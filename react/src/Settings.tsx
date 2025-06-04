@@ -9,9 +9,10 @@ import {
 } from "./components/ui/card";
 import { Button } from "./components/ui/button";
 import { Label } from "./components/ui/label";
-import { ArrowLeftIcon, Save } from "lucide-react";
+import { ArrowLeftIcon, PlusIcon, Save, TrashIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "./components/ui/checkbox";
+import { AddProviderDialog } from "./AddProviderDialog";
 
 type LLMConfig = {
   models: Record<string, { type?: "text" | "image" | "video" }>;
@@ -106,7 +107,7 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
+  const [showAddProviderDialog, setShowAddProviderDialog] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -116,14 +117,18 @@ export default function Settings() {
         const config: { [key: string]: LLMConfig } = await response.json();
         setConfig((curConfig) => {
           const res: { [key: string]: LLMConfig } = {};
-          for (const provider in DEFAULT_CONFIG) {
-            if (config[provider] && typeof config[provider] === "object") {
+          for (const provider in config) {
+            if (
+              DEFAULT_CONFIG[provider] &&
+              config[provider] &&
+              typeof config[provider] === "object"
+            ) {
               res[provider] = {
                 ...DEFAULT_CONFIG[provider],
                 ...config[provider],
               };
             } else {
-              res[provider] = DEFAULT_CONFIG[provider];
+              res[provider] = config[provider];
             }
           }
           return res;
@@ -188,19 +193,66 @@ export default function Settings() {
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
             </div>
           )}
+          <Button onClick={() => setShowAddProviderDialog(true)}>
+            <PlusIcon /> Add Provider
+          </Button>
+          {showAddProviderDialog && (
+            <AddProviderDialog
+              onSave={(provider, apiKey, apiUrl, modelList) => {
+                setConfig({
+                  ...config,
+                  [provider]: {
+                    models: modelList.reduce((acc, model) => {
+                      acc[model] = { type: "text" };
+                      return acc;
+                    }, {} as Record<string, { type?: "text" | "image" | "video" }>),
+                    url: apiUrl,
+                    api_key: apiKey,
+                  },
+                });
+              }}
+              onClose={() => setShowAddProviderDialog(false)}
+            />
+          )}
           {Object.keys(config).map((key, index) => (
-            <>
+            <div key={key} className="gap-2 space-y-2">
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <img
-                    src={PROVIDER_NAME_MAPPING[key].icon}
-                    alt={PROVIDER_NAME_MAPPING[key].name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <p className="font-bold text-2xl w-fit">
-                    {PROVIDER_NAME_MAPPING[key].name}
-                  </p>
-                  {key === "replicate" && <span>🎨 Image Generation</span>}
+                <div className="flex justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {PROVIDER_NAME_MAPPING[key]?.icon ? (
+                      <img
+                        src={PROVIDER_NAME_MAPPING[key]?.icon}
+                        alt={PROVIDER_NAME_MAPPING[key]?.name || key}
+                        className="w-10 h-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-purple-300 flex items-center justify-center">
+                        <p className="text-gray-500">{key.charAt(0)}</p>
+                      </div>
+                    )}
+                    <p className="font-bold text-2xl w-fit">
+                      {PROVIDER_NAME_MAPPING[key]?.name || key}
+                    </p>
+                    {key === "replicate" && <span>🎨 Image Generation</span>}
+                  </div>
+                  <Button
+                    size={"icon"}
+                    variant={"ghost"}
+                    onClick={() => {
+                      const confirm = window.confirm(
+                        "Are you sure you want to delete this provider?"
+                      );
+                      if (confirm) {
+                        setConfig((prevConfig) => {
+                          const newConfig = { ...prevConfig };
+                          delete newConfig[key];
+                          return newConfig;
+                        });
+                      }
+                    }}
+                  >
+                    <TrashIcon />
+                  </Button>
                 </div>
                 <Input
                   placeholder="Enter your API URL"
@@ -218,11 +270,10 @@ export default function Settings() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`${key}-apiKey`}>API Key</Label>
                 <Input
                   id={`${key}-apiKey`}
                   type="password"
-                  placeholder="Enter your API key"
+                  placeholder="API key"
                   value={config[key]?.api_key ?? ""}
                   onChange={(e) => {
                     setConfig({
@@ -269,9 +320,8 @@ export default function Settings() {
                   ...DEFAULT_CONFIG[key]?.models,
                   ...config[key]?.models,
                 }).map((model) => (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3" key={model}>
                     <Checkbox
-                      key={model}
                       id={model}
                       checked={!!config[key]?.models[model]?.type}
                       onCheckedChange={(checked) => {
@@ -303,7 +353,7 @@ export default function Settings() {
               {index !== Object.keys(config).length - 1 && (
                 <div className="my-6 border-t bg-border" />
               )}
-            </>
+            </div>
           ))}
           <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
             <Button onClick={handleSave} className="w-[400px]" size={"lg"}>

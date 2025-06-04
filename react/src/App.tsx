@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import { Tldraw } from "tldraw";
-import "tldraw/tldraw.css";
 import {
   BrowserRouter,
   Routes,
@@ -18,8 +16,6 @@ import { useTheme } from "@/components/theme-provider";
 import { toast, Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
-import PostEditor from "./PostEditor";
-import Canvas from "./Canvas";
 import CanvasExcali from "./CanvasExcali";
 import { Button } from "./components/ui/button";
 import {
