@@ -1,49 +1,37 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  EAgentState,
-  Message,
-  MessageContent,
-  MessageGroup,
-  ToolCall,
-} from "./types/types";
-import { Button } from "./components/ui/button";
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ImageIcon,
-  ImagePlusIcon,
-  Link,
-  MoonIcon,
-  PlusIcon,
-  SendIcon,
-  SettingsIcon,
-  SidebarIcon,
-  SquareIcon,
-  StopCircleIcon,
-  SunIcon,
-  XIcon,
-} from "lucide-react";
-import { Badge } from "./components/ui/badge";
-import { Textarea } from "./components/ui/textarea";
-import { nanoid } from "nanoid";
-import { Markdown } from "./components/Markdown";
-import { toast } from "sonner";
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./components/ui/select";
-import { useNavigate } from "react-router-dom";
-import MultiChoicePrompt from "./MultiChoicePrompt";
-import SingleChoicePrompt from "./SingleChoicePrompt";
-import Spinner from "./components/ui/Spinner";
-import { useTheme } from "./components/theme-provider";
-import { PLATFORMS_CONFIG } from "./platformsConfig";
+} from '@/components/ui/select'
+import Spinner from '@/components/ui/Spinner'
+import { Textarea } from '@/components/ui/textarea'
+import { useTheme } from '@/hooks/use-theme'
+import { Message, ToolCall } from '@/types/types'
+import { useNavigate } from '@tanstack/react-router'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ImagePlusIcon,
+  MoonIcon,
+  PlusIcon,
+  SendIcon,
+  SettingsIcon,
+  StopCircleIcon,
+  SunIcon,
+  XIcon,
+} from 'lucide-react'
+import { nanoid } from 'nanoid'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { Markdown } from './Markdown'
+import MultiChoicePrompt from './MultiChoicePrompt'
+import SingleChoicePrompt from './SingleChoicePrompt'
 
-const FOOTER_HEIGHT = 100; // Keep this as minimum height
-const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
+const FOOTER_HEIGHT = 100 // Keep this as minimum height
+const MAX_INPUT_HEIGHT = 300 // Add this for maximum input height
 
 const ChatInterface = ({
   sessionId,
@@ -51,272 +39,272 @@ const ChatInterface = ({
   editorContent,
   editorTitle,
 }: {
-  sessionId: string;
-  editorTitle: string;
-  editorContent: string;
-  onClickNewChat: () => void;
+  sessionId: string
+  editorTitle: string
+  editorContent: string
+  onClickNewChat: () => void
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [prompt, setPrompt] = useState("");
-  const [fileId, setFileId] = useState<string | null>(null);
-  const [disableStop, setDisableStop] = useState(false);
-  const [pending, setPending] = useState(false);
-  const { setTheme, theme } = useTheme();
+  const [messages, setMessages] = useState<Message[]>([])
+  const [prompt, setPrompt] = useState('')
+  const [fileId, setFileId] = useState<string | null>(null)
+  const [disableStop, setDisableStop] = useState(false)
+  const [pending, setPending] = useState(false)
+  const { setTheme, theme } = useTheme()
   const [textModel, setTextModel] = useState<{
-    provider: string;
-    model: string;
-    url: string;
-  }>();
+    provider: string
+    model: string
+    url: string
+  }>()
   const [imageModel, setImageModel] = useState<{
-    provider: string;
-    model: string;
-    url: string;
-  }>();
+    provider: string
+    model: string
+    url: string
+  }>()
 
   const [modelList, setModelList] = useState<
     {
-      provider: string;
-      model: string;
-      url: string;
-      type: string;
+      provider: string
+      model: string
+      url: string
+      type: string
     }[]
-  >([]);
-  const textModels = modelList.filter((m) => m.type == "text");
-  const imageModels = modelList.filter((m) => m.type == "image");
-  const webSocketRef = useRef<WebSocket | null>(null);
-  const sessionIdRef = useRef<string>(nanoid());
-  const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
-  const navigate = useNavigate();
+  >([])
+  const textModels = modelList.filter((m) => m.type == 'text')
+  const imageModels = modelList.filter((m) => m.type == 'image')
+  const webSocketRef = useRef<WebSocket | null>(null)
+  const sessionIdRef = useRef<string>(nanoid())
+  const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
-    fetch("/api/list_models")
+    fetch('/api/list_models')
       .then((resp) => resp.json())
       .then(
         (
           data: {
-            provider: string;
-            model: string;
-            type: string;
-            url: string;
+            provider: string
+            model: string
+            type: string
+            url: string
           }[]
         ) => {
           if (data.length > 0) {
-            const textModel = localStorage.getItem("text_model");
+            const textModel = localStorage.getItem('text_model')
             if (
               textModel &&
-              data.find((m) => m.provider + ":" + m.model == textModel)
+              data.find((m) => m.provider + ':' + m.model == textModel)
             ) {
               setTextModel(
-                data.find((m) => m.provider + ":" + m.model == textModel)
-              );
+                data.find((m) => m.provider + ':' + m.model == textModel)
+              )
             } else {
-              setTextModel(data.find((m) => m.type == "text"));
+              setTextModel(data.find((m) => m.type == 'text'))
             }
-            const imageModel = localStorage.getItem("image_model");
+            const imageModel = localStorage.getItem('image_model')
             if (
               imageModel &&
-              data.find((m) => m.provider + ":" + m.model == imageModel)
+              data.find((m) => m.provider + ':' + m.model == imageModel)
             ) {
               setImageModel(
-                data.find((m) => m.provider + ":" + m.model == imageModel)
-              );
+                data.find((m) => m.provider + ':' + m.model == imageModel)
+              )
             } else {
-              setImageModel(data.find((m) => m.type == "image"));
+              setImageModel(data.find((m) => m.type == 'image'))
             }
-            setModelList(data);
+            setModelList(data)
           }
         }
-      );
-  }, []);
+      )
+  }, [])
 
   const initChat = async () => {
-    await fetch("/api/chat_session/" + sessionId)
+    await fetch('/api/chat_session/' + sessionId)
       .then((resp) => resp.json())
       .then((data) => {
         if (data?.length) {
-          setMessages(data);
+          setMessages(data)
         } else {
-          setMessages([]);
+          setMessages([])
         }
-        console.log("👇messages", data);
-      });
+        console.log('👇messages', data)
+      })
 
-    const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`);
-    webSocketRef.current = socket;
+    const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`)
+    webSocketRef.current = socket
 
-    socket.addEventListener("open", (event) => {
-      console.log("Connected to WebSocket server");
-    });
+    socket.addEventListener('open', (event) => {
+      console.log('Connected to WebSocket server')
+    })
 
-    socket.addEventListener("message", (event) => {
+    socket.addEventListener('message', (event) => {
       // const data = JSON.parse(event.data);
       // console.log(event.data);
       try {
-        const data = JSON.parse(event.data);
-        if (data.type == "log") {
-          console.log(data);
+        const data = JSON.parse(event.data)
+        if (data.type == 'log') {
+          console.log(data)
         }
-        if (data.type == "error") {
-          setPending(false);
-          toast.error("Error: " + data.error, {
+        if (data.type == 'error') {
+          setPending(false)
+          toast.error('Error: ' + data.error, {
             closeButton: true,
             duration: 3600 * 1000, // set super large duration to make it not auto dismiss
             style: {
-              color: "red",
+              color: 'red',
             },
-          });
-        } else if (data.type == "done") {
-          setPending(false);
-        } else if (data.type == "info") {
+          })
+        } else if (data.type == 'done') {
+          setPending(false)
+        } else if (data.type == 'info') {
           toast.info(data.info, {
             closeButton: true,
             duration: 10 * 1000,
-          });
-        } else if (data.type == "image_generated") {
-          console.log("⭐️dispatching image_generated", data);
+          })
+        } else if (data.type == 'image_generated') {
+          console.log('⭐️dispatching image_generated', data)
           window.dispatchEvent(
-            new CustomEvent("image_generated", {
+            new CustomEvent('image_generated', {
               detail: {
                 image_data: data.image_data,
               },
             })
-          );
+          )
         } else {
           setMessages((prev) => {
-            if (data.type == "delta") {
-              if (prev.at(-1)?.role == "assistant") {
-                const lastMessage = structuredClone(prev.at(-1));
+            if (data.type == 'delta') {
+              if (prev.at(-1)?.role == 'assistant') {
+                const lastMessage = structuredClone(prev.at(-1))
                 if (lastMessage) {
-                  if (typeof lastMessage.content == "string") {
-                    lastMessage.content += data.text;
+                  if (typeof lastMessage.content == 'string') {
+                    lastMessage.content += data.text
                   } else if (
                     lastMessage.content &&
                     lastMessage.content.at(-1) &&
-                    lastMessage.content.at(-1)!.type === "text"
+                    lastMessage.content.at(-1)!.type === 'text'
                   ) {
-                    (lastMessage.content.at(-1) as { text: string }).text +=
-                      data.text;
+                    ;(lastMessage.content.at(-1) as { text: string }).text +=
+                      data.text
                   }
                   // TODO: handle other response type
                 }
-                return [...prev.slice(0, -1), lastMessage];
+                return [...prev.slice(0, -1), lastMessage]
               } else {
                 return [
                   ...prev,
                   {
-                    role: "assistant",
+                    role: 'assistant',
                     content: data.text,
                   },
-                ];
+                ]
               }
-            } else if (data.type == "tool_call") {
-              console.log("👇tool_call event get", data);
-              setExpandingToolCalls([...expandingToolCalls, data.id]);
+            } else if (data.type == 'tool_call') {
+              console.log('👇tool_call event get', data)
+              setExpandingToolCalls([...expandingToolCalls, data.id])
               return prev.concat({
-                role: "assistant",
+                role: 'assistant',
                 tool_calls: [
                   {
-                    type: "function",
+                    type: 'function',
                     function: {
                       name: data.name,
-                      arguments: "",
+                      arguments: '',
                     },
                     id: data.id,
                   },
                 ],
-              });
-            } else if (data.type == "tool_call_arguments") {
-              const lastMessage = structuredClone(prev.at(-1));
+              })
+            } else if (data.type == 'tool_call_arguments') {
+              const lastMessage = structuredClone(prev.at(-1))
 
               if (
-                lastMessage?.role === "assistant" &&
+                lastMessage?.role === 'assistant' &&
                 lastMessage.tool_calls &&
                 lastMessage.tool_calls.at(-1) &&
                 lastMessage.tool_calls.at(-1)!.id == data.id
               ) {
-                lastMessage.tool_calls.at(-1)!.function.arguments += data.text;
-                return prev.slice(0, -1).concat(lastMessage);
+                lastMessage.tool_calls.at(-1)!.function.arguments += data.text
+                return prev.slice(0, -1).concat(lastMessage)
               }
-            } else if (data.type == "tool_call_result") {
+            } else if (data.type == 'tool_call_result') {
               const res: {
-                id: string;
+                id: string
                 content: {
-                  text: string;
-                }[];
-              } = data;
-            } else if (data.type == "all_messages") {
-              console.log("👇all_messages", data.messages);
-              return data.messages;
+                  text: string
+                }[]
+              } = data
+            } else if (data.type == 'all_messages') {
+              console.log('👇all_messages', data.messages)
+              return data.messages
             }
-            return prev;
-          });
+            return prev
+          })
         }
       } catch (error) {
-        console.error("Error parsing JSON:", error);
+        console.error('Error parsing JSON:', error)
       }
-    });
+    })
 
-    socket.addEventListener("close", (event) => {
-      console.log("Disconnected from WebSocket server");
-    });
+    socket.addEventListener('close', (event) => {
+      console.log('Disconnected from WebSocket server')
+    })
 
-    socket.addEventListener("error", (event) => {
-      console.error("WebSocket error:", event);
-    });
-  };
+    socket.addEventListener('error', (event) => {
+      console.error('WebSocket error:', event)
+    })
+  }
 
   useEffect(() => {
-    sessionIdRef.current = sessionId;
-    initChat();
+    sessionIdRef.current = sessionId
+    initChat()
     return () => {
       if (webSocketRef.current?.readyState === WebSocket.OPEN) {
-        webSocketRef.current?.close();
+        webSocketRef.current?.close()
       }
-    };
-  }, [sessionId]);
+    }
+  }, [sessionId])
 
   const onSendPrompt = (promptStr: string) => {
     if (pending) {
-      return;
+      return
     }
     if (!textModel) {
       toast.error(
         "Please select a text model! Go to Settings to set your API keys if you haven't done so."
-      );
-      return;
+      )
+      return
     }
     if (!imageModel) {
       toast.error(
         "Please select an image model! Go to Settings to set your API keys if you haven't done so."
-      );
-      return;
+      )
+      return
     }
-    if (!textModel.url || textModel.url == "") {
-      toast.error("Please set the model URL in Settings");
-      return;
+    if (!textModel.url || textModel.url == '') {
+      toast.error('Please set the model URL in Settings')
+      return
     }
-    if (!promptStr || promptStr == "") {
-      return;
+    if (!promptStr || promptStr == '') {
+      return
     }
     if (fileId) {
-      promptStr += `\n\n ![Attached image filename: ${fileId}](/api/file/${fileId})`;
+      promptStr += `\n\n ![Attached image filename: ${fileId}](/api/file/${fileId})`
     }
 
     const newMessages = messages.concat([
       {
-        role: "user",
+        role: 'user',
         content: promptStr,
       },
-    ]);
+    ])
 
-    setMessages(newMessages);
-    setPrompt("");
+    setMessages(newMessages)
+    setPrompt('')
     setFileId(null)
-    setPending(true);
-    fetch("/api/chat", {
-      method: "POST",
+    setPending(true)
+    fetch('/api/chat', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         messages: newMessages,
@@ -324,37 +312,37 @@ const ChatInterface = ({
         text_model: textModel,
         image_model: imageModel,
       }),
-    }).then((resp) => resp.json());
-  };
+    }).then((resp) => resp.json())
+  }
   const onUploadImage = () => {
     // open file input
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/png, image/jpeg, image/jpg, image/webp,image/gif";
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/png, image/jpeg, image/jpg, image/webp,image/gif'
     input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+      const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
         // Create a FormData object
-        const formData = new FormData();
-        formData.append("session_id", sessionIdRef.current);
-        formData.append("file", file);
+        const formData = new FormData()
+        formData.append('session_id', sessionIdRef.current)
+        formData.append('file', file)
 
         // Upload image
-        fetch("/api/upload_image", {
-          method: "POST",
+        fetch('/api/upload_image', {
+          method: 'POST',
           body: formData, // Use FormData as the body
         })
           .then((resp) => resp.json())
           .then((data) => {
-            console.log("👇upload_image", data);
+            console.log('👇upload_image', data)
             if (data.file_id) {
-              setFileId(data.file_id);
+              setFileId(data.file_id)
             }
-          });
+          })
       }
-    };
-    input.click();
-  };
+    }
+    input.click()
+  }
 
   return (
     <div className="flex flex-col h-screen relative">
@@ -372,12 +360,12 @@ const ChatInterface = ({
               <SidebarIcon size={30} />
             </Button> */}
           <Select
-            value={textModel?.provider + ":" + textModel?.model}
+            value={textModel?.provider + ':' + textModel?.model}
             onValueChange={(value) => {
-              localStorage.setItem("text_model", value);
+              localStorage.setItem('text_model', value)
               setTextModel(
-                modelList.find((m) => m.provider + ":" + m.model == value)
-              );
+                modelList.find((m) => m.provider + ':' + m.model == value)
+              )
             }}
           >
             <SelectTrigger className="w-[45%]">
@@ -386,8 +374,8 @@ const ChatInterface = ({
             <SelectContent>
               {textModels.map((model) => (
                 <SelectItem
-                  key={model.provider + ":" + model.model}
-                  value={model.provider + ":" + model.model}
+                  key={model.provider + ':' + model.model}
+                  value={model.provider + ':' + model.model}
                 >
                   {model.model}
                 </SelectItem>
@@ -396,12 +384,12 @@ const ChatInterface = ({
           </Select>
 
           <Select
-            value={imageModel?.provider + ":" + imageModel?.model}
+            value={imageModel?.provider + ':' + imageModel?.model}
             onValueChange={(value) => {
-              localStorage.setItem("image_model", value);
+              localStorage.setItem('image_model', value)
               setImageModel(
-                modelList.find((m) => m.provider + ":" + m.model == value)
-              );
+                modelList.find((m) => m.provider + ':' + m.model == value)
+              )
             }}
           >
             <SelectTrigger className="w-[45%]">
@@ -411,8 +399,8 @@ const ChatInterface = ({
             <SelectContent>
               {imageModels.map((model) => (
                 <SelectItem
-                  key={model.provider + ":" + model.model}
-                  value={model.provider + ":" + model.model}
+                  key={model.provider + ':' + model.model}
+                  value={model.provider + ':' + model.model}
                 >
                   {model.model}
                 </SelectItem>
@@ -421,21 +409,21 @@ const ChatInterface = ({
           </Select>
 
           <Button
-            size={"sm"}
-            variant={"secondary"}
-            onClick={() => navigate("/settings")}
+            size={'sm'}
+            variant={'secondary'}
+            onClick={() => navigate({ to: '/settings' })}
           >
             <SettingsIcon size={30} />
           </Button>
 
           <Button
-            size={"sm"}
-            variant={"ghost"}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            size={'sm'}
+            variant={'ghost'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
+            {theme === 'dark' ? <SunIcon size={30} /> : <MoonIcon size={30} />}
           </Button>
-          <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
+          <Button size={'sm'} variant={'outline'} onClick={onClickNewChat}>
             <PlusIcon /> New
           </Button>
         </header>
@@ -444,19 +432,19 @@ const ChatInterface = ({
         {messages.map((message, idx) => (
           <div key={`${idx}`}>
             {/* Regular message content */}
-            {typeof message.content == "string" && message.role !== "tool" && (
+            {typeof message.content == 'string' && message.role !== 'tool' && (
               <div
                 className={`${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
-                    : "text-gray-800 dark:text-gray-200 text-left items-start"
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                    : 'text-gray-800 dark:text-gray-200 text-left items-start'
                 } space-y-3 flex flex-col w-fit`}
               >
                 <Markdown>{message.content}</Markdown>
               </div>
             )}
-            {typeof message.content == "string" &&
-              message.role == "tool" &&
+            {typeof message.content == 'string' &&
+              message.role == 'tool' &&
               expandingToolCalls.includes(message.tool_call_id) && (
                 <div>
                   <Markdown>{message.content}</Markdown>
@@ -464,30 +452,30 @@ const ChatInterface = ({
               )}
             {Array.isArray(message.content) &&
               message.content.map((content, i) => {
-                if (content.type == "text") {
+                if (content.type == 'text') {
                   return (
                     <div
                       key={i}
                       className={`${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
-                          : "text-gray-800 dark:text-gray-200 text-left items-start"
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                          : 'text-gray-800 dark:text-gray-200 text-left items-start'
                       } space-y-3 flex flex-col w-fit`}
                     >
                       <Markdown>{content.text}</Markdown>
                     </div>
-                  );
-                } else if (content.type == "image_url") {
+                  )
+                } else if (content.type == 'image_url') {
                   return (
                     <div key={i}>
                       <img src={content.image_url.url} alt="Image" />
                     </div>
-                  );
+                  )
                 }
               })}
-            {message.role === "assistant" &&
+            {message.role === 'assistant' &&
               message.tool_calls &&
-              message.tool_calls.at(-1)?.function.name != "finish" &&
+              message.tool_calls.at(-1)?.function.name != 'finish' &&
               message.tool_calls.map((toolCall, i) => {
                 return (
                   <ToolCallTag
@@ -498,20 +486,20 @@ const ChatInterface = ({
                       if (expandingToolCalls.includes(toolCall.id)) {
                         setExpandingToolCalls(
                           expandingToolCalls.filter((id) => id !== toolCall.id)
-                        );
+                        )
                       } else {
                         setExpandingToolCalls([
                           ...expandingToolCalls,
                           toolCall.id,
-                        ]);
+                        ])
                       }
                     }}
                   />
-                );
+                )
               })}
           </div>
         ))}
-        {pending && messages.at(-1)?.role == "user" && (
+        {pending && messages.at(-1)?.role == 'user' && (
           <div className="flex items-start text-left">{<Spinner />}</div>
         )}
       </div>
@@ -532,8 +520,8 @@ const ChatInterface = ({
                 className="w-full h-full object-contain"
               />
               <Button
-                variant={"ghost"}
-                size={"sm"}
+                variant={'ghost'}
+                size={'sm'}
                 onClick={() => setFileId(null)}
                 className="absolute top-0 right-0"
               >
@@ -542,9 +530,9 @@ const ChatInterface = ({
             </div>
           ) : (
             <Button
-              variant={"outline"}
+              variant={'outline'}
               className="w-fit"
-              size={"sm"}
+              size={'sm'}
               onClick={() => onUploadImage()}
             >
               <ImagePlusIcon />
@@ -556,17 +544,17 @@ const ChatInterface = ({
               placeholder="What do you want to do?"
               value={prompt}
               onChange={(e) => {
-                setPrompt(e.target.value);
+                setPrompt(e.target.value)
               }}
               style={{
                 maxHeight: MAX_INPUT_HEIGHT,
                 minHeight: FOOTER_HEIGHT,
-                overflowY: "auto",
+                overflowY: 'auto',
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault(); // Prevents adding a new line
-                  onSendPrompt(prompt);
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault() // Prevents adding a new line
+                  onSendPrompt(prompt)
                 }
               }}
             />
@@ -583,13 +571,13 @@ const ChatInterface = ({
               <Button
                 disabled={disableStop}
                 onClick={() => {
-                  fetch("/api/cancel/" + sessionIdRef.current, {
-                    method: "POST",
+                  fetch('/api/cancel/' + sessionIdRef.current, {
+                    method: 'POST',
                   })
                     .then((resp) => resp.json())
                     .finally(() => {
-                      setPending(false);
-                    });
+                      setPending(false)
+                    })
                 }}
                 className="mb-1"
               >
@@ -600,8 +588,8 @@ const ChatInterface = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 // Component to render tool call tag
 const ToolCallTag = ({
@@ -609,38 +597,40 @@ const ToolCallTag = ({
   isExpanded,
   onToggleExpand,
 }: {
-  toolCall: ToolCall;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
+  toolCall: ToolCall
+  isExpanded: boolean
+  onToggleExpand: () => void
 }) => {
-  const { name, arguments: inputs } = toolCall.function;
-  let parsedArgs: Record<string, any> | null = null;
+  const { name, arguments: inputs } = toolCall.function
+  let parsedArgs: Record<string, unknown> | null = null
   try {
-    parsedArgs = JSON.parse(inputs);
-  } catch (error) {}
-
-  if (name == "prompt_user_multi_choice") {
-    return <MultiChoicePrompt />;
+    parsedArgs = JSON.parse(inputs)
+  } catch (error) {
+    /* empty */
   }
-  if (name == "prompt_user_single_choice") {
-    return <SingleChoicePrompt />;
+
+  if (name == 'prompt_user_multi_choice') {
+    return <MultiChoicePrompt />
+  }
+  if (name == 'prompt_user_single_choice') {
+    return <SingleChoicePrompt />
   }
 
   return (
     <div className="w-full border rounded-md overflow-hidden">
       <Button
-        variant={"secondary"}
+        variant={'secondary'}
         onClick={onToggleExpand}
-        className={"w-full justify-start text-left"}
+        className={'w-full justify-start text-left'}
       >
         {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         <span
           style={{
-            maxWidth: "80%",
-            display: "inline-block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            maxWidth: '80%',
+            display: 'inline-block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
           <span className="font-semibold text-muted-foreground">{name}</span>
@@ -667,6 +657,6 @@ const ToolCallTag = ({
         </div>
       )}
     </div>
-  );
-};
-export default ChatInterface;
+  )
+}
+export default ChatInterface

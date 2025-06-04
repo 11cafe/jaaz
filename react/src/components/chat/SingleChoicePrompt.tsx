@@ -1,10 +1,9 @@
-import { InfoIcon } from "lucide-react";
-import { Markdown } from "./components/Markdown";
-import { Button } from "./components/ui/button";
-import { Card } from "./components/ui/card";
-import { Checkbox } from "./components/ui/checkbox";
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { InfoIcon } from 'lucide-react'
+import { Markdown } from './Markdown'
 
-export default function MultiChoicePrompt() {
+export default function SingleChoicePrompt() {
   return (
     <div className="flex flex-col gap-2">
       <Card className="p-3">
@@ -16,17 +15,17 @@ export default function MultiChoicePrompt() {
         </div>
         <div className="flex gap-2">
           <Button
-            size={"sm"}
+            size={'sm'}
             className="flex-1 bg-purple-600 dark:bg-purple-600 text-white"
           >
             Post
           </Button>
-          <Button size={"sm"} variant={"secondary"} className="flex-1">
+          <Button size={'sm'} variant={'secondary'} className="flex-1">
             Cancel
           </Button>
         </div>
         <Markdown>{`![My cat](https://i.imgur.com/gufUD2J.png) \n`}</Markdown>
       </Card>
     </div>
-  );
+  )
 }
