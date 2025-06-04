@@ -8,7 +8,7 @@ import { LLMConfig } from '@/types/types'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, PlusIcon, Save, TrashIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { AddProviderDialog } from './AddProviderDialog'
+import { AddProviderDialog } from '@/components/AddProviderDialog'
 
 export const Route = createFileRoute('/settings')({
   component: Settings,
@@ -119,10 +119,16 @@ export default function Settings() {
                 setConfig({
                   ...config,
                   [provider]: {
-                    models: modelList.reduce((acc, model) => {
-                      acc[model] = { type: 'text' }
-                      return acc
-                    }, {} as Record<string, { type?: 'text' | 'image' | 'video' }>),
+                    models: modelList.reduce(
+                      (acc, model) => {
+                        acc[model] = { type: 'text' }
+                        return acc
+                      },
+                      {} as Record<
+                        string,
+                        { type?: 'text' | 'image' | 'video' }
+                      >
+                    ),
                     url: apiUrl,
                     api_key: apiKey,
                   },

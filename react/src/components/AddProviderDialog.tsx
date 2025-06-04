@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button } from "./components/ui/button";
+import { useState } from 'react'
+import { Button } from './ui/button'
 import {
   Dialog,
   DialogClose,
@@ -9,10 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./components/ui/dialog";
-import { Input } from "./components/ui/input";
-import { Label } from "./components/ui/label";
-import { PlusIcon, XIcon } from "lucide-react";
+} from './ui/dialog'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { PlusIcon, XIcon } from 'lucide-react'
 
 export function AddProviderDialog({
   onSave,
@@ -23,23 +23,23 @@ export function AddProviderDialog({
     apiKey: string,
     apiUrl: string,
     models: string[]
-  ) => void;
-  onClose: () => void;
+  ) => void
+  onClose: () => void
 }) {
-  const [provider, setProvider] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [apiUrl, setApiUrl] = useState("");
-  const [modelName, setModelName] = useState("");
-  const [modelList, setModelList] = useState<string[]>([]);
+  const [provider, setProvider] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [apiUrl, setApiUrl] = useState('')
+  const [modelName, setModelName] = useState('')
+  const [modelList, setModelList] = useState<string[]>([])
   const handleSave = () => {
     if (!provider || !apiKey || !apiUrl || modelList.length === 0) {
-      alert("Please fill in all fields");
-      return;
+      alert('Please fill in all fields')
+      return
     }
 
-    onSave(provider, apiKey, apiUrl, modelList);
-    onClose();
-  };
+    onSave(provider, apiKey, apiUrl, modelList)
+    onClose()
+  }
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[50vw]">
@@ -80,8 +80,8 @@ export function AddProviderDialog({
           />
           <Button
             onClick={() => {
-              setModelList([...modelList, modelName]);
-              setModelName("");
+              setModelList([...modelList, modelName])
+              setModelName('')
             }}
           >
             <PlusIcon className="w-4 h-4" />
@@ -93,7 +93,7 @@ export function AddProviderDialog({
             <div className="flex items-center gap-2">
               <p>{model}</p>
               <Button
-                size={"xs"}
+                size={'xs'}
                 variant="outline"
                 onClick={() =>
                   setModelList(modelList.filter((m) => m !== model))
@@ -112,5 +112,5 @@ export function AddProviderDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
