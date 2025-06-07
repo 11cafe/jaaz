@@ -44,8 +44,11 @@
       "running": "运行中",
       "installed": "已安装（未运行）",
       "notInstalled": "未安装",
+      "notRunning": "未运行",
       "checking": "检查中..."
     },
+    "urlDescription": "ComfyUI 服务地址，如果已安装请输入地址",
+    "invalidUrl": "请输入有效的 URL 地址（如：http://127.0.0.1:8188）",
     "notInstalledTitle": "ComfyUI 未安装",
     "notInstalledDescription": "安装 ComfyUI 以启用 Flux 模型的本地图像生成",
     "installButton": "安装 ComfyUI"

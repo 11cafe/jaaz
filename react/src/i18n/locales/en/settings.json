@@ -44,8 +44,11 @@
       "running": "Running",
       "installed": "Installed (Not Running)",
       "notInstalled": "Not Installed",
+      "notRunning": "Not Running",
       "checking": "Checking..."
     },
+    "urlDescription": "ComfyUI service URL, enter the address if already installed",
+    "invalidUrl": "Please enter a valid URL (e.g., http://127.0.0.1:8188)",
     "notInstalledTitle": "ComfyUI Not Installed",
     "notInstalledDescription": "Install ComfyUI to enable local image generation with Flux models",
     "installButton": "Install ComfyUI"
