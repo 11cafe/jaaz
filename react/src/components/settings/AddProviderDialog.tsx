@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Combobox } from '@/components/ui/combobox'
 import { LLMConfig } from '@/types/types'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,35 @@ interface AddProviderDialogProps {
   onOpenChange: (open: boolean) => void
   onSave: (providerKey: string, config: LLMConfig) => void
 }
+
+// Predefined provider options with their API URLs
+const PROVIDER_OPTIONS = [
+  {
+    value: 'OpenRouter',
+    label: 'OpenRouter',
+    data: { apiUrl: 'https://openrouter.ai/api/v1/' }
+  },
+  {
+    value: '深度求索',
+    label: '深度求索 (DeepSeek)',
+    data: { apiUrl: 'https://api.deepseek.com/v1/' }
+  },
+  {
+    value: '硅基流动',
+    label: '硅基流动 (SiliconFlow)',
+    data: { apiUrl: 'https://api.siliconflow.cn/v1/' }
+  },
+  {
+    value: '智谱 AI',
+    label: '智谱 AI (GLM)',
+    data: { apiUrl: 'https://open.bigmodel.cn/api/paas/v4/' }
+  },
+  {
+    value: '月之暗面',
+    label: '月之暗面 (Kimi)',
+    data: { apiUrl: 'https://api.moonshot.cn/v1/' }
+  },
+]
 
 export default function AddProviderDialog({
   open,
@@ -31,6 +61,13 @@ export default function AddProviderDialog({
   const [models, setModels] = useState<
     Record<string, { type?: 'text' | 'image' | 'video' }>
   >({})
+
+  // Handle data change when provider is selected
+  const handleProviderDataChange = (data: unknown) => {
+    if (data && typeof data === 'object' && 'apiUrl' in data) {
+      setApiUrl((data as { apiUrl: string }).apiUrl)
+    }
+  }
 
   const handleSave = () => {
     if (!providerName.trim() || !apiUrl.trim()) {
@@ -79,11 +116,13 @@ export default function AddProviderDialog({
             <Label htmlFor="provider-name">
               {t('settings:provider.providerName')}
             </Label>
-            <Input
+            <Combobox
               id="provider-name"
-              placeholder={t('settings:provider.providerNamePlaceholder')}
               value={providerName}
-              onChange={(e) => setProviderName(e.target.value)}
+              onChange={setProviderName}
+              onDataChange={handleProviderDataChange}
+              options={PROVIDER_OPTIONS}
+              placeholder={t('settings:provider.providerNamePlaceholder')}
             />
           </div>
 
