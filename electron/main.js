@@ -120,6 +120,7 @@ const createWindow = (pyPort) => {
       // for showing local image and video files
       webSecurity: false,
       allowRunningInsecureContent: true,
+      cache: false,
     },
   })
 

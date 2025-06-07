@@ -32,15 +32,31 @@ app.include_router(agent.wsrouter)
 app.include_router(canvas.router)
 app.include_router(workspace.router)
 app.include_router(image_tools.router)
+
+# no cache static files for react app
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if hasattr(response, 'headers'):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
 # Mount the React build directory
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(os.path.dirname(root_dir), "react", "dist"))
 
 static_site = os.path.join(react_build_dir, "assets")
 if os.path.exists(static_site):
-    app.mount("/assets", StaticFiles(directory=static_site), name="assets")
+    app.mount("/assets", NoCacheStaticFiles(directory=static_site), name="assets")
+
 
 @app.get("/")
-async def serve_react_app():
+async def serve_react_app(response):
+    # Set no-cache headers for the main HTML file
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return FileResponse(os.path.join(react_build_dir, "index.html"))
 
 
