@@ -1,3 +1,31 @@
+"""
+SSL Configuration and Proxy Utilities - SSL配置和代理工具模块
+
+该模块提供 SSL 配置和网络代理相关的工具函数，包括：
+- 本地 URL 检测
+- 代理配置获取和解析
+- SSL 上下文创建
+- 带代理支持的 HTTP 客户端创建
+
+主要功能：
+1. 自动检测本地 URL，避免对本地服务使用代理
+2. 解析和标准化代理配置
+3. 创建正确配置的 SSL 上下文
+4. 为 aiohttp 和 httpx 创建支持代理的客户端
+
+支持的代理类型：
+- HTTP/HTTPS 代理
+- SOCKS5 代理
+- 带认证的代理（用户名/密码）
+
+依赖模块：
+- ssl - Python 标准 SSL 库
+- certifi - CA 证书包
+- aiohttp - 异步 HTTP 客户端
+- httpx - 现代 HTTP 客户端
+- urllib.parse - URL 解析工具
+"""
+
 import ssl
 import certifi
 import aiohttp
@@ -6,36 +34,78 @@ from urllib.parse import urlparse
 
 
 def is_local_url(url: str) -> bool:
-    """Check if URL is local (localhost, 127.0.0.1, or local IP ranges)"""
+    """
+    检查 URL 是否为本地地址
+
+    Args:
+        url (str): 要检查的 URL
+
+    Returns:
+        bool: 如果是本地地址返回 True，否则返回 False
+
+    Description:
+        检测 URL 是否指向本地服务，本地服务通常不需要使用代理。
+        支持检测的本地地址模式：
+        - localhost 变体：localhost, 127.0.0.1, ::1
+        - 私有 IP 范围：192.168.x.x, 10.x.x.x, 172.x.x.x
+        - 本地域名：*.local
+
+    Note:
+        如果 URL 解析失败，出于安全考虑会假设它是本地地址
+    """
     try:
         parsed = urlparse(url)
         hostname = parsed.hostname
         if not hostname:
             return True
 
-        # Check for localhost variants
+        # 检查 localhost 变体
         if hostname.lower() in ['localhost', '127.0.0.1', '::1']:
             return True
 
-        # Check for local IP ranges
+        # 检查私有 IP 地址范围
         if hostname.startswith('192.168.') or hostname.startswith('10.') or hostname.startswith('172.'):
             return True
 
-        # Check for other local patterns
+        # 检查其他本地模式
         if hostname.endswith('.local'):
             return True
 
         return False
     except Exception:
-        return True  # If we can't parse, assume it's local to be safe
+        return True  # 如果无法解析，为安全起见假设是本地地址
 
 
 def get_proxy_config():
-    """Get proxy configuration from app_settings"""
+    """
+    获取代理配置
+
+    Returns:
+        str | None: 标准化的代理 URL，如果未配置或配置无效则返回 None
+
+    Description:
+        从设置服务获取代理配置并将其标准化为可用的代理 URL。
+        支持多种输入格式的自动解析和标准化：
+
+        输入格式示例：
+        - 完整 URL: http://user:pass@proxy.com:8080
+        - 简单格式: proxy.com:8080
+        - 仅主机名: proxy.com (会添加默认端口)
+        - SOCKS 代理: socks5://proxy.com:1080
+
+        输出格式：
+        - HTTP 代理: http://[user:pass@]host:port
+        - SOCKS5 代理: socks5://[user:pass@]host:port
+
+    Note:
+        使用延迟导入避免循环依赖问题
+    """
     try:
-        # Lazy import to avoid circular dependency
+        # 延迟导入避免循环依赖
         from services.settings_service import settings_service
         proxy_config = settings_service.get_proxy_config()
+
+        # 检查代理是否启用
         if not proxy_config.get('enable', False):
             return None
 
@@ -43,23 +113,23 @@ def get_proxy_config():
         if not proxy_url:
             return None
 
-        # Parse the proxy URL to extract components
+        # 解析代理 URL 以提取组件
         import urllib.parse
 
-        # Handle different URL formats
+        # 处理不同的 URL 格式
         if not proxy_url.startswith(('http://', 'https://', 'socks5://', 'socks://')):
-            # If no protocol specified, assume http
+            # 如果没有指定协议，假设为 http
             if ':' in proxy_url:
-                # Format: host:port or user:pass@host:port
+                # 格式: host:port 或 user:pass@host:port
                 proxy_url = f"http://{proxy_url}"
             else:
-                # Just hostname, add default port
+                # 仅主机名，添加默认端口
                 proxy_url = f"http://{proxy_url}:8080"
 
         try:
             parsed = urllib.parse.urlparse(proxy_url)
 
-            # Determine proxy type
+            # 确定代理类型
             if parsed.scheme in ['socks5', 'socks']:
                 proxy_type = 'socks5'
                 default_port = 1080
@@ -67,7 +137,7 @@ def get_proxy_config():
                 proxy_type = 'http'
                 default_port = 8080
 
-            # Extract components
+            # 提取组件
             host = parsed.hostname
             port = parsed.port or default_port
             username = parsed.username or ''
@@ -76,7 +146,7 @@ def get_proxy_config():
             if not host:
                 return None
 
-            # Build final proxy URL
+            # 构建最终的代理 URL
             if username and password:
                 if proxy_type == 'socks5':
                     final_url = f"socks5://{username}:{password}@{host}:{port}"
@@ -101,14 +171,29 @@ def get_proxy_config():
 
 
 def create_ssl_context():
-    """Create SSL context with proper CA certificates for PyInstaller environments"""
+    """
+    创建 SSL 上下文
+
+    Returns:
+        ssl.SSLContext: 配置好的 SSL 上下文对象
+
+    Description:
+        创建正确配置的 SSL 上下文，特别适用于 PyInstaller 打包环境。
+        使用 certifi 包提供的 CA 证书包，确保 SSL 验证正常工作。
+
+        在打包环境中，系统默认的 CA 证书可能不可用，
+        certifi 包提供了一个可靠的 CA 证书集合。
+
+    Fallback:
+        如果 certifi 配置失败，会回退到系统默认的 SSL 上下文
+    """
     try:
-        # Use certifi's CA bundle
+        # 使用 certifi 的 CA 证书包
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         return ssl_context
     except Exception as e:
         print(f"Warning: Failed to create SSL context with certifi: {e}")
-        # Fallback to default context
+        # 回退到默认上下文
         return ssl.create_default_context()
 
 
@@ -164,20 +249,44 @@ class ProxyAwareClientSession(aiohttp.ClientSession):
 
 
 def create_aiohttp_session(url: str = None, **kwargs):
-    """Create aiohttp ClientSession with automatic proxy handling"""
+    """
+    创建 aiohttp 客户端会话
+
+    Args:
+        url (str, 可选): 目标 URL，用于判断是否需要使用代理
+        **kwargs: 传递给 ClientSession 的额外参数
+
+    Returns:
+        aiohttp.ClientSession: 配置好的客户端会话对象
+
+    Description:
+        创建带有自动代理处理的 aiohttp 客户端会话。
+
+        代理处理逻辑：
+        1. 本地 URL 不使用代理
+        2. SOCKS 代理使用 aiohttp-socks 连接器
+        3. HTTP/HTTPS 代理使用自定义会话类
+        4. 无代理配置时使用直连
+
+        SSL 配置：
+        所有会话都使用 certifi 提供的 CA 证书包进行 SSL 验证
+
+    Dependencies:
+        - aiohttp-socks: 可选，用于 SOCKS 代理支持
+    """
     ssl_context = create_ssl_context()
 
-    # Check if we should use proxy
+    # 检查是否应该使用代理
     if url and is_local_url(url):
-        # Local URL, no proxy needed
+        # 本地 URL，无需代理
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         return aiohttp.ClientSession(connector=connector, **kwargs)
 
-    # Check for proxy configuration
+    # 检查代理配置
     proxy_url = get_proxy_config()
     if proxy_url:
         if proxy_url.startswith('socks'):
-            # For SOCKS proxy, use special connector
+            # SOCKS 代理，使用特殊连接器
             try:
                 from aiohttp_socks import ProxyConnector
                 connector = ProxyConnector.from_url(proxy_url, ssl=ssl_context)
@@ -186,11 +295,11 @@ def create_aiohttp_session(url: str = None, **kwargs):
                 print(
                     "Warning: aiohttp-socks not installed, falling back to direct connection")
         else:
-            # For HTTP/HTTPS proxy, use our custom session class
+            # HTTP/HTTPS 代理，使用自定义会话类
             connector = aiohttp.TCPConnector(ssl=ssl_context)
             return ProxyAwareClientSession(target_url=url, connector=connector, **kwargs)
 
-    # No proxy needed
+    # 无需代理
     connector = aiohttp.TCPConnector(ssl=ssl_context)
     return aiohttp.ClientSession(connector=connector, **kwargs)
 
