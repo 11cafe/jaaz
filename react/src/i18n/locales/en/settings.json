@@ -35,6 +35,24 @@
     "save": "Save",
     "cancel": "Cancel"
   },
+  "proxy": {
+    "title": "Proxy Settings",
+    "description": "Configure network proxy for accessing external API services. Local models (Ollama, ComfyUI) will not use proxy.",
+    "enable": "Enable Proxy",
+    "url": "Proxy URL",
+    "urlPlaceholder": "http://user:pass@proxy.example.com:8080 or socks5://127.0.0.1:1080",
+    "urlDescription": "Supports multiple formats: full URL, simple format (host:port), or hostname only. The system will automatically parse and identify proxy type.",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "testSuccess": "Proxy connection test successful",
+    "testFailed": "Proxy connection test failed: {{message}}",
+    "testError": "Proxy connection test error",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "misconfigured": "Misconfigured"
+    }
+  },
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 Local Image Generation",

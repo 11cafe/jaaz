@@ -1,0 +1,7 @@
+# Example settings file for the application
+# Copy this file to user_data/settings.toml and modify as needed
+
+# Proxy configuration
+[proxy]
+enable = false  # Set to true to enable proxy
+url = ""         # Proxy URL (e.g., "http://proxy.example.com:8080" or "socks5://127.0.0.1:1080")

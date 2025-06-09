@@ -19,7 +19,7 @@ from utils.ssl_config import create_aiohttp_session
 
 async def get_image_info_and_save(url, file_path_without_extension):
     # Fetch the image asynchronously
-    async with create_aiohttp_session() as session:
+    async with create_aiohttp_session(url=url) as session:
         async with session.get(url) as response:
             # Read the image content as bytes
             image_content = await response.read()
@@ -65,7 +65,7 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         if input_image_b64:
             data['input']['input_image'] = input_image_b64
             model = 'black-forest-labs/flux-kontext-pro'
-        async with create_aiohttp_session() as session:
+        async with create_aiohttp_session(url=url) as session:
             async with session.post(url, headers=headers, json=data) as response:
                 res = await response.json()
         print('🦄image generation response', res)
@@ -146,7 +146,7 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
     api_key = app_config.get('wavespeed', {}).get('api_key', '')
     url = app_config.get('wavespeed', {}).get('url', '')
 
-    async with create_aiohttp_session() as session:
+    async with create_aiohttp_session(url=url) as session:
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'

@@ -9,10 +9,10 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
-import { PlugZap } from 'lucide-react'
+import { PlugZap, Network } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-export type SettingSidebarType = 'provider'
+export type SettingSidebarType = 'provider' | 'proxy'
 
 type SettingSidebar = {
   current: SettingSidebarType
@@ -28,12 +28,17 @@ const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent }) => {
     title: string
     icon: React.ElementType
   }[] = [
-    {
-      type: 'provider',
-      title: 'settings:provider:title',
-      icon: PlugZap,
-    },
-  ]
+      {
+        type: 'provider',
+        title: 'settings:provider:title',
+        icon: PlugZap,
+      },
+      {
+        type: 'proxy',
+        title: 'settings:proxy:title',
+        icon: Network,
+      },
+    ]
 
   return (
     <Sidebar className="h-full rounded-l-lg overflow-hidden">

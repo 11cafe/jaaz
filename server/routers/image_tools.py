@@ -77,7 +77,7 @@ async def get_object_info(data: dict):
 
     try:
         timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
-        async with create_aiohttp_session(timeout=timeout) as session:
+        async with create_aiohttp_session(url=url, timeout=timeout) as session:
             async with session.get(f"{url}/api/object_info") as response:
                 if response.status == 200:
                     return await response.json()

@@ -130,7 +130,7 @@ async def langraph_agent(messages, session_id, text_model, image_model):
         )
     else:
         # Create httpx client with SSL configuration for ChatOpenAI
-        http_client = create_httpx_client(timeout=1000)
+        http_client = create_httpx_client(url=url, timeout=1000)
         model = ChatOpenAI(
             model=model,
             api_key=api_key,

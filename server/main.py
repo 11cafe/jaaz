@@ -1,4 +1,4 @@
-from routers import config, agent, workspace, image_tools, canvas, ssl_test
+from routers import config, agent, workspace, image_tools, canvas, ssl_test, settings
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
@@ -27,6 +27,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Include routers
 app.include_router(config.router)
+app.include_router(settings.router)
 app.include_router(agent.router)
 app.include_router(agent.wsrouter)
 app.include_router(canvas.router)
@@ -41,6 +42,7 @@ react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
 static_site = os.path.join(react_build_dir, "assets")
 if os.path.exists(static_site):
     app.mount("/assets", StaticFiles(directory=static_site), name="assets")
+
 
 @app.get("/")
 async def serve_react_app():
