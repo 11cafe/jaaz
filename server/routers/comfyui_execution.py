@@ -9,7 +9,7 @@ from datetime import timedelta
 from urllib import request
 import asyncio
 
-import httpx
+from utils.http_client import HttpClient
 
 import typer
 from rich import print as pprint
@@ -17,15 +17,22 @@ from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
 from websocket import WebSocket
 from .websocket import send_to_websocket
 
+
 async def check_comfy_server_running(port, host):
-    async with httpx.AsyncClient(timeout=10) as client:
-        url = f'{host}:{port}/api/prompt'
-        response = await client.get(url)
-        return response.status_code == 200
+    # Use context manager for local ComfyUI service check
+    url = f'http://{host}:{port}/api/prompt'
+    try:
+        async with HttpClient.create(url) as client:
+            response = await client.get(url, timeout=10.0)
+            return response.status_code == 200
+    except Exception:
+        return False
+
 
 async def execute(workflow: dict, host, port, wait=True, verbose=False, local_paths=False, timeout=300, ctx: dict = {}):
     if not check_comfy_server_running(port, host):
-        pprint(f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]")
+        pprint(
+            f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]")
         raise typer.Exit(code=1)
 
     progress = None
@@ -37,7 +44,8 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
     else:
         print(f"Queuing comfyui workflow")
 
-    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout)
+    execution = WorkflowExecution(
+        workflow, host, port, verbose, progress, local_paths, timeout)
 
     try:
         if wait:
@@ -56,7 +64,8 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
                     pprint(f)
 
             elapsed = timedelta(seconds=end - start)
-            pprint(f"[bold green]\nWorkflow execution completed ({elapsed})[/bold green]")
+            pprint(
+                f"[bold green]\nWorkflow execution completed ({elapsed})[/bold green]")
         else:
             pprint("[bold green]Workflow queued[/bold green]")
     finally:
@@ -68,15 +77,19 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
 class ExecutionProgress(Progress):
     def get_renderables(self):
         table_columns = (
-            (Column(no_wrap=True) if isinstance(_column, str) else _column.get_table_column().copy())
+            (Column(no_wrap=True) if isinstance(_column, str)
+             else _column.get_table_column().copy())
             for _column in self.columns
         )
 
         for task in self.tasks:
-            percent = "[progress.percentage]{task.percentage:>3.0f}%".format(task=task)
+            percent = "[progress.percentage]{task.percentage:>3.0f}%".format(
+                task=task)
             if task.fields.get("progress_type") == "overall":
-                overall_table = Table.grid(*table_columns, padding=(0, 1), expand=self.expand)
-                overall_table.add_row(BarColumn().render(task), percent, TimeElapsedColumn().render(task))
+                overall_table = Table.grid(
+                    *table_columns, padding=(0, 1), expand=self.expand)
+                overall_table.add_row(BarColumn().render(
+                    task), percent, TimeElapsedColumn().render(task))
                 yield overall_table
             else:
                 yield self.make_tasks_table([task])
@@ -95,7 +108,8 @@ class WorkflowExecution:
         self.remaining_nodes = set(self.workflow.keys())
         self.total_nodes = len(self.remaining_nodes)
         if progress:
-            self.overall_task = self.progress.add_task("", total=self.total_nodes, progress_type="overall")
+            self.overall_task = self.progress.add_task(
+                "", total=self.total_nodes, progress_type="overall")
         self.current_node = None
         self.progress_task = None
         self.progress_node = None
@@ -106,11 +120,13 @@ class WorkflowExecution:
 
     def connect(self):
         self.ws = WebSocket()
-        self.ws.connect(f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
+        self.ws.connect(
+            f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
 
     def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
-        req = request.Request(f"http://{self.host}:{self.port}/prompt", json.dumps(data).encode("utf-8"))
+        req = request.Request(
+            f"http://{self.host}:{self.port}/prompt", json.dumps(data).encode("utf-8"))
         try:
             resp = request.urlopen(req)
             body = json.loads(resp.read())
@@ -142,7 +158,8 @@ class WorkflowExecution:
                     break
 
     def update_overall_progress(self):
-        self.progress.update(self.overall_task, completed=self.total_nodes - len(self.remaining_nodes))
+        self.progress.update(
+            self.overall_task, completed=self.total_nodes - len(self.remaining_nodes))
 
     def get_node_title(self, node_id):
         node = self.workflow[node_id]
@@ -230,9 +247,9 @@ class WorkflowExecution:
         node = data["node"]
         if self.ctx.get('session_id'):
             asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
-                    'type': 'tool_call_progress',
-                    'tool_call_id': self.ctx.get('tool_call_id'),
-                    'progress': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
+                'type': 'tool_call_progress',
+                'tool_call_id': self.ctx.get('tool_call_id'),
+                'progress': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
             }))
         if self.progress_node != node:
             self.progress_node = node
@@ -261,5 +278,6 @@ class WorkflowExecution:
             self.outputs.append(self.format_image_path(img))
 
     def on_error(self, data):
-        pprint(f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]")
+        pprint(
+            f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]")
         raise typer.Exit(code=1)

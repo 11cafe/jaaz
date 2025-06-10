@@ -9,9 +9,8 @@ from typing import Optional
 from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
-import aiohttp
-import requests
-from utils.ssl_config import create_aiohttp_session, create_httpx_client
+
+from utils.http_client import HttpClient
 from services.agent_service import openai_client, anthropic_client, ollama_client
 from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
@@ -129,8 +128,10 @@ async def langraph_agent(messages, session_id, text_model, image_model):
             base_url=url,
         )
     else:
-        # Create httpx client with SSL configuration for ChatOpenAI
-        http_client = create_httpx_client(url=url, timeout=1000)
+        # Create both sync and async httpx clients for ChatOpenAI
+        http_async_client = HttpClient.create_async_client(
+            url=url, timeout=1000)
+        http_sync_client = HttpClient.create_sync_client(url=url, timeout=1000)
         model = ChatOpenAI(
             model=model,
             api_key=api_key,
@@ -138,7 +139,8 @@ async def langraph_agent(messages, session_id, text_model, image_model):
             base_url=url,
             temperature=0,
             max_tokens=max_tokens,
-            http_client=http_client
+            http_client=http_sync_client,
+            http_async_client=http_async_client
         )
     agent = create_react_agent(
         model=model,
@@ -238,11 +240,12 @@ def get_ollama_model_list():
     base_url = config_service.get_config().get('ollama', {}).get(
         'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     try:
-        response = requests.get(f'{base_url}/api/tags', timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return [model['name'] for model in data.get('models', [])]
-    except requests.RequestException as e:
+        with HttpClient.create_sync(base_url) as client:
+            response = client.get(f'{base_url}/api/tags', timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return [model['name'] for model in data.get('models', [])]
+    except Exception as e:
         print(f"Error querying Ollama: {e}")
         return []
 

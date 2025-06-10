@@ -21,3 +21,5 @@ typer # needed for comfyui execution
 langgraph
 langchain_ollama
 langchain_openai
+httpx
+httpx[socks]

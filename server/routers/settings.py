@@ -23,8 +23,7 @@ Settings Router - 设置路由模块
 
 from fastapi import APIRouter, HTTPException, Request
 from services.settings_service import settings_service
-import aiohttp
-from utils.ssl_config import create_aiohttp_session
+from utils.http_client import HttpClient
 
 # 创建设置相关的路由器，所有端点都以 /api/settings 为前缀
 router = APIRouter(prefix="/api/settings")
@@ -180,43 +179,42 @@ async def test_proxy():
     # 逐个测试每个 URL
     for test_url in test_urls:
         try:
-            async with create_aiohttp_session(url=test_url) as session:
-                timeout = aiohttp.ClientTimeout(total=10)
-                async with session.get(test_url, timeout=timeout) as response:
-                    if response.status == 200:
-                        # 请求成功
-                        if "httpbin.org" in test_url:
-                            # 对于 httpbin，尝试解析 JSON 响应获取 IP 信息
-                            try:
-                                result = await response.json()
-                                results.append({
-                                    "url": test_url,
-                                    "status": "success",
-                                    "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}",
-                                    "data": result
-                                })
-                            except:
-                                # JSON 解析失败，但连接成功
-                                results.append({
-                                    "url": test_url,
-                                    "status": "success",
-                                    "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}"
-                                })
-                        else:
-                            # 其他 URL 只记录连接成功
+            async with HttpClient.create(test_url) as client:
+                response = await client.get(test_url, timeout=10.0)
+                if response.status_code == 200:
+                    # 请求成功
+                    if "httpbin.org" in test_url:
+                        # 对于 httpbin，尝试解析 JSON 响应获取 IP 信息
+                        try:
+                            result = response.json()
+                            results.append({
+                                "url": test_url,
+                                "status": "success",
+                                "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}",
+                                "data": result
+                            })
+                        except:
+                            # JSON 解析失败，但连接成功
                             results.append({
                                 "url": test_url,
                                 "status": "success",
                                 "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}"
                             })
-                        break  # 有一个成功就退出测试
                     else:
-                        # HTTP 状态码不是 200
+                        # 其他 URL 只记录连接成功
                         results.append({
                             "url": test_url,
-                            "status": "error",
-                            "message": f"HTTP {response.status}"
+                            "status": "success",
+                            "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}"
                         })
+                    break  # 有一个成功就退出测试
+                else:
+                    # HTTP 状态码不是 200
+                    results.append({
+                        "url": test_url,
+                        "status": "error",
+                        "message": f"HTTP {response.status_code}"
+                    })
         except Exception as e:
             # 连接异常
             results.append({

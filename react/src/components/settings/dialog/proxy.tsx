@@ -102,9 +102,6 @@ const SettingProxy = () => {
               <Network className="h-5 w-5" />
               <CardTitle>{t('settings:proxy:title')}</CardTitle>
             </div>
-            <CardDescription>
-              {t('settings:proxy:description')}
-            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">

@@ -10,21 +10,20 @@ from PIL import Image
 from io import BytesIO
 import os
 from nanoid import generate
-import httpx
 import aiofiles
-import aiohttp
 from typing import Optional
-from utils.ssl_config import create_aiohttp_session
+from utils.http_client import HttpClient
 
 
 async def get_image_info_and_save(url, file_path_without_extension):
-    # Fetch the image asynchronously
-    async with create_aiohttp_session(url=url) as session:
-        async with session.get(url) as response:
-            # Read the image content as bytes
-            image_content = await response.read()
-            # Open the image
-            image = Image.open(BytesIO(image_content))
+    # Fetch the image asynchronously using HttpClient
+    async with HttpClient.create(url) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        # Read the image content as bytes
+        image_content = response.content
+        # Open the image
+        image = Image.open(BytesIO(image_content))
 
     # Get MIME type
     mime_type = Image.MIME.get(image.format if image.format else 'PNG')
@@ -65,9 +64,10 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         if input_image_b64:
             data['input']['input_image'] = input_image_b64
             model = 'black-forest-labs/flux-kontext-pro'
-        async with create_aiohttp_session(url=url) as session:
-            async with session.post(url, headers=headers, json=data) as response:
-                res = await response.json()
+        async with HttpClient.create(url) as client:
+            response = await client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            res = response.json()
         print('🦄image generation response', res)
         output = res.get('output', '')
         image_id = 'im_' + generate(size=8)
@@ -146,7 +146,7 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
     api_key = app_config.get('wavespeed', {}).get('api_key', '')
     url = app_config.get('wavespeed', {}).get('url', '')
 
-    async with create_aiohttp_session(url=url) as session:
+    async with HttpClient.create(url) as client:
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
@@ -173,28 +173,30 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
                 "strength": kwargs.get("strength", 0.8),
             }
         endpoint = f"{url.rstrip('/')}/{model}"
-        async with session.post(endpoint, json=payload, headers=headers) as response:
-            response_json = await response.json()
-            if response.status != 200 or response_json.get("code") != 200:
-                raise Exception(f"WaveSpeed API error: {response_json}")
-            result_url = response_json["data"]["urls"]["get"]
-            # 轮询获取图片结果
-            for _ in range(60):  # 最多等60秒
-                await asyncio.sleep(1)
-                async with session.get(result_url, headers=headers) as result_resp:
-                    result_data = await result_resp.json()
-                    print("WaveSpeed polling result:", result_data)
-                    data = result_data.get("data", {})
-                    outputs = data.get("outputs", [])
-                    status = data.get("status")
-                    if status in ("succeeded", "completed") and outputs:
-                        image_url = outputs[0]
-                        image_id = 'im_' + generate(size=8)
-                        mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{image_id}'))
-                        filename = f'{image_id}.{extension}'
-                        return mime_type, width, height, filename
+        response = await client.post(endpoint, json=payload, headers=headers)
+        response.raise_for_status()
+        response_json = response.json()
+        if response_json.get("code") != 200:
+            raise Exception(f"WaveSpeed API error: {response_json}")
+        result_url = response_json["data"]["urls"]["get"]
+        # 轮询获取图片结果
+        for _ in range(60):  # 最多等60秒
+            await asyncio.sleep(1)
+            result_resp = await client.get(result_url, headers=headers)
+            result_resp.raise_for_status()
+            result_data = result_resp.json()
+            print("WaveSpeed polling result:", result_data)
+            data = result_data.get("data", {})
+            outputs = data.get("outputs", [])
+            status = data.get("status")
+            if status in ("succeeded", "completed") and outputs:
+                image_url = outputs[0]
+                image_id = 'im_' + generate(size=8)
+                mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{image_id}'))
+                filename = f'{image_id}.{extension}'
+                return mime_type, width, height, filename
 
-                    if status == "failed":
-                        raise Exception(
-                            f"WaveSpeed generation failed: {result_data}")
-            raise Exception("WaveSpeed image generation timeout")
+            if status == "failed":
+                raise Exception(
+                    f"WaveSpeed generation failed: {result_data}")
+        raise Exception("WaveSpeed image generation timeout")

@@ -12,14 +12,12 @@ from io import BytesIO
 import os
 from nanoid import generate
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
-import httpx
 import aiofiles
 from mimetypes import guess_type
-import aiohttp
 import asyncio
 from typing import Optional, Annotated, List
 from langchain_core.tools import tool
-from utils.ssl_config import create_aiohttp_session
+from utils.http_client import HttpClient
 router = APIRouter(prefix="/api")
 
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -76,26 +74,24 @@ async def get_object_info(data: dict):
         raise HTTPException(status_code=400, detail="URL is required")
 
     try:
-        timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
-        async with create_aiohttp_session(url=url, timeout=timeout) as session:
-            async with session.get(f"{url}/api/object_info") as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    raise HTTPException(
-                        status_code=response.status, detail=f"ComfyUI server returned status {response.status}")
-    except aiohttp.ClientConnectorError as e:
-        print(f"ComfyUI connection error: {str(e)}")
-        raise HTTPException(
-            status_code=503, detail="ComfyUI server is not available. Please make sure ComfyUI is running.")
-    except asyncio.TimeoutError:
-        print("ComfyUI connection timeout")
-        raise HTTPException(
-            status_code=504, detail="ComfyUI server connection timeout")
+        # Use context manager for local ComfyUI service
+        async with HttpClient.create(url) as client:
+            response = await client.get(f"{url}/api/object_info", timeout=10.0)
+            response.raise_for_status()
+            return response.json()
     except Exception as e:
-        print(f"Unexpected error connecting to ComfyUI: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")
+        error_msg = str(e)
+        print(f"ComfyUI connection error: {error_msg}")
+
+        if "ConnectError" in error_msg or "Connection" in error_msg:
+            raise HTTPException(
+                status_code=503, detail="ComfyUI server is not available. Please make sure ComfyUI is running.")
+        elif "timeout" in error_msg.lower():
+            raise HTTPException(
+                status_code=504, detail="ComfyUI server connection timeout")
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to connect to ComfyUI: {error_msg}")
 
 
 @tool("generate_image", parse_docstring=True)
