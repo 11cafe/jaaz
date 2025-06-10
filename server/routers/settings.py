@@ -18,7 +18,7 @@ Settings Router - 设置路由模块
 
 依赖模块：
 - services.settings_service - 设置服务
-- utils.ssl_config - SSL和代理配置工具
+- utils.http_client - HTTP客户端工具
 """
 
 from fastapi import APIRouter, HTTPException, Request
@@ -106,35 +106,33 @@ async def get_proxy_status():
         - enable=True, configured=False: 代理已启用但配置有误
         - enable=False, configured=False: 代理未启用
     """
-    from utils.ssl_config import get_proxy_config
+    # 获取设置中的代理配置
+    settings = settings_service.get_raw_settings()
+    proxy_config = settings.get('proxy', {})
 
-    # 获取当前生效的代理配置
-    proxy_url = get_proxy_config()
-    if proxy_url:
-        # 代理配置正确且已生效
-        return {
-            "enable": True,
-            "configured": True,
-            "message": "Proxy is configured and enabled"
-        }
-    else:
-        # 检查设置中的代理配置
-        settings = settings_service.get_raw_settings()
-        proxy_config = settings.get('proxy', {})
-        if proxy_config.get('enable', False):
+    if proxy_config.get('enable', False):
+        proxy_url = proxy_config.get('url', '').strip()
+        if proxy_url:
+            # 代理配置正确且已启用
+            return {
+                "enable": True,
+                "configured": True,
+                "message": "Proxy is configured and enabled"
+            }
+        else:
             # 代理已启用但配置不正确
             return {
                 "enable": True,
                 "configured": False,
                 "message": "Proxy is enabled but not properly configured"
             }
-        else:
-            # 代理未启用
-            return {
-                "enable": False,
-                "configured": False,
-                "message": "Proxy is disabled"
-            }
+    else:
+        # 代理未启用
+        return {
+            "enable": False,
+            "configured": False,
+            "message": "Proxy is disabled"
+        }
 
 
 @router.get("/proxy/test")
@@ -160,11 +158,13 @@ async def test_proxy():
         只要有一个测试成功，就认为代理配置正确。
         如果没有配置代理，会测试直连是否正常。
     """
-    from utils.ssl_config import get_proxy_config
-
     # 检查是否配置了代理
-    proxy_url = get_proxy_config()
-    if not proxy_url:
+    settings = settings_service.get_raw_settings()
+    proxy_config = settings.get('proxy', {})
+    proxy_configured = proxy_config.get(
+        'enable', False) and proxy_config.get('url', '').strip()
+
+    if not proxy_configured:
         return {"status": "info", "message": "No proxy configured, testing direct connection"}
 
     # 测试多个 URL 以提高可靠性
@@ -190,7 +190,7 @@ async def test_proxy():
                             results.append({
                                 "url": test_url,
                                 "status": "success",
-                                "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}",
+                                "message": f"Connected successfully via {'proxy' if proxy_configured else 'direct connection'}",
                                 "data": result
                             })
                         except:
@@ -198,14 +198,14 @@ async def test_proxy():
                             results.append({
                                 "url": test_url,
                                 "status": "success",
-                                "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}"
+                                "message": f"Connected successfully via {'proxy' if proxy_configured else 'direct connection'}"
                             })
                     else:
                         # 其他 URL 只记录连接成功
                         results.append({
                             "url": test_url,
                             "status": "success",
-                            "message": f"Connected successfully via {'proxy' if proxy_url else 'direct connection'}"
+                            "message": f"Connected successfully via {'proxy' if proxy_configured else 'direct connection'}"
                         })
                     break  # 有一个成功就退出测试
                 else:
@@ -234,8 +234,8 @@ async def test_proxy():
             "status": "success",
             "message": successful_result["message"],
             "data": successful_result.get("data"),
-            "proxy_configured": proxy_url is not None,
-            "proxy_url_masked": "***configured***" if proxy_url else None
+            "proxy_configured": proxy_configured,
+            "proxy_url_masked": "***configured***" if proxy_configured else None
         }
     else:
         # 所有测试都失败
@@ -243,8 +243,8 @@ async def test_proxy():
             "status": "error",
             "message": "All connection tests failed",
             "details": results,
-            "proxy_configured": proxy_url is not None,
-            "proxy_url_masked": "***configured***" if proxy_url else None
+            "proxy_configured": proxy_configured,
+            "proxy_url_masked": "***configured***" if proxy_configured else None
         }
 
 
