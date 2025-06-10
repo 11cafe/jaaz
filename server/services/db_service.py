@@ -36,14 +36,14 @@ class DatabaseService:
             # Get current version
             cursor = conn.execute("SELECT version FROM db_version")
             current_version = cursor.fetchone()
-            print('🦄 local db version', current_version, 'latest version', CURRENT_VERSION)
+            print('local db version', current_version, 'latest version', CURRENT_VERSION)
             
             if current_version is None:
                 # First time setup - start from version 0
                 conn.execute("INSERT INTO db_version (version) VALUES (0)")
                 self._migration_manager.migrate(conn, 0, CURRENT_VERSION)
             elif current_version[0] < CURRENT_VERSION:
-                print('🦄 Migrating database from version', current_version[0], 'to', CURRENT_VERSION)
+                print('Migrating database from version', current_version[0], 'to', CURRENT_VERSION)
                 # Need to migrate
                 self._migration_manager.migrate(conn, current_version[0], CURRENT_VERSION)
 

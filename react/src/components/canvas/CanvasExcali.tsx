@@ -1,29 +1,26 @@
-import { saveCanvas } from '@/api/canvas'
 import { useCanvas } from '@/contexts/canvas'
 import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
 import { CanvasData } from '@/types/types'
 import { Excalidraw } from '@excalidraw/excalidraw'
-import { IMAGE_MIME_TYPES } from '@excalidraw/excalidraw/constants'
 import {
   ExcalidrawImageElement,
-  FileId,
   OrderedExcalidrawElement,
   Theme,
 } from '@excalidraw/excalidraw/element/types'
 import '@excalidraw/excalidraw/index.css'
 import {
   AppState,
+  BinaryFileData,
   BinaryFiles,
-  DataURL,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
-import { ValueOf } from '@excalidraw/excalidraw/utility-types'
-import { nanoid } from 'nanoid'
-import { memo, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { saveCanvas } from '@/api/canvas'
 import '@/assets/style/canvas.css'
+import { eventBus } from '@/lib/event'
 
 type LastImagePosition = {
   x: number
@@ -52,6 +49,10 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       appState: AppState,
       files: BinaryFiles
     ) => {
+      if (elements.length === 0 || !appState) {
+        return
+      }
+
       const data: CanvasData = {
         elements,
         appState: {
@@ -73,98 +74,18 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
   const { theme } = useTheme()
 
-  // TODO: Move to Backend
   const addImageToExcalidraw = useCallback(
-    async (imageData: {
-      url: string
-      mime_type: ValueOf<typeof IMAGE_MIME_TYPES>
-      width: number
-      height: number
-    }) => {
+    async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
-      const imageDataUrl = imageData.url
+      excalidrawAPI.addFiles([file])
 
-      // Convert base64 data URL to File
-      const fileid = nanoid() as FileId
-
-      // Add file to Excalidraw
-      excalidrawAPI.addFiles([
-        {
-          mimeType: imageData.mime_type,
-          id: fileid,
-          dataURL: imageDataUrl as DataURL,
-          created: Date.now(),
-        },
-      ])
-
-      // Position image next to the previous one, 4 items per row
-      let newX = 0
-      let newY = 0
-      let newCol = 0
-      // Check if we need to start a new row
-      if (!lastImagePosition.current) {
-        // first image in canvas
-      } else if (lastImagePosition.current.col >= 3) {
-        // 0-based index, so 3 means 4th item
-        const { x, y, width, height, col } = lastImagePosition.current
-        newX = 0 // Reset X position
-        newY = y + height + 20 // Move to the next row
-        newCol = 0 // Reset column index
-      } else {
-        const { x, y, width, height, col } = lastImagePosition.current
-        newX = x + width + 20 // adjust spacing to 20px
-        newY = y
-        newCol = col + 1 // Increment column index
-      }
-
-      const imageElement: ExcalidrawImageElement = {
-        type: 'image',
-        id: fileid,
-        x: newX,
-        y: newY,
-        width: imageData.width,
-        height: imageData.height,
-        angle: 0,
-        fileId: fileid,
-        strokeColor: '#000000',
-        fillStyle: 'solid',
-        strokeStyle: 'solid',
-        boundElements: null,
-        roundness: null,
-        frameId: null,
-        backgroundColor: 'transparent',
-        strokeWidth: 1,
-        roughness: 0,
-        opacity: 100,
-        groupIds: [],
-        seed: Math.floor(Math.random() * 100000),
-        version: 1,
-        versionNonce: Math.floor(Math.random() * 100000),
-        isDeleted: false,
-        index: null,
-        updated: 0,
-        link: null,
-        locked: false,
-        status: 'saved',
-        scale: [1, 1],
-        crop: null,
-      }
       const currentElements = excalidrawAPI.getSceneElements()
       console.log('👇 adding to currentElements', currentElements)
       excalidrawAPI.updateScene({
         elements: [...(currentElements || []), imageElement],
       })
 
-      // Update position for the next image
-      lastImagePosition.current = {
-        x: newX,
-        y: newY,
-        width: imageData.width,
-        height: imageData.height,
-        col: newCol,
-      }
-      console.log('👇lastImagePosition', lastImagePosition.current)
       localStorage.setItem(
         'excalidraw-last-image-position',
         JSON.stringify(lastImagePosition.current)
@@ -174,18 +95,16 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
 
   const handleImageGenerated = useCallback(
-    (e: Event) => {
-      const event = e as CustomEvent
-      console.log('👇image_generated', event.detail)
-      addImageToExcalidraw(event.detail.image_data)
+    (imageData: { element: ExcalidrawImageElement; file: BinaryFileData }) => {
+      console.log('👇image_generated', imageData)
+      addImageToExcalidraw(imageData.element, imageData.file)
     },
     [addImageToExcalidraw]
   )
 
   useEffect(() => {
-    window.addEventListener('image_generated', handleImageGenerated)
-    return () =>
-      window.removeEventListener('image_generated', handleImageGenerated)
+    eventBus.on('Socket::ImageGenerated', handleImageGenerated)
+    return () => eventBus.off('Socket::ImageGenerated', handleImageGenerated)
   }, [handleImageGenerated])
 
   return (
@@ -198,6 +117,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       onChange={handleChange}
       initialData={() => {
         const data = initialData
+        console.log('👇initialData', data)
         if (data?.appState) {
           data.appState = {
             ...data.appState,
@@ -209,4 +129,4 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     />
   )
 }
-export default memo(CanvasExcali)
+export default CanvasExcali

@@ -23,7 +23,11 @@ function Home() {
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
     onSuccess: (data) => {
-      navigate({ to: '/canvas/$id', params: { id: data.id } })
+      navigate({
+        to: '/canvas/$id',
+        params: { id: data.id },
+        search: { init: true },
+      })
     },
     onError: (error) => {
       toast.error(t('common:messages.error'), {

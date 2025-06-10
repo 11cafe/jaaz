@@ -125,11 +125,15 @@ const createWindow = (pyPort) => {
 
   // In development, use Vite dev server
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5174')
+    mainWindow.loadURL('http://localhost:5174', {
+      extraHeaders: 'pragma: no-cache\n',
+    })
     mainWindow.webContents.openDevTools()
   } else {
     // In production, load built files
-    mainWindow.loadURL(`http://127.0.0.1:${pyPort}`)
+    mainWindow.loadURL(`http://127.0.0.1:${pyPort}`, {
+      extraHeaders: 'pragma: no-cache\n',
+    })
   }
 }
 

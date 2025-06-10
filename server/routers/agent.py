@@ -99,7 +99,7 @@ async def chat(request: Request):
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
 
     task = asyncio.create_task(langraph_agent(
-        messages, session_id, text_model, image_model))
+        messages, canvas_id, session_id, text_model, image_model))
     stream_tasks[session_id] = task
     try:
         await task
@@ -114,7 +114,7 @@ async def chat(request: Request):
     return {"status": "done"}
 
 
-async def langraph_agent(messages, session_id, text_model, image_model):
+async def langraph_agent(messages, canvas_id, session_id, text_model, image_model):
     model = text_model.get('model')
     provider = text_model.get('provider')
     url = text_model.get('url')
@@ -148,6 +148,7 @@ async def langraph_agent(messages, session_id, text_model, image_model):
         prompt='You are a profession design agent, specializing in visual design.'
     )
     ctx = {
+        'canvas_id': canvas_id,
         'session_id': session_id,
         'model_info': {
             'image': image_model

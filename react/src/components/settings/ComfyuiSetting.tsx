@@ -79,6 +79,7 @@ export default function ComfyuiSetting({
           setComfyuiModels(modelList)
 
           // if models are fetched, then ComfyUI is installed and running
+          //TODO: Needs to delete this line, because user may self installed ComfyUI, but we cannot show Start ComfyUI button if user self installed ComfyUI
           setIsComfyUIInstalled(true)
         }
       })
@@ -248,15 +249,16 @@ export default function ComfyuiSetting({
             </div>
           ) : (
             // Show install button if ComfyUI is not installed
-            <Button
-              onClick={handleInstallClick}
-              variant="outline"
-              size="sm"
-              className="border-blue-300 text-blue-700 hover:bg-blue-50"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {t('settings:comfyui.installButton')}
-            </Button>
+            <></>
+            // <Button
+            //   onClick={handleInstallClick}
+            //   variant="outline"
+            //   size="sm"
+            //   className="border-blue-300 text-blue-700 hover:bg-blue-50"
+            // >
+            //   <Download className="w-4 h-4 mr-2" />
+            //   {t('settings:comfyui.installButton')}
+            // </Button>
           )}
         </div>
       </div>

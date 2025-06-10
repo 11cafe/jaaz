@@ -1,8 +1,11 @@
 from langchain_core.runnables import RunnableConfig
 import base64
+import random
+import time
 from fastapi.responses import FileResponse
 from common import DEFAULT_PORT
 from routers.image_generators import generate_image_comfyui, generate_image_replicate, generate_image_wavespeed
+from services.db_service import db_service
 from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
@@ -18,6 +21,7 @@ import asyncio
 from typing import Optional, Annotated, List
 from langchain_core.tools import tool
 from utils.http_client import HttpClient
+import json
 router = APIRouter(prefix="/api")
 
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -110,8 +114,9 @@ async def generate_image_tool(
     """
     print('🛠️', prompt, aspect_ratio)
     ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
-    print('🛠️session_id', session_id)
+    print('🛠️canvas_id',canvas_id, 'session_id',session_id)
     args_json = {
         'prompt': prompt,
         'aspect_ratio': aspect_ratio,
@@ -147,15 +152,45 @@ async def generate_image_tool(
             elif provider == 'wavespeed':
                 mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, input_image)
 
+        file_id = generate_file_id()
+        url = f'/api/file/{filename}'
+
+        file_data = {
+          'mimeType': mime_type,
+          'id': file_id,
+          'dataURL': url,
+          'created': int(time.time() * 1000),
+        }
+
+        new_image_element = await generate_new_image_element(canvas_id, file_id, {
+            'width': width,
+            'height': height,
+        })
+
+        # update the canvas data, add the new image element
+        canvas_data = await db_service.get_canvas_data(canvas_id)
+        if 'data' not in canvas_data:
+            canvas_data['data'] = {}
+        if 'elements' not in canvas_data['data']:
+            canvas_data['data']['elements'] = []
+        if 'files' not in canvas_data['data']:
+            canvas_data['data']['files'] = {}
+
+        canvas_data['data']['elements'].append(new_image_element)
+        canvas_data['data']['files'][file_id] = file_data
+
+        print('🛠️canvas_data', canvas_data)
+
+        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
+
         await send_to_websocket(session_id, {
             'type': 'image_generated',
             'image_data': {
-                'mime_type': mime_type,
-                'url': f'/api/file/{filename}',
-                'width': width,
-                'height': height,
-            }
+                'element': new_image_element,
+                'file': file_data,
+            },
         })
+
         return f"image generated successfully ![image_id: {filename}](http://localhost:{DEFAULT_PORT}/api/file/{filename})"
 
     except Exception as e:
@@ -185,3 +220,57 @@ async def generate_image(args_json: dict, ctx: dict):
         raise ValueError("Image generation failed: text prompt is required")
     if model == '':
         raise ValueError("Image generation failed: model is not selected")
+
+
+async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
+    canvas = await db_service.get_canvas_data(canvas_id)
+    canvas_data = canvas.get('data', {})
+    elements = canvas_data.get('elements', [])
+
+    # find the last image element
+    last_x = 0
+    last_y = 0
+    last_width = 0
+    last_height = 0
+    image_elements = [element for element in elements if element.get('type') == 'image']
+    last_image_element = image_elements[-1] if len(image_elements) > 0 else None
+    if last_image_element is not None:
+        last_x = last_image_element.get('x', 0)
+        last_y = last_image_element.get('y', 0)
+        last_width = last_image_element.get('width', 0)
+        last_height = last_image_element.get('height', 0)
+
+    new_x = last_x + last_width + 20
+
+    return {
+        'type': 'image',
+        'id': fileid,
+        'x': new_x,
+        'y': last_y,
+        'width': image_data.get('width', 0),
+        'height': image_data.get('height', 0),
+        'angle': 0,
+        'fileId': fileid,
+        'strokeColor': '#000000',
+        'fillStyle': 'solid',
+        'strokeStyle': 'solid',
+        'boundElements': None,
+        'roundness': None,
+        'frameId': None,
+        'backgroundColor': 'transparent',
+        'strokeWidth': 1,
+        'roughness': 0,
+        'opacity': 100,
+        'groupIds': [],
+        'seed': int(random.random() * 1000000),
+        'version': 1,
+        'versionNonce': int(random.random() * 1000000),
+        'isDeleted': False,
+        'index': None,
+        'updated': 0,
+        'link': None,
+        'locked': False,
+        'status': 'saved',
+        'scale': [1, 1],
+        'crop': None,
+    }

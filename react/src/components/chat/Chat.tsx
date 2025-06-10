@@ -1,6 +1,8 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useWebSocket } from '@/hooks/use-websocket'
+import { eventBus, TEvents } from '@/lib/event'
 import { Message, Model, PendingType, Session } from '@/types/types'
 import { useSearch } from '@tanstack/react-router'
 import { motion } from 'motion/react'
@@ -33,16 +35,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onClickNewChat,
   onSessionChange,
 }) => {
+  useWebSocket(session?.id)
+
+  const search = useSearch({ from: '/canvas/$id' }) as {
+    sessionId: string
+    init?: boolean
+  }
+  const searchSessionId = search.sessionId || ''
+  const searchInit = search.init || false
+
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
-  const [pending, setPending] = useState<PendingType>(false)
+  const [pending, setPending] = useState<PendingType>(
+    searchInit ? 'text' : false
+  )
 
   const sessionId = session?.id
 
-  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
-  const searchSessionId = search.sessionId || ''
-
-  const webSocketRef = useRef<WebSocket | null>(null)
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
 
@@ -50,15 +59,130 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const isAtBottomRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      setTimeout(() => {
-        scrollRef.current!.scrollTo({
-          top: scrollRef.current!.scrollHeight,
-          behavior: 'smooth',
-        })
-      }, 200)
-    }
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current!.scrollHeight,
+        behavior: 'smooth',
+      })
+    }, 200)
   }, [])
+
+  const handleDelta = (data: TEvents['Socket::Delta']) => {
+    setPending('text')
+    setMessages((prev) => {
+      const last = prev.at(-1)
+      if (last?.role == 'assistant' && last.content != null) {
+        const lastMessage = structuredClone(last)
+        if (lastMessage) {
+          if (typeof lastMessage.content == 'string') {
+            lastMessage.content += data.text
+          } else if (
+            lastMessage.content &&
+            lastMessage.content.at(-1) &&
+            lastMessage.content.at(-1)!.type === 'text'
+          ) {
+            ;(lastMessage.content.at(-1) as { text: string }).text += data.text
+          }
+          return [...prev.slice(0, -1), lastMessage]
+        } else {
+          return prev
+        }
+      } else {
+        return [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.text,
+          },
+        ]
+      }
+    })
+    scrollToBottom()
+  }
+
+  const handleToolCall = (data: TEvents['Socket::ToolCall']) => {
+    setMessages((prev) => {
+      console.log('👇tool_call event get', data)
+      setExpandingToolCalls((prev) => [...prev, data.id])
+      setPending('tool')
+      return prev.concat({
+        role: 'assistant',
+        content: '',
+        tool_calls: [
+          {
+            type: 'function',
+            function: {
+              name: data.name,
+              arguments: '',
+            },
+            id: data.id,
+          },
+        ],
+      })
+    })
+  }
+
+  const handleToolCallArguments = (
+    data: TEvents['Socket::ToolCallArguments']
+  ) => {
+    setMessages((prev) => {
+      const lastMessage = structuredClone(prev.at(-1))
+      if (
+        lastMessage?.role === 'assistant' &&
+        lastMessage.tool_calls &&
+        lastMessage.tool_calls.at(-1) &&
+        lastMessage.tool_calls.at(-1)!.id == data.id
+      ) {
+        lastMessage.tool_calls.at(-1)!.function.arguments += data.text
+        return prev.slice(0, -1).concat(lastMessage)
+      }
+      return prev
+    })
+    scrollToBottom()
+  }
+
+  const handleToolCallResult = (data: TEvents['Socket::ToolCallResult']) => {
+    setMessages((prev) => {
+      console.log('👇tool_call_result', data)
+      return prev
+    })
+  }
+
+  const handleImageGenerated = (data: TEvents['Socket::ImageGenerated']) => {
+    console.log('⭐️dispatching image_generated', data)
+    setPending('image')
+  }
+
+  const handleAllMessages = (data: TEvents['Socket::AllMessages']) => {
+    setMessages(() => {
+      console.log('👇all_messages', data.messages)
+      return data.messages
+    })
+    scrollToBottom()
+  }
+
+  const handleDone = () => {
+    setPending(false)
+    scrollToBottom()
+  }
+
+  const handleError = (data: TEvents['Socket::Error']) => {
+    setPending(false)
+    toast.error('Error: ' + data.error, {
+      closeButton: true,
+      duration: 3600 * 1000, // set super large duration to make it not auto dismiss
+      style: {
+        color: 'red',
+      },
+    })
+  }
+
+  const handleInfo = (data: TEvents['Socket::Info']) => {
+    toast.info(data.info, {
+      closeButton: true,
+      duration: 10 * 1000,
+    })
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -71,10 +195,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll)
 
+    eventBus.on('Socket::Delta', handleDelta)
+    eventBus.on('Socket::ToolCall', handleToolCall)
+    eventBus.on('Socket::ToolCallArguments', handleToolCallArguments)
+    eventBus.on('Socket::ToolCallResult', handleToolCallResult)
+    eventBus.on('Socket::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::AllMessages', handleAllMessages)
+    eventBus.on('Socket::Done', handleDone)
+    eventBus.on('Socket::Error', handleError)
+    eventBus.on('Socket::Info', handleInfo)
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
+
+      eventBus.off('Socket::Delta', handleDelta)
+      eventBus.off('Socket::ToolCall', handleToolCall)
+      eventBus.off('Socket::ToolCallArguments', handleToolCallArguments)
+      eventBus.off('Socket::ToolCallResult', handleToolCallResult)
+      eventBus.off('Socket::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::AllMessages', handleAllMessages)
+      eventBus.off('Socket::Done', handleDone)
+      eventBus.off('Socket::Error', handleError)
+      eventBus.off('Socket::Info', handleInfo)
     }
-  }, [])
+  })
 
   const initChat = useCallback(async () => {
     if (!sessionId) {
@@ -83,154 +226,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     sessionIdRef.current = sessionId
 
-    if (webSocketRef.current) {
-      webSocketRef.current.close()
-    }
-
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
     setMessages(data?.length ? data : [])
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsHost = window.location.host
-    const wsUrl = `${wsProtocol}//${wsHost}/ws?session_id=${sessionIdRef.current}`
-
-    const socket = new WebSocket(wsUrl)
-    webSocketRef.current = socket
-
-    socket.onopen = () => {
-      console.log('Connected to WebSocket server')
-    }
-    socket.onclose = () => {
-      console.log('Disconnected from WebSocket server')
-    }
-    socket.onerror = (event) => {
-      console.error('WebSocket error:', event)
-    }
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type == 'error') {
-          setPending(false)
-          toast.error('Error: ' + data.error, {
-            closeButton: true,
-            duration: 3600 * 1000, // set super large duration to make it not auto dismiss
-            style: {
-              color: 'red',
-            },
-          })
-        } else if (data.type == 'done') {
-          setPending(false)
-          scrollToBottom()
-        } else if (data.type == 'info') {
-          toast.info(data.info, {
-            closeButton: true,
-            duration: 10 * 1000,
-          })
-        } else if (data.type == 'image_generated') {
-          console.log('⭐️dispatching image_generated', data)
-          setPending('image')
-          window.dispatchEvent(
-            new CustomEvent('image_generated', {
-              detail: {
-                image_data: data.image_data,
-              },
-            })
-          )
-          scrollToBottom()
-        } else {
-          setMessages((prev) => {
-            if (data.type == 'delta') {
-              if (
-                prev.at(-1)?.role == 'assistant' &&
-                prev.at(-1)?.content != null
-              ) {
-                const lastMessage = structuredClone(prev.at(-1))
-                if (lastMessage) {
-                  if (typeof lastMessage.content == 'string') {
-                    lastMessage.content += data.text
-                  } else if (
-                    lastMessage.content &&
-                    lastMessage.content.at(-1) &&
-                    lastMessage.content.at(-1)!.type === 'text'
-                  ) {
-                    ;(lastMessage.content.at(-1) as { text: string }).text +=
-                      data.text
-                  }
-                  // TODO: handle other response type
-                }
-                return [...prev.slice(0, -1), lastMessage]
-              } else {
-                return [
-                  ...prev,
-                  {
-                    role: 'assistant',
-                    content: data.text,
-                  },
-                ]
-              }
-            } else if (data.type == 'tool_call') {
-              console.log('👇tool_call event get', data)
-              setExpandingToolCalls((prev) => [...prev, data.id])
-              setPending('tool')
-              return prev.concat({
-                role: 'assistant',
-                content: '',
-                tool_calls: [
-                  {
-                    type: 'function',
-                    function: {
-                      name: data.name,
-                      arguments: '',
-                    },
-                    id: data.id,
-                  },
-                ],
-              })
-            } else if (data.type == 'tool_call_arguments') {
-              const lastMessage = structuredClone(prev.at(-1))
-
-              if (
-                lastMessage?.role === 'assistant' &&
-                lastMessage.tool_calls &&
-                lastMessage.tool_calls.at(-1) &&
-                lastMessage.tool_calls.at(-1)!.id == data.id
-              ) {
-                lastMessage.tool_calls.at(-1)!.function.arguments += data.text
-                return prev.slice(0, -1).concat(lastMessage)
-              }
-            } else if (data.type == 'tool_call_result') {
-              const res: {
-                id: string
-                content: {
-                  text: string
-                }[]
-              } = data
-            } else if (data.type == 'all_messages') {
-              console.log('👇all_messages', data.messages)
-              return data.messages
-            }
-
-            scrollToBottom()
-
-            return prev
-          })
-        }
-      } catch (error) {
-        console.error('Error parsing JSON:', error)
-      }
-    }
 
     scrollToBottom()
   }, [sessionId, scrollToBottom])
 
   useEffect(() => {
     initChat()
-    return () => {
-      if (webSocketRef.current) {
-        webSocketRef.current.close()
-      }
-    }
   }, [sessionId, initChat])
 
   const onSelectSession = (sessionId: string) => {
@@ -239,9 +243,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const onSendMessages = useCallback(
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+      setPending('text')
       setMessages(data)
       setPrompt('')
-      setPending('text')
 
       sendMessages({
         sessionId: sessionId!,

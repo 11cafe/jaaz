@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/canvas/$id')({
@@ -29,12 +29,16 @@ function Canvas() {
   const { id } = useParams({ from: '/canvas/$id' })
   const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
 
+  const canvasKey = useRef(nanoid())
+
   const { data: canvas, isLoading } = useQuery({
     queryKey: ['canvas', id],
     queryFn: () => getCanvas(id),
   })
 
   useEffect(() => {
+    console.log('👇canvas', canvas)
+    canvasKey.current = nanoid()
     if (canvas && !canvasName && sessionList.length === 0) {
       setCanvasName(canvas.name)
       setSessionList(canvas.sessions)
@@ -95,9 +99,11 @@ function Canvas() {
                   </div>
                 </div>
               ) : (
-                <>
-                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
-                </>
+                <CanvasExcali
+                  key={canvasKey.current}
+                  canvasId={id}
+                  initialData={canvas?.data}
+                />
               )}
             </div>
           </ResizablePanel>

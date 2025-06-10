@@ -46,6 +46,8 @@ jobs:
           pyinstaller main.spec
 
       - name: Build React app
+        env:
+          VITE_UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
         run: |
           cd react
           npm run build
