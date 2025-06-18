@@ -44,7 +44,7 @@ async def generate_image(
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: Optional[str] = None,
 ) -> str:
-    """重构后的图像生成函数，使用工厂模式和抽象接口"""
+    """图像生成函数，使用工厂模式和抽象接口"""
     print('🛠️ tool_call_id', tool_call_id)
 
     ctx = config.get('configurable', {})
@@ -214,7 +214,7 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: di
 
 
 async def generate_image_comfyui_wrapper(prompt: str, model: str, aspect_ratio: str, ctx: dict):
-    """ComfyUI特殊wrapper函数，因为它需要ctx参数"""
+    """ComfyUI特殊wrapper函数"""
     from .providers.comfyui import ComfyUIProvider
 
     comfyui_config = config_service.app_config.get('comfyui', {})

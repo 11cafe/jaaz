@@ -3,7 +3,6 @@ from services.config_service import config_service
 from .base import ImageProvider
 from .providers.replicate import ReplicateProvider
 from .providers.jaaz import JaazProvider
-from .providers.comfyui import ComfyUIProvider
 from .providers.wavespeed import WaveSpeedProvider
 from .providers.openai import OpenAIProvider
 
@@ -15,7 +14,6 @@ class ImageProviderFactory:
     _providers: Dict[str, Type[ImageProvider]] = {
         'replicate': ReplicateProvider,
         'jaaz': JaazProvider,
-        'comfyui': ComfyUIProvider,
         'wavespeed': WaveSpeedProvider,
         'openai': OpenAIProvider,
     }

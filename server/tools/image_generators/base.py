@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 import base64
-import os
-import time
 from PIL import Image
 from io import BytesIO
 import aiofiles
 from nanoid import generate
 from utils.http_client import HttpClient
-from services.config_service import FILES_DIR
 from mimetypes import guess_type
 
 
