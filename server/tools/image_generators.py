@@ -1,9 +1,11 @@
+from openai import OpenAI
 import random
 from routers.comfyui_execution import execute
 import asyncio
 import base64
 import json
 import sys
+import tempfile
 from services.config_service import config_service
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
@@ -25,19 +27,24 @@ from utils.http_client import HttpClient
 from langchain_core.runnables import RunnableConfig
 
 # 生成唯一文件 ID
+
+
 def generate_file_id():
     return 'im_' + generate(size=8)
 
+
 class GenerateImageInputSchema(BaseModel):
-    prompt: str = Field(description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.")
-    aspect_ratio: str = Field(description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4")
+    prompt: str = Field(
+        description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.")
+    aspect_ratio: str = Field(
+        description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4")
     input_image: Optional[str] = Field(default=None, description="Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.")
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 @tool("generate_image",
-description="Generate an image using text prompt or optionally pass an image for reference or for editing",
-args_schema=GenerateImageInputSchema)
+      description="Generate an image using text prompt or optionally pass an image for reference or for editing",
+      args_schema=GenerateImageInputSchema)
 async def generate_image(
     prompt: str,
     aspect_ratio: str,
@@ -151,8 +158,6 @@ async def generate_image(
 
 print('🛠️', generate_image.args_schema.model_json_schema())
 
-
-from openai import OpenAI
 
 async def get_image_info_and_save(url, file_path_without_extension, is_b64=False):
     if is_b64:
@@ -348,6 +353,36 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
     与 Replicate 兼容但使用不同的 API 端点
     """
     try:
+        # 如果模型以 openai/ 开头，调用 OpenAI 专用方法
+        if model.startswith("openai/"):
+            # 将 input_image_b64 转换为临时文件路径（如果存在）
+            input_path = None
+            if input_image_b64:
+                # 从 base64 字符串中提取实际的 base64 数据
+                if input_image_b64.startswith('data:'):
+                    # 格式: data:image/png;base64,{base64_data}
+                    header, base64_data = input_image_b64.split(',', 1)
+                else:
+                    base64_data = input_image_b64
+
+                # 创建临时文件
+                temp_fd, input_path = tempfile.mkstemp(suffix='.png')
+                try:
+                    with os.fdopen(temp_fd, 'wb') as tmp_file:
+                        tmp_file.write(base64.b64decode(base64_data))
+                except:
+                    os.close(temp_fd)
+                    raise
+
+            try:
+                # 调用 OpenAI 专用方法
+                return await generate_image_jaaz_openai(prompt, model, input_path)
+            finally:
+                # 清理临时文件
+                if input_path and os.path.exists(input_path):
+                    os.unlink(input_path)
+
+        # 非 OpenAI 模型使用原有逻辑
         # 从配置中获取 API 设置
         jaaz_config = config_service.app_config.get('jaaz', {})
         api_url = jaaz_config.get('url', '')
@@ -378,14 +413,9 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
         if input_image_b64:
             data['input_image'] = input_image_b64
 
-        print(
-            f'🦄 Jaaz image generation request: {prompt[:50]}... with model: {model}')
-
         async with HttpClient.create() as client:
             response = await client.post(url, headers=headers, json=data)
             res = response.json()
-
-        print('🦄 Jaaz image generation response', res)
 
         # 从响应中获取图像 URL
         output = res.get('output', '')
@@ -399,8 +429,6 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
 
         # 生成唯一图像 ID
         image_id = 'im_' + generate(size=8)
-
-        print(f'🦄 Jaaz image generation image_id: {image_id}')
 
         # 下载并保存图像
         mime_type, width, height, extension = await get_image_info_and_save(
@@ -417,6 +445,8 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
         raise e
 
 # 生成新的 image 元素，放置到 canvas 中
+
+
 async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
     canvas = await db_service.get_canvas_data(canvas_id)
     canvas_data = canvas.get('data', {})
@@ -472,9 +502,11 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: di
         'crop': None,
     }
 
+
 async def generate_image_openai(prompt: str, model: str, input_path: Optional[str] = None, **kwargs):
     try:
-        api_key = config_service.app_config.get('openai', {}).get('api_key', '')
+        api_key = config_service.app_config.get(
+            'openai', {}).get('api_key', '')
         url = config_service.app_config.get('openai', {}).get('url', '')
         model = model.replace('openai/', '')
 
@@ -505,5 +537,86 @@ async def generate_image_openai(prompt: str, model: str, input_path: Optional[st
 
     except Exception as e:
         print('Error generating image with OpenAI:', e)
+        traceback.print_exc()
+        raise e
+
+
+async def generate_image_jaaz_openai(prompt: str, model: str, input_path: Optional[str] = None, **kwargs):
+    """
+    使用 Jaaz API 服务调用 OpenAI 模型生成图像
+    兼容 OpenAI 图像生成 API
+    """
+    try:
+        # 从配置中获取 Jaaz API 设置
+        jaaz_config = config_service.app_config.get('jaaz', {})
+        api_url = jaaz_config.get('url', '')
+        api_token = jaaz_config.get('api_key', '')
+
+        if not api_url or not api_token:
+            raise ValueError("Jaaz API URL or token is not configured")
+
+        # 构建请求 URL - 检查是否已经包含 /api/v1
+        if api_url.rstrip('/').endswith('/api/v1'):
+            url = f"{api_url.rstrip('/')}/image/generations"
+        else:
+            url = f"{api_url.rstrip('/')}/api/v1/image/generations"
+
+        headers = {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json"
+        }
+
+        # 构建请求数据
+        data = {
+            "model": model,
+            "prompt": prompt,
+            "n": kwargs.get("num_images", 1),
+            "size": kwargs.get("size", "1024x1024"),
+        }
+
+        # 如果有输入图像路径（编辑模式）
+        if input_path:
+            # 将图像转换为 base64
+            with open(input_path, 'rb') as image_file:
+                image_data = image_file.read()
+                image_b64 = base64.b64encode(image_data).decode('utf-8')
+                data['image'] = image_b64
+                data['mask'] = None  # 如果需要遮罩，可以在这里添加
+
+        async with HttpClient.create() as client:
+            response = await client.post(url, headers=headers, json=data)
+            res = response.json()
+
+        # 检查响应格式
+        if 'data' in res and len(res['data']) > 0:
+            # OpenAI 格式响应
+            image_data = res['data'][0]
+            if 'b64_json' in image_data:
+                image_b64 = image_data['b64_json']
+                image_id = 'im_' + generate(size=8)
+                mime_type, width, height, extension = await get_image_info_and_save(
+                    image_b64,
+                    os.path.join(FILES_DIR, f'{image_id}'),
+                    is_b64=True
+                )
+                filename = f'{image_id}.{extension}'
+                return mime_type, width, height, filename
+            elif 'url' in image_data:
+                # URL 格式响应
+                image_url = image_data['url']
+                image_id = 'im_' + generate(size=8)
+                mime_type, width, height, extension = await get_image_info_and_save(
+                    image_url,
+                    os.path.join(FILES_DIR, f'{image_id}')
+                )
+                filename = f'{image_id}.{extension}'
+                return mime_type, width, height, filename
+
+        # 如果没有找到有效的图像数据
+        error_detail = res.get('error', res.get('detail', 'Unknown error'))
+        raise Exception(f'Jaaz OpenAI image generation failed: {error_detail}')
+
+    except Exception as e:
+        print('Error generating image with Jaaz OpenAI:', e)
         traceback.print_exc()
         raise e
