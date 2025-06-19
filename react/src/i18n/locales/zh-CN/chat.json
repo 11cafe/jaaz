@@ -7,7 +7,12 @@
     "enterPrompt": "请输入提示内容"
   },
   "messages": {
-    "imagePositioning": "定位到图片"
+    "imagePositioning": "定位到图片",
+    "showMore": "显示更多",
+    "showLess": "收起"
+  },
+  "thinking": {
+    "title": "思考过程"
   },
   "plan": {
     "title": "计划",

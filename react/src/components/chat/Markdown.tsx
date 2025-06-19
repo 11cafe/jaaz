@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { useCanvas } from '@/contexts/canvas'
-import { memo } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown, { Components } from 'react-markdown'
 import { PhotoView } from 'react-photo-view'
 import remarkGfm from 'remark-gfm'
+import TextFoldTag from './Message/TextFoldTag'
 
 type MarkdownProps = {
   children: string
@@ -19,6 +20,78 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
   }))
 
   const { t } = useTranslation()
+  const [isThinkExpanded, setIsThinkExpanded] = useState(false)
+
+  const hasUnclosedThinkTags = (text: string): boolean => {
+    const openTags = (text.match(/<think>/g) || []).length
+    const closeTags = (text.match(/<\/think>/g) || []).length
+    return openTags > closeTags
+  }
+
+ 
+  const fixUnclosedThinkTags = (text: string): string => {
+    const openTags = (text.match(/<think>/g) || []).length
+    const closeTags = (text.match(/<\/think>/g) || []).length
+    
+    if (openTags > closeTags) {
+      return text + '</think>'.repeat(openTags - closeTags)
+    }
+    return text
+  }
+
+
+  const shouldAutoExpand = hasUnclosedThinkTags(children)
+  
+
+  useEffect(() => {
+    if (shouldAutoExpand) {
+      setIsThinkExpanded(true)
+    } else {
+      setIsThinkExpanded(false)
+    }
+  }, [shouldAutoExpand])
+
+
+  const processThinkTags = (content: string) => {
+    // 首先移除所有空的think标签（包括只含空格的）
+    const cleanedContent = content.replace(/<think>\s*<\/think>/g, '')
+    const fixedContent = fixUnclosedThinkTags(cleanedContent)
+    const thinkRegex = /<think>([\s\S]*?)<\/think>/g
+    const parts = []
+    let lastIndex = 0
+    let match
+    
+    while ((match = thinkRegex.exec(fixedContent)) !== null) {
+      if (match.index > lastIndex) {
+        const beforeContent = fixedContent.slice(lastIndex, match.index).trim()
+        if (beforeContent) {
+          parts.push({ type: 'normal', content: beforeContent })
+        }
+      }
+      
+      const thinkContent = match[1]?.trim()
+      if (thinkContent) {
+        parts.push({ type: 'think', content: thinkContent })
+      }
+      // 不显示空的think标签
+      lastIndex = match.index + match[0].length
+    }
+    
+    if (lastIndex < fixedContent.length) {
+      const remainingContent = fixedContent.slice(lastIndex).trim()
+      if (remainingContent) {
+        parts.push({ type: 'normal', content: remainingContent })
+      }
+    }
+    
+    if (parts.length === 0 && fixedContent.trim()) {
+      parts.push({ type: 'normal', content: fixedContent.trim() })
+    }
+    
+    console.log('Think tags processing:', { parts, originalContent: children.substring(0, 100) })
+    
+    return parts
+  }
 
   const handleImagePositioning = (id: string) => {
     excalidrawAPI?.scrollToContent(id, { animate: true })
@@ -148,7 +221,7 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       const id = filesArray.find((file) => props.src?.includes(file.url))?.id
       return (
         <PhotoView src={props.src}>
-          <span className="group block relative overflow-hidden rounded-md my-2 last:mb-0">
+          <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
             <img
               className="cursor-pointer group-hover:scale-105 transition-transform duration-300"
               {...props}
@@ -170,6 +243,37 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
         </PhotoView>
       )
     },
+  }
+
+  // 如果内容包含think标签，进行特殊处理
+  if (children.includes('<think>')) {
+    const parts = processThinkTags(children)
+    
+    return (
+      <div className="space-y-3 flex flex-col w-full max-w-full">
+        {parts.map((part, index) => (
+          part.type === 'think' ? (
+            <TextFoldTag
+              key={index}
+              isExpanded={isThinkExpanded}
+              onToggleExpand={() => setIsThinkExpanded(!isThinkExpanded)}
+            >
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                  {part.content}
+                </ReactMarkdown>
+              </div>
+            </TextFoldTag>
+          ) : (
+            <div key={index} className="w-full max-w-full">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {part.content}
+              </ReactMarkdown>
+            </div>
+          )
+        ))}
+      </div>
+    )
   }
 
   return (

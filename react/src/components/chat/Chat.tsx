@@ -400,7 +400,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex-1 px-4 space-y-6 pb-50 pt-15">
+            <div className="flex-1 px-4 pb-50 pt-15">
               {/* Messages */}
               {messages.map((message, idx) => (
                 <div key={`${idx}`}>

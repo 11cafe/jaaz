@@ -7,7 +7,12 @@
     "enterPrompt": "Please enter a prompt"
   },
   "messages": {
-    "imagePositioning": "Go to image"
+    "imagePositioning": "Go to image",
+    "showMore": "Show More",
+    "showLess": "Show Less"
+  },
+  "thinking": {
+    "title": "Thinking"
   },
   "plan": {
     "title": "Plan",

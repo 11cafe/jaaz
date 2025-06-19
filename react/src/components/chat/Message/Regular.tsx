@@ -14,18 +14,19 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
   const isStrContent = typeof content === 'string'
   const isText = isStrContent || (!isStrContent && content.type == 'text')
 
-  return isText ? (
+  const markdownText = isStrContent ? content : (content.type === 'text' ? content.text : '')
+  if (!isText) return <MessageImage content={content} />
+
+  return (
     <div
       className={`${
         message.role === 'user'
-          ? 'bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left ml-auto'
+          ? 'bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left ml-auto mb-4'
           : 'text-gray-800 dark:text-gray-200 text-left items-start'
-      } space-y-3 flex flex-col w-fit`}
+      } flex flex-col`}
     >
-      <Markdown>{isStrContent ? content : content.text}</Markdown>
+      <Markdown>{markdownText}</Markdown>
     </div>
-  ) : (
-    <MessageImage content={content} />
   )
 }
 

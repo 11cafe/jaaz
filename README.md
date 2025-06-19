@@ -4,7 +4,7 @@
 
 AI design agent. Local and free alternative for Lovart. AI agent with ability to design, edit and generate images, posters, storyboards, etc. with a creative canvas board for fast iterations and layout publishing
 
-<div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.10-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-Setup-1.0.10.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
+<div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.12-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-Setup-1.0.12.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 
@@ -36,7 +36,8 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 3. Start chatting with agent to generate stories or storyboards!
 
-<img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
+<img width="1239" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
+
 
 ## Cases
 
