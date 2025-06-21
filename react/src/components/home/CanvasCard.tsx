@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
+import { formatDate } from '@/utils/formatDate'
 import CanvasDeleteDialog from './CanvasDeleteDialog'
 
 type CanvasCardProps = {
@@ -72,7 +73,7 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
         )}
         <div className="flex flex-col">
           <h3 className="text-lg font-bold">{canvas.name}</h3>
-          <p className="text-sm text-gray-500">{canvas.created_at}</p>
+          <p className="text-sm text-gray-500">{formatDate(canvas.created_at)}</p>
         </div>
       </div>
     </motion.div>
