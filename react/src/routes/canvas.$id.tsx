@@ -3,6 +3,7 @@ import CanvasExcali from '@/components/canvas/CanvasExcali'
 import CanvasHeader from '@/components/canvas/CanvasHeader'
 import CanvasMenu from '@/components/canvas/menu'
 import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
+import VideoCanvasOverlay from '@/components/canvas/VideoCanvasOverlay'
 import ChatInterface from '@/components/chat/Chat'
 import {
   ResizableHandle,
@@ -90,11 +91,12 @@ function Canvas() {
                   </div>
                 </div>
               ) : (
-                <>
+                <div className="relative w-full h-full">
                   <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                  <VideoCanvasOverlay canvasId={id} />
                   <CanvasMenu />
                   <CanvasPopbarWrapper />
-                </>
+                </div>
               )}
             </div>
           </ResizablePanel>

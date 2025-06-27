@@ -23,3 +23,5 @@ langchain_ollama
 langchain_openai
 python-socketio==5.13.0
 langgraph-swarm
+fal-client
+python-dotenv

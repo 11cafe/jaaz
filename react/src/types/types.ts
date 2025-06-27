@@ -3,6 +3,7 @@ import { AppState, BinaryFiles } from '@excalidraw/excalidraw/types'
 
 export type ToolCallFunctionName =
   | 'generate_image'
+  | 'generate_video'
   | 'prompt_user_multi_choice'
   | 'prompt_user_single_choice'
   | 'write_plan'

@@ -33,7 +33,7 @@ export default function Knowledge() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-[90vw]">
-            <Editor />
+            <Editor knowledgeID="new" />
           </DialogContent>
         </Dialog>
         <div

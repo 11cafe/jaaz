@@ -1,0 +1,241 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Development Workflow Guide
+
+## Setup and Installation
+
+### Prerequisites
+- **Node.js** 18+ for frontend and Electron
+- **Python** 3.8+ for backend services
+- **Git** for version control
+- **Ollama** (optional) for local LLM models
+- **ComfyUI** (auto-installed) for image generation
+
+### Initial Setup
+```bash
+# Clone repository
+git clone https://github.com/11cafe/jaaz
+cd jaaz
+
+# Install root dependencies (Electron)
+npm install
+
+# Setup React frontend
+cd react
+npm install --force
+cd ..
+
+# Setup Python backend
+cd server
+pip install -r requirements.txt
+cd ..
+```
+
+## Development Commands
+
+### Frontend Development
+```bash
+# Start React dev server (port 5173)
+cd react && npm run dev
+
+# Build React for production
+cd react && npm run build
+```
+
+### Backend Development
+```bash
+# Start FastAPI server (port 57988)
+cd server && python main.py
+
+# Run with custom port
+cd server && python main.py --port 8000
+```
+
+### Electron Development
+```bash
+# Development mode (React + Electron)
+npm run dev
+
+# Production mode (build React + start Electron)
+npm run start
+
+# Build distributables
+npm run build:win    # Windows
+npm run build:mac    # macOS
+npm run build:linux  # Linux
+```
+
+### Testing
+```bash
+# Run test suite
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests once
+npm run test:run
+```
+
+## Project Structure Rules
+
+### File Organization
+- Keep components small and focused (< 200 lines)
+- Group related functionality in directories
+- Use consistent naming conventions:
+  - `PascalCase` for components and types
+  - `camelCase` for functions and variables
+  - `kebab-case` for file names when appropriate
+
+### Import Organization
+```typescript
+// 1. External libraries
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+
+// 2. Internal components
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
+
+// 3. Relative imports
+import './Component.css'
+```
+
+## Coding Standards
+
+### TypeScript Best Practices
+- Always use strict TypeScript settings
+- Define interfaces for all component props
+- Use proper return types for functions
+- Avoid `any` type - use `unknown` or specific types
+
+### React Patterns
+```tsx
+// Prefer function components with hooks
+const MyComponent: React.FC<Props> = ({ prop1, prop2 }) => {
+  // Use custom hooks for complex logic
+  const { data, loading } = useCustomHook()
+  
+  // Early returns for loading/error states
+  if (loading) return <LoadingSpinner />
+  
+  return <div>{/* component JSX */}</div>
+}
+```
+
+### Python Patterns
+```python
+# Use type hints
+def process_image(image_path: str, options: Dict[str, Any]) -> GeneratedImage:
+    pass
+
+# Use async/await for I/O operations
+async def generate_image(prompt: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json={"prompt": prompt})
+        return response.content
+```
+
+## Debugging Guidelines
+
+### Frontend Debugging
+- Use React DevTools browser extension
+- Leverage TanStack Query DevTools for API state
+- Use browser network tab for API debugging
+- Check WebSocket connections in browser DevTools
+
+### Backend Debugging
+- Use `print()` statements for quick debugging
+- Leverage FastAPI's automatic documentation at `/docs`
+- Use `logging` module for production debugging
+- Monitor WebSocket connections via Socket.IO debug logs
+
+### Electron Debugging
+- Main process: Use `console.log()` and check terminal output
+- Renderer process: Use browser DevTools (F12)
+- IPC debugging: Log messages in both main and renderer processes
+
+## Testing Strategy
+
+### Frontend Tests
+- Unit tests for utility functions
+- Component tests with React Testing Library
+- Integration tests for API interactions
+- E2E tests for critical user flows
+
+### Backend Tests
+- Unit tests for service functions
+- API endpoint tests with FastAPI test client
+- Integration tests for AI model interactions
+- Mock external APIs in tests
+
+## Performance Considerations
+
+### Frontend Performance
+- Lazy load routes and heavy components
+- Optimize canvas rendering with proper state management
+- Use React.memo for expensive component re-renders
+- Implement proper error boundaries
+
+### Backend Performance
+- Use async/await for all I/O operations
+- Implement proper caching for AI model responses
+- Monitor memory usage with large image processing
+- Use background tasks for long-running operations
+
+## Common Patterns
+
+### Error Handling
+```typescript
+// Frontend error handling
+try {
+  const result = await api.generateImage(prompt)
+  setResult(result)
+} catch (error) {
+  toast.error(error.message)
+  console.error('Generation failed:', error)
+}
+```
+
+```python
+# Backend error handling
+@router.post("/generate")
+async def generate_image(request: GenerateRequest):
+    try:
+        result = await image_service.generate(request.prompt)
+        return {"success": True, "data": result}
+    except Exception as e:
+        logger.error(f"Generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+### Configuration Management
+- Use environment variables for sensitive data
+- Validate configuration on application startup
+- Provide sensible defaults for optional settings
+- Document all configuration options
+
+## Git Workflow
+
+### Branch Naming
+- `feature/description` - New features
+- `fix/description` - Bug fixes
+- `refactor/description` - Code refactoring
+- `docs/description` - Documentation updates
+
+### Commit Messages
+```
+feat: add image batch generation functionality
+fix: resolve ComfyUI installation on Windows
+refactor: improve API error handling
+docs: update development setup guide
+```
+
+### Pull Request Guidelines
+- Provide clear description of changes
+- Include screenshots for UI changes
+- Test on multiple platforms when relevant
+- Update documentation as needed

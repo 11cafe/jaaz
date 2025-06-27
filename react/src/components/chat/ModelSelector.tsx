@@ -14,10 +14,13 @@ const ModelSelector: React.FC = () => {
   const {
     textModel,
     imageModel,
+    videoModel,
     setTextModel,
     setImageModel,
+    setVideoModel,
     textModels,
     imageModels,
+    videoModels,
   } = useConfigs()
 
   // Group models by provider
@@ -34,6 +37,7 @@ const ModelSelector: React.FC = () => {
 
   const groupedTextModels = groupModelsByProvider(textModels)
   const groupedImageModels = groupModelsByProvider(imageModels)
+  const groupedVideoModels = groupModelsByProvider(videoModels)
 
   // Sort providers to put Jaaz first
   const sortProviders = (providers: [string, typeof textModels][]) => {
@@ -135,6 +139,50 @@ const ModelSelector: React.FC = () => {
           })}
         </SelectContent>
       </Select>
+      {/* Video Model Selector */}
+      {videoModels && videoModels.length > 0 && (
+        <Select
+          value={videoModel?.provider + ':' + videoModel?.model}
+          onValueChange={(value) => {
+            localStorage.setItem('video_model', value)
+            setVideoModel(
+              videoModels?.find((m) => m.provider + ':' + m.model == value)
+            )
+          }}
+        >
+          <SelectTrigger className="w-fit max-w-[40%] bg-background">
+            <span>🎬</span>
+            <SelectValue placeholder="Video Model" />
+          </SelectTrigger>
+          <SelectContent>
+            {sortProviders(Object.entries(groupedVideoModels)).map(([provider, models]) => {
+              const providerInfo = getProviderDisplayName(provider)
+              return (
+                <SelectGroup key={provider}>
+                  <SelectLabel className="flex items-center gap-2 select-none">
+                    {providerInfo.icon && (
+                      <img
+                        src={providerInfo.icon}
+                        alt={providerInfo.name}
+                        className="w-4 h-4 rounded-sm"
+                      />
+                    )}
+                    {providerInfo.name}
+                  </SelectLabel>
+                  {models.map((model) => (
+                    <SelectItem
+                      key={model.provider + ':' + model.model}
+                      value={model.provider + ':' + model.model}
+                    >
+                      {model.model}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )
+            })}
+          </SelectContent>
+        </Select>
+      )}
     </>
   )
 }

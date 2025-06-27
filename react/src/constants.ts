@@ -41,6 +41,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'ComfyUI',
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
+  fal: {
+    name: 'Fal AI',
+    icon: 'https://storage.googleapis.com/fal-bucket/favicon.ico',
+  },
 }
 export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   openai: {
@@ -111,6 +115,21 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
     api_key: '',
     max_tokens: 8192,
   },
+  fal: {
+    models: {
+      'flux/dev': { type: 'image', name: 'FLUX.1 [dev]' },
+      'flux-pro': { type: 'image', name: 'FLUX.1 Pro' },
+      'flux-pro-ultra': { type: 'image', name: 'FLUX.1 Pro Ultra' },
+      'recraft-v3': { type: 'image', name: 'Recraft V3' },
+      'stable-diffusion-v3-5-large': { type: 'image', name: 'Stable Diffusion 3.5 Large' },
+      'ideogram-v2': { type: 'image', name: 'Ideogram V2' },
+      'hidream-i1': { type: 'image', name: 'HiDream I1' },
+      'minimax/hailuo-02': { type: 'video', name: 'Hailuo Image-to-Video' },
+    },
+    url: 'https://fal.run/',
+    api_key: '',
+    max_tokens: 2000,
+  },
 }
 
 export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
@@ -127,6 +146,7 @@ export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
 export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
   {
     generate_image: 'Generate Image',
+    generate_video: 'Generate Video',
     prompt_user_multi_choice: 'Prompt Multi-Choice',
     prompt_user_single_choice: 'Prompt Single-Choice',
     write_plan: 'Write Plan',
@@ -171,5 +191,15 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Soft-touch matte laminate overall.
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
-Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval. 
+Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval.
+
+IMPORTANT: If the user requests video generation or animation, you should:
+1. First generate an image using generate_image tool
+2. Then use generate_video tool with the generated image as input to create a video
+3. For video prompts, focus on describing motion, camera movement, and animation rather than static descriptions
+
+Video generation examples:
+- "The character slowly turns their head while wind gently blows through their hair"
+- "Camera slowly zooms out revealing the full scene with parallax movement"
+- "Product rotates 360 degrees showcasing all angles with professional lighting" 
 `

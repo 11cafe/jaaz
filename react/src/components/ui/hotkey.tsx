@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 
 interface HotkeyProps {
   keys: string[]
@@ -17,11 +17,15 @@ export const Hotkey: React.FC<HotkeyProps> = ({
   const [displayKeys, setDisplayKeys] = useState(keys)
   const { theme } = useTheme()
 
+  // Memoize keys array content to prevent infinite re-renders
+  const keysString = useMemo(() => keys.join(','), [keys])
+  
   useEffect(() => {
     const isMac = window.navigator.userAgent.includes('Macintosh')
+    const currentKeys = keysString.split(',')
     setModifierText(isMac ? '⌘' : '⌃')
-    setDisplayKeys(modifier ? [isMac ? '⌘' : '⌃', ...keys] : keys)
-  }, [modifier, keys])
+    setDisplayKeys(modifier ? [isMac ? '⌘' : '⌃', ...currentKeys] : currentKeys)
+  }, [modifier, keysString])
 
   const isDarkTheme = theme === 'dark'
 

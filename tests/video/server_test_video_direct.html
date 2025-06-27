@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Video Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        video { border: 2px solid #007bff; margin: 10px; }
+        .test { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🎬 Direct Video Test</h1>
+    
+    <div class="test">
+        <h3>Test 1: Direct Video Element</h3>
+        <p>This should show the video player with controls:</p>
+        <video controls width="320" height="180">
+            <source src="/api/file/vid__28Xr6ru.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Video with JavaScript</h3>
+        <p>This tests loading the video via JavaScript:</p>
+        <div id="video-container"></div>
+        <button onclick="loadVideo()">Load Video</button>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Canvas API Data</h3>
+        <p>This shows the canvas data:</p>
+        <button onclick="loadCanvasData()">Load Canvas Data</button>
+        <pre id="canvas-data"></pre>
+    </div>
+    
+    <script>
+        function loadVideo() {
+            const container = document.getElementById('video-container');
+            container.innerHTML = '';
+            
+            const video = document.createElement('video');
+            video.src = '/api/file/vid__28Xr6ru.mp4';
+            video.controls = true;
+            video.width = 320;
+            video.height = 180;
+            
+            video.addEventListener('loadedmetadata', () => {
+                console.log('✅ Video metadata loaded');
+                console.log('Duration:', video.duration);
+                console.log('Video size:', video.videoWidth, 'x', video.videoHeight);
+            });
+            
+            video.addEventListener('error', (e) => {
+                console.error('❌ Video error:', e);
+                container.innerHTML = '<p style="color: red;">Video failed to load</p>';
+            });
+            
+            container.appendChild(video);
+        }
+        
+        async function loadCanvasData() {
+            try {
+                const response = await fetch('/api/canvas/xaLHgjjWumgBuEFAhrCSm');
+                const data = await response.json();
+                
+                document.getElementById('canvas-data').textContent = JSON.stringify(data, null, 2);
+                
+                const elements = data.data?.elements || [];
+                const videoElements = elements.filter(e => e.type === 'video');
+                
+                console.log('Canvas data loaded');
+                console.log('Video elements:', videoElements);
+                
+            } catch (error) {
+                console.error('Error loading canvas data:', error);
+            }
+        }
+        
+        // Auto-load video on page load
+        window.addEventListener('load', loadVideo);
+    </script>
+</body>
+</html>

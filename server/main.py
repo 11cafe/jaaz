@@ -5,6 +5,10 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
 import routers.websocket_router
 from fastapi.responses import FileResponse

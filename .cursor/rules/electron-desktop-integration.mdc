@@ -1,0 +1,240 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Electron Desktop Integration Guide
+
+## Electron Architecture
+
+Jaaz uses Electron to provide a native desktop experience across Windows, macOS, and Linux.
+
+### Main Process
+Located in [electron/main.js](mdc:electron/main.js) - The main Electron process that:
+- Creates and manages browser windows
+- Handles application lifecycle events
+- Manages IPC communication with renderers
+- Integrates with OS features (notifications, file system)
+
+### Renderer Process
+The React application runs in the renderer process:
+- Web-based UI using Chromium
+- IPC communication via `window.electronAPI`
+- Access to Node.js APIs through context isolation
+
+### Preload Script
+[electron/preload.js](mdc:electron/preload.js) provides secure API bridge:
+- Exposes safe APIs to renderer process
+- Implements context isolation security
+- Defines `window.electronAPI` interface
+
+## IPC Communication Patterns
+
+### IPC Handlers
+[electron/ipcHandlers.js](mdc:electron/ipcHandlers.js) defines main process handlers:
+
+```javascript
+// Example IPC handler pattern
+ipcMain.handle('get-app-version', async () => {
+  return app.getVersion()
+})
+
+// File system operations
+ipcMain.handle('read-file', async (event, filePath) => {
+  return await fs.readFile(filePath, 'utf8')
+})
+```
+
+### Frontend IPC Usage
+```typescript
+// Renderer process API calls
+const version = await window.electronAPI.getAppVersion()
+const fileContent = await window.electronAPI.readFile(path)
+```
+
+### Common IPC Patterns
+- **File Operations**: Reading/writing user data and generated content
+- **Process Management**: Starting/stopping ComfyUI and other services
+- **System Integration**: OS notifications, file dialogs, clipboard
+- **Settings Management**: Persistent application configuration
+- **Update Management**: Auto-updater integration
+
+## ComfyUI Integration
+
+### ComfyUI Manager
+[electron/comfyUIManager.js](mdc:electron/comfyUIManager.js) handles ComfyUI lifecycle:
+- Process spawning and monitoring
+- Port management and health checks
+- Graceful shutdown handling
+- Error recovery and restart logic
+
+### ComfyUI Installer
+[electron/comfyUIInstaller.js](mdc:electron/comfyUIInstaller.js) manages installation:
+- Automated ComfyUI download and setup
+- Dependency management (Python, models)
+- Cross-platform installation support
+- Progress reporting to UI
+
+### Integration Patterns
+```javascript
+// Start ComfyUI process
+const startComfyUI = async () => {
+  try {
+    const result = await comfyUIManager.start()
+    if (result.success) {
+      // Notify renderer of successful start
+      mainWindow.webContents.send('comfyui-status', 'running')
+    }
+  } catch (error) {
+    console.error('ComfyUI start failed:', error)
+  }
+}
+```
+
+## Settings Management
+
+### Settings Service
+[electron/settingsService.js](mdc:electron/settingsService.js) provides:
+- Persistent settings storage using electron-store
+- Secure API key management
+- User preference synchronization
+- Settings validation and migration
+
+### Settings Pattern
+```javascript
+// Settings management pattern
+const store = new Store({
+  name: 'jaaz-settings',
+  defaults: {
+    theme: 'system',
+    language: 'en',
+    apiKeys: {}
+  }
+})
+
+// Secure API key storage
+const setApiKey = (provider, key) => {
+  const encrypted = encrypt(key)
+  store.set(`apiKeys.${provider}`, encrypted)
+}
+```
+
+## Application Lifecycle
+
+### Startup Sequence
+1. Initialize Electron app
+2. Load user settings
+3. Create main window
+4. Start backend server
+5. Auto-start ComfyUI (if configured)
+6. Show UI when ready
+
+### Shutdown Sequence
+1. Save application state
+2. Stop ComfyUI process
+3. Stop backend server
+4. Close database connections
+5. Exit application
+
+### Window Management
+```javascript
+// Window creation pattern
+const createMainWindow = () => {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+  
+  // Development vs production loading
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../react/dist/index.html'))
+  }
+}
+```
+
+## Security Considerations
+
+### Context Isolation
+- Renderer process cannot directly access Node.js APIs
+- All communication goes through secure IPC channels
+- Preload script provides controlled API exposure
+
+### API Key Security
+- Encrypt sensitive data at rest
+- Use secure storage mechanisms
+- Never log or expose API keys in plain text
+- Implement proper key rotation support
+
+### File System Access
+- Validate all file paths to prevent directory traversal
+- Use safe file operations with proper error handling
+- Restrict access to sensitive system directories
+
+## Platform-Specific Features
+
+### macOS Integration
+- Native menu bar integration
+- Dock icon and badge management
+- macOS-specific file associations
+- Touch Bar support (if applicable)
+
+### Windows Integration
+- Windows-specific installer (NSIS)
+- Start menu and desktop shortcuts
+- Windows notification system
+- Registry integration for file types
+
+### Linux Integration
+- .desktop file creation
+- System tray integration
+- Package manager compatibility (deb, AppImage)
+- Window manager compatibility
+
+## Auto-Updater Integration
+
+### Update Management
+```javascript
+// Auto-updater pattern
+const { autoUpdater } = require('electron-updater')
+
+autoUpdater.checkForUpdatesAndNotify()
+
+autoUpdater.on('update-available', () => {
+  // Notify user of available update
+  mainWindow.webContents.send('update-available')
+})
+```
+
+### Update Flow
+1. Check for updates on startup
+2. Download updates in background
+3. Notify user when update is ready
+4. Install update on next restart
+5. Handle update failures gracefully
+
+## Testing Electron Features
+
+### Unit Testing
+- Test IPC handlers independently
+- Mock Electron APIs for testing
+- Test settings management logic
+- Validate security measures
+
+### Integration Testing
+- Test full IPC communication flows
+- Validate ComfyUI integration
+- Test file system operations
+- Verify update mechanisms
+
+### Manual Testing
+- Test on all target platforms
+- Verify native integrations work
+- Test performance with large files
+- Validate security boundaries

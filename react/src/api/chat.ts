@@ -12,6 +12,7 @@ export const sendMessages = async (payload: {
   newMessages: Message[]
   textModel: Model
   imageModel: Model
+  videoModel?: Model
   systemPrompt: string | null
 }) => {
   const response = await fetch(`/api/chat`, {
@@ -25,6 +26,7 @@ export const sendMessages = async (payload: {
       session_id: payload.sessionId,
       text_model: payload.textModel,
       image_model: payload.imageModel,
+      video_model: payload.videoModel,
       system_prompt: payload.systemPrompt,
     }),
   })

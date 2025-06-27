@@ -25,6 +25,7 @@ from .img_generators import (
     JaazGenerator,
     OpenAIGenerator,
     VolcesImageGenerator,
+    FalAIGenerator,
 )
 
 # 生成唯一文件 ID
@@ -49,6 +50,7 @@ PROVIDERS = {
     'jaaz': JaazGenerator(),
     'openai': OpenAIGenerator(),
     'volces': VolcesImageGenerator(),
+    'fal': FalAIGenerator(),
 }
 
 

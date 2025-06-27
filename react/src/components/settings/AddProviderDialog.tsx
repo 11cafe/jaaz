@@ -84,6 +84,23 @@ const PROVIDER_OPTIONS = [
     label: '月之暗面 (Kimi)',
     data: { apiUrl: 'https://api.moonshot.cn/v1/' },
   },
+  {
+    value: 'fal',
+    label: 'Fal AI',
+    data: {
+      apiUrl: 'https://fal.run/',
+      models: {
+        'flux/dev': { type: 'image', name: 'FLUX.1 [dev]' },
+        'flux-pro': { type: 'image', name: 'FLUX.1 Pro' },
+        'flux-pro-ultra': { type: 'image', name: 'FLUX.1 Pro Ultra' },
+        'recraft-v3': { type: 'image', name: 'Recraft V3' },
+        'stable-diffusion-v3-5-large': { type: 'image', name: 'Stable Diffusion 3.5 Large' },
+        'ideogram-v2': { type: 'image', name: 'Ideogram V2' },
+        'hidream-i1': { type: 'image', name: 'HiDream I1' },
+        'minimax/hailuo-02': { type: 'video', name: 'Hailuo Image-to-Video' },
+      },
+    },
+  },
 ]
 
 export default function AddProviderDialog({

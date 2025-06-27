@@ -1,0 +1,134 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# AI Integration Patterns
+
+## Multi-Model Architecture
+
+Jaaz supports both local and cloud-based AI models through a unified interface.
+
+### Local Model Integration
+
+#### Ollama Integration
+- **Purpose**: Local LLM execution for privacy and cost savings
+- **Configuration**: Automatic detection of local Ollama installation
+- **Models**: Supports various open-source models (Llama, Mistral, etc.)
+- **Usage**: Agent reasoning, prompt optimization, chat functionality
+
+#### ComfyUI Integration
+- **Purpose**: Advanced image generation workflows
+- **Management**: [electron/comfyUIManager.js](mdc:electron/comfyUIManager.js) handles installation and process lifecycle
+- **Installer**: [electron/comfyUIInstaller.js](mdc:electron/comfyUIInstaller.js) manages automated setup
+- **Execution**: [server/routers/comfyui_execution.py](mdc:server/routers/comfyui_execution.py) handles workflow execution
+- **Workflows**: Custom node configurations for specific image generation tasks
+
+### Cloud API Integration
+
+#### OpenAI Integration
+- **Models**: GPT-4, GPT-4V, DALL-E 3, GPT-4O
+- **Usage**: Agent reasoning, image analysis, text generation
+- **Configuration**: API key management in settings
+
+#### Anthropic Claude Integration
+- **Models**: Claude 3 (Opus, Sonnet, Haiku)
+- **Usage**: Advanced reasoning, code generation, creative writing
+- **Configuration**: API key management with proper headers
+
+#### Replicate Integration
+- **Models**: Flux, Stable Diffusion, specialized image models
+- **Usage**: High-quality image generation and editing
+- **Configuration**: Token-based authentication
+
+#### Google Services
+- **Models**: Gemini, Imagen
+- **Usage**: Multimodal AI tasks, image generation
+- **Configuration**: Service account or API key authentication
+
+### Agent Architecture
+
+#### LangGraph Integration
+Located in [server/services/langgraph_service.py](mdc:server/services/langgraph_service.py):
+
+```python
+# Multi-agent workflow orchestration
+# Tool calling for image generation
+# State management for complex tasks
+# Streaming responses for real-time feedback
+```
+
+#### Key Agent Patterns
+
+1. **Smart Prompt Agent**
+   - Interprets user ideas
+   - Generates optimized prompts
+   - Handles multi-step creative workflows
+
+2. **Image Generation Agent**
+   - Selects appropriate models
+   - Manages generation parameters
+   - Handles batch processing
+
+3. **Canvas Management Agent**
+   - Coordinates infinite canvas operations
+   - Manages object placement and relationships
+   - Handles multi-character coherence
+
+### API Key Management
+
+#### Settings Service
+[server/services/settings_service.py](mdc:server/services/settings_service.py) handles:
+- Secure API key storage
+- Provider configuration
+- Model availability checking
+- Usage tracking and rate limiting
+
+#### Frontend Configuration
+Settings UI allows users to:
+- Configure multiple providers
+- Test API connections
+- Set default models
+- Manage local model preferences
+
+### Model Selection Logic
+
+#### Automatic Model Selection
+- **Cost Optimization**: Prefer local models when available
+- **Quality Requirements**: Use cloud models for high-quality outputs
+- **Speed Requirements**: Balance between quality and generation time
+- **User Preferences**: Respect user-defined model preferences
+
+#### Fallback Mechanisms
+- Primary model failure → Secondary model
+- Cloud API failure → Local model fallback
+- Rate limiting → Alternative provider
+
+### Real-time Processing
+
+#### WebSocket Updates
+Progress updates for long-running operations:
+- Image generation progress
+- Model loading status
+- Error handling and recovery
+- Batch processing updates
+
+#### Streaming Responses
+For text generation and agent reasoning:
+- Token-by-token streaming
+- Partial result display
+- Cancellation support
+
+### Error Handling
+
+#### Common Patterns
+- API rate limiting detection
+- Network connectivity issues
+- Model availability checks
+- Resource constraint handling
+
+#### User Feedback
+- Clear error messages
+- Suggested alternatives
+- Automatic retry mechanisms
+- Provider status indicators

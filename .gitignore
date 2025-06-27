@@ -16,3 +16,19 @@ build
 
 # User data
 user_data/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+server/.env
+
+# Log files
+*.log
+server/server.log
+
+# Database files
+*.db
+server/*.db

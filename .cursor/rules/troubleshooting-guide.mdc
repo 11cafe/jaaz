@@ -1,0 +1,334 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Troubleshooting Guide
+
+## Common Development Issues
+
+### Environment Setup Problems
+
+#### Python Virtual Environment Issues
+```bash
+# Create isolated environment
+cd server
+python -m venv venv
+
+# Activate environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### Node.js Version Conflicts
+- Ensure Node.js 18+ is installed
+- Use `nvm` for version management
+- Clear npm cache: `npm cache clean --force`
+- Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
+
+#### Port Conflicts
+- Backend default port: 57988
+- Frontend dev port: 5173
+- Check for running processes: `lsof -i :57988` (macOS/Linux) or `netstat -ano | findstr :57988` (Windows)
+
+### ComfyUI Integration Issues
+
+#### ComfyUI Installation Failures
+1. **Windows Specific**:
+   - Ensure Python 3.8+ is in PATH
+   - Install Visual Studio Build Tools if missing
+   - Check antivirus software blocking downloads
+
+2. **macOS Specific**:
+   - Install Xcode Command Line Tools: `xcode-select --install`
+   - Verify Homebrew installation if using Homebrew Python
+
+3. **Linux Specific**:
+   - Install build essentials: `sudo apt-get install build-essential`
+   - Check Python development headers: `sudo apt-get install python3-dev`
+
+#### ComfyUI Process Management
+```javascript
+// Debug ComfyUI process status
+const checkComfyUIStatus = async () => {
+  try {
+    const isRunning = await comfyUIManager.isRunning()
+    console.log('ComfyUI Status:', isRunning ? 'Running' : 'Stopped')
+    
+    if (!isRunning) {
+      const startResult = await comfyUIManager.start()
+      console.log('Start result:', startResult)
+    }
+  } catch (error) {
+    console.error('ComfyUI check failed:', error)
+  }
+}
+```
+
+### API Integration Problems
+
+#### API Key Configuration
+1. **Environment Variables Not Loading**:
+   - Check [server/.env](mdc:server/.env) file exists
+   - Verify proper key=value format (no spaces around =)
+   - Restart server after environment changes
+
+2. **API Key Validation**:
+   ```python
+   # Test API key validity
+   async def test_openai_key(api_key: str):
+       try:
+           client = OpenAI(api_key=api_key)
+           response = await client.models.list()
+           return {"valid": True, "models": len(response.data)}
+       except Exception as e:
+           return {"valid": False, "error": str(e)}
+   ```
+
+#### Network and Proxy Issues
+- Configure proxy settings for corporate networks
+- Check firewall blocking AI service domains
+- Verify internet connectivity for cloud APIs
+- Test with curl/postman for API endpoint accessibility
+
+### Database and Storage Issues
+
+#### SQLite Database Problems
+```python
+# Database debugging
+import sqlite3
+
+def debug_database():
+    try:
+        conn = sqlite3.connect('jaaz.db')
+        cursor = conn.cursor()
+        
+        # Check tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        print(f"Database tables: {tables}")
+        
+        conn.close()
+    except Exception as e:
+        print(f"Database error: {e}")
+```
+
+#### File Storage Issues
+- Check disk space for image storage
+- Verify write permissions in user data directory
+- Monitor large file handling (images/videos)
+- Clean up temporary files periodically
+
+### Frontend Specific Issues
+
+#### React Build Problems
+```bash
+# Clear build cache
+cd react
+rm -rf dist node_modules .vite
+npm install --force
+npm run build
+```
+
+#### WebSocket Connection Issues
+```typescript
+// Debug WebSocket connection
+const debugWebSocket = () => {
+  const socket = io('http://localhost:57988')
+  
+  socket.on('connect', () => {
+    console.log('WebSocket connected:', socket.id)
+  })
+  
+  socket.on('disconnect', (reason) => {
+    console.log('WebSocket disconnected:', reason)
+  })
+  
+  socket.on('connect_error', (error) => {
+    console.error('WebSocket connection error:', error)
+  })
+}
+```
+
+#### State Management Issues
+- Use React DevTools to inspect component state
+- Check TanStack Query DevTools for API state
+- Verify context providers are properly wrapped
+- Monitor for memory leaks in long-running components
+
+### Backend Specific Issues
+
+#### FastAPI Server Problems
+```python
+# Add detailed logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+# Monitor server health
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    }
+```
+
+#### WebSocket Service Issues
+```python
+# Debug WebSocket events
+from services.websocket_state import sio
+
+@sio.event
+async def connect(sid, environ):
+    print(f"Client connected: {sid}")
+    await sio.emit('connection_status', {'status': 'connected'}, room=sid)
+
+@sio.event
+async def disconnect(sid):
+    print(f"Client disconnected: {sid}")
+```
+
+### Performance Issues
+
+#### Memory Usage Problems
+1. **Python Backend**:
+   - Monitor with `memory_profiler`
+   - Use generators for large data processing
+   - Implement proper cleanup for AI model instances
+
+2. **Frontend**:
+   - Use React.memo for expensive components
+   - Implement virtual scrolling for large lists
+   - Monitor bundle size with webpack-bundle-analyzer
+
+#### Image Processing Performance
+```python
+# Optimize image handling
+from PIL import Image
+import io
+
+def optimize_image(image_data: bytes, max_size: tuple = (1024, 1024)) -> bytes:
+    with Image.open(io.BytesIO(image_data)) as img:
+        # Resize if needed
+        if img.size[0] > max_size[0] or img.size[1] > max_size[1]:
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Convert to optimized format
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=85, optimize=True)
+        return output.getvalue()
+```
+
+## Debugging Tools and Techniques
+
+### Logging Configuration
+```python
+# Enhanced logging setup
+import logging
+from logging.handlers import RotatingFileHandler
+
+def setup_logging():
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # File handler with rotation
+    file_handler = RotatingFileHandler(
+        'jaaz.log', maxBytes=10*1024*1024, backupCount=5
+    )
+    file_handler.setFormatter(formatter)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    root_logger.setLevel(logging.DEBUG)
+```
+
+### Error Monitoring
+```typescript
+// Frontend error tracking
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error)
+  // Send to error tracking service
+})
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason)
+  // Send to error tracking service
+})
+```
+
+### Development Tools
+- **Backend**: FastAPI automatic docs at `http://localhost:57988/docs`
+- **Frontend**: React DevTools, TanStack Query DevTools
+- **Electron**: Main process debugging with `--inspect-brk`
+- **Network**: Browser DevTools Network tab for API calls
+
+## Platform-Specific Issues
+
+### Windows
+- Long path limitations: Enable long path support in Windows 10+
+- Antivirus false positives: Add exclusions for dev directories
+- PowerShell execution policy: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned`
+
+### macOS
+- Gatekeeper issues: Allow unsigned applications in Security settings
+- Permission issues: Grant Full Disk Access if needed
+- Code signing: Disable for development builds
+
+### Linux
+- AppImage permissions: `chmod +x Jaaz.AppImage`
+- Missing libraries: Install required system dependencies
+- Display server compatibility: Test with X11 and Wayland
+
+## Recovery Procedures
+
+### Reset Application State
+```bash
+# Clear all user data (nuclear option)
+rm -rf ~/.config/jaaz  # Linux
+rm -rf ~/Library/Application\ Support/jaaz  # macOS
+rmdir /s %APPDATA%\jaaz  # Windows
+```
+
+### Database Recovery
+```python
+# Backup and reset database
+import shutil
+from datetime import datetime
+
+def backup_and_reset_db():
+    backup_name = f"jaaz_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+    shutil.copy('jaaz.db', backup_name)
+    
+    # Recreate database with fresh schema
+    os.remove('jaaz.db')
+    # Initialize new database
+```
+
+### Emergency Debugging
+```python
+# Emergency debug mode - log everything
+import sys
+import traceback
+
+def emergency_debug():
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        
+        logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    
+    sys.excepthook = handle_exception
+```

@@ -29,6 +29,7 @@ from services.db_service import db_service
 from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image
+from tools.video_tools import generate_video
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
@@ -44,11 +45,12 @@ class InputParam(BaseModel):
 def create_tool(tool_json: dict):
     TOOL_MAP = {
         'generate_image': generate_image,
+        'generate_video': generate_video,
         'write_plan': write_plan_tool,
     }
     return TOOL_MAP.get(tool_json.get('tool', ''), None)
 
-async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
+async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model, video_model=None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -84,7 +86,8 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             'canvas_id': canvas_id,
             'session_id': session_id,
             'model_info': {
-                'image': image_model
+                'image': image_model,
+                'video': video_model
             },
         }
         tool_calls: list[ToolCall] = []
@@ -212,7 +215,7 @@ def create_handoff_tool(
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None):
+async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None, video_model=None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -295,6 +298,38 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'system_prompt': system_prompt,
                 'knowledge': [],
+                'handoffs': [
+                    {
+                        'agent_name': 'video_designer',
+                        'description': """
+                        Transfer user to the video_designer. About this agent: Specialize in generating videos from images.
+                        """
+                    }
+                ]
+            },
+            {
+                'name': 'video_designer',
+                'tools': [
+                    {
+                        'name': 'generate_video',
+                        'description': "Generate a video from an image and prompt",
+                        'tool': 'generate_video',
+                    }
+                ],
+                'system_prompt': """You are a professional video design agent. You specialize in generating videos from images using AI video generation models.
+                
+When generating videos:
+1. Use the generate_video tool with a clear motion prompt describing what should happen in the video
+2. Always specify an existing image_id as the starting frame (e.g., 'im_abc123.png')
+3. Choose appropriate duration (6s for quick animations, 10s for more complex sequences)
+4. Focus on describing motion, camera movement, and animation rather than static descriptions
+
+Example prompts:
+- "The woman slowly turns her head to look at the camera, with gentle wind blowing through her hair"
+- "Camera slowly zooms out to reveal the full scene, with subtle parallax movement"
+- "The product rotates 360 degrees showcasing all angles with professional lighting"
+""",
+                'knowledge': [],
                 'handoffs': []
             }
         ]
@@ -342,65 +377,162 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             'canvas_id': canvas_id,
             'session_id': session_id,
             'model_info': {
-                'image': image_model
+                'image': image_model,
+                'video': video_model
             },
         }
         tool_calls: list[ToolCall] = []
         last_saved_message_index = len(messages) - 1
 
-        async for chunk in swarm.astream(
-            {"messages": messages},
-            config=ctx,
-            stream_mode=["messages", "custom", 'values']
-        ):
-            chunk_type = chunk[0]
-            if chunk_type == 'values':
-                all_messages = chunk[1].get('messages', [])
-                oai_messages = convert_to_openai_messages(all_messages)
-                await send_to_websocket(session_id, {
-                        'type': 'all_messages',
-                        'messages': oai_messages
-                    })
-                for i in range(last_saved_message_index + 1, len(oai_messages)):
-                    new_message = oai_messages[i]
-                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
-                    last_saved_message_index = i
-            else:
-                # Access the AIMessageChunk
-                ai_message_chunk: AIMessageChunk = chunk[1][0]
-                # print('👇ai_message_chunk', ai_message_chunk)
-                content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-                if isinstance(ai_message_chunk, ToolMessage):
-                    print('👇tool_call_results', ai_message_chunk.content)
-                elif content:
-                    await send_to_websocket(session_id, {
-                        'type': 'delta',
-                        'text': content
-                    })
-                elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
-                    print('😘tool_call event', ai_message_chunk.tool_calls)
+        # Clean up incomplete tool calls to prevent LangGraph and OpenAI validation errors
+        def clean_messages_for_langgraph(messages):
+            """Remove incomplete tool calls and orphaned tool messages for OpenAI API compliance"""
+            cleaned_messages = []
+            tool_call_to_response = {}  # Map tool call IDs to their responses
+            
+            # First pass: identify all tool call -> tool response pairs
+            for message in messages:
+                if message.get('role') == 'assistant' and message.get('tool_calls'):
+                    # Track tool calls
+                    for tool_call in message.get('tool_calls', []):
+                        tool_call_id = tool_call.get('id')
+                        if tool_call_id:
+                            tool_call_to_response[tool_call_id] = None  # Mark as pending
+                            
+                elif message.get('role') == 'tool':
+                    # Mark tool call as completed if we find its response
+                    tool_call_id = message.get('tool_call_id')
+                    if tool_call_id and tool_call_id in tool_call_to_response:
+                        tool_call_to_response[tool_call_id] = message
+            
+            # Second pass: only include messages that form complete tool call pairs
+            i = 0
+            while i < len(messages):
+                message = messages[i]
+                
+                if message.get('role') == 'assistant' and message.get('tool_calls'):
+                    # Check if ALL tool calls in this message have responses
+                    tool_calls = message.get('tool_calls', [])
+                    all_complete = True
+                    
                     for tool_call in tool_calls:
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call',
-                            'id': tool_call.get('id'),
-                            'name': tool_call.get('name'),
-                            'arguments': '{}'
-                        })
-                elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                    tool_call_chunks = ai_message_chunk.tool_call_chunks
-                    for tool_call_chunk in tool_call_chunks:
-                        index: int = tool_call_chunk['index']
-                        if index < len(tool_calls):
-                            for_tool_call: ToolCall = tool_calls[index]
-                            # print('👇tool_call_arguments event', for_tool_call, 'chunk', tool_call_chunk)
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call_arguments',
-                                'id': for_tool_call.get('id'),
-                                'text': tool_call_chunk.get('args')
-                            })
+                        tool_call_id = tool_call.get('id')
+                        if tool_call_id not in tool_call_to_response or tool_call_to_response[tool_call_id] is None:
+                            all_complete = False
+                            break
+                    
+                    if all_complete:
+                        # Include the assistant message with tool calls
+                        cleaned_messages.append(message)
+                        
+                        # Include all corresponding tool responses
+                        for tool_call in tool_calls:
+                            tool_call_id = tool_call.get('id')
+                            if tool_call_id and tool_call_to_response[tool_call_id]:
+                                cleaned_messages.append(tool_call_to_response[tool_call_id])
+                    
+                    # Skip any following tool messages as they're handled above
+                    i += 1
+                    while i < len(messages) and messages[i].get('role') == 'tool':
+                        i += 1
+                    continue
+                    
+                elif message.get('role') == 'tool':
+                    # Skip standalone tool messages - they're handled with their assistant messages
+                    pass
+                    
                 else:
-                    print('👇no tool_call_chunks', chunk)
+                    # Include user, system, and regular assistant messages
+                    cleaned_messages.append(message)
+                
+                i += 1
+            
+            return cleaned_messages
+
+        # Clean messages before passing to LangGraph
+        cleaned_messages = clean_messages_for_langgraph(messages)
+        print(f"👇 Cleaned {len(messages)} messages to {len(cleaned_messages)} for LangGraph")
+
+        async def process_swarm_stream(messages_to_use):
+            """Process the swarm stream with given messages"""
+            nonlocal last_saved_message_index
+            async for chunk in swarm.astream(
+                {"messages": messages_to_use},
+                config=ctx,
+                stream_mode=["messages", "custom", 'values']
+            ):
+                chunk_type = chunk[0]
+                if chunk_type == 'values':
+                    all_messages = chunk[1].get('messages', [])
+                    oai_messages = convert_to_openai_messages(all_messages)
+                    await send_to_websocket(session_id, {
+                            'type': 'all_messages',
+                            'messages': oai_messages
+                        })
+                    for i in range(last_saved_message_index + 1, len(oai_messages)):
+                        new_message = oai_messages[i]
+                        await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+                        last_saved_message_index = i
+                else:
+                    # Access the AIMessageChunk
+                    ai_message_chunk: AIMessageChunk = chunk[1][0]
+                    # print('👇ai_message_chunk', ai_message_chunk)
+                    content = ai_message_chunk.content  # Get the content from the AIMessageChunk
+                    if isinstance(ai_message_chunk, ToolMessage):
+                        print('👇tool_call_results', ai_message_chunk.content)
+                    elif content:
+                        await send_to_websocket(session_id, {
+                            'type': 'delta',
+                            'text': content
+                        })
+                    elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
+                        tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
+                        print('😘tool_call event', ai_message_chunk.tool_calls)
+                        for tool_call in tool_calls:
+                            await send_to_websocket(session_id, {
+                                'type': 'tool_call',
+                                'id': tool_call.get('id'),
+                                'name': tool_call.get('name'),
+                                'arguments': '{}'
+                            })
+                    elif hasattr(ai_message_chunk, 'tool_call_chunks'):
+                        tool_call_chunks = ai_message_chunk.tool_call_chunks
+                        for tool_call_chunk in tool_call_chunks:
+                            index: int = tool_call_chunk['index']
+                            if index < len(tool_calls):
+                                for_tool_call: ToolCall = tool_calls[index]
+                                # print('👇tool_call_arguments event', for_tool_call, 'chunk', tool_call_chunk)
+                                await send_to_websocket(session_id, {
+                                    'type': 'tool_call_arguments',
+                                    'id': for_tool_call.get('id'),
+                                    'text': tool_call_chunk.get('args')
+                                })
+                    else:
+                        print('👇no tool_call_chunks', chunk)
+
+        # Try to process with cleaned messages first
+        try:
+            await process_swarm_stream(cleaned_messages)
+        except (ValueError, Exception) as e:
+            error_msg = str(e)
+            if ("Found AIMessages with tool_calls that do not have a corresponding ToolMessage" in error_msg or 
+                "messages with role 'tool' must be a response to a preceeding message with 'tool_calls'" in error_msg):
+                print(f"🚨 Message validation error, starting fresh session: {error_msg}")
+                # Start with a fresh session - only keep the last user message
+                user_messages = [msg for msg in messages if msg.get('role') == 'user']
+                if user_messages:
+                    fresh_messages = [user_messages[-1]]  # Keep only the latest user message
+                    print(f"👇 Starting fresh with last user message: {len(fresh_messages)} messages")
+                    await process_swarm_stream(fresh_messages)
+                else:
+                    # No user messages, send error
+                    await send_to_websocket(session_id, {
+                        'type': 'error',
+                        'error': 'Chat session corrupted. Please start a new conversation.'
+                    })
+                    return
+            else:
+                raise e  # Re-raise other errors
 
         # 发送完成事件
         await send_to_websocket(session_id, {

@@ -1,0 +1,72 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Backend Architecture Guide
+
+## FastAPI Server Structure
+
+The backend is a FastAPI application ([server/main.py](mdc:server/main.py)) that serves as the core AI processing engine.
+
+### Entry Point & Configuration
+- **Main Server**: [server/main.py](mdc:server/main.py) - FastAPI app with lifespan management
+- **Environment**: [server/.env](mdc:server/.env) - Configuration and API keys
+- **Dependencies**: [server/requirements.txt](mdc:server/requirements.txt) - Python packages
+
+### Router Organization
+Located in `server/routers/`, each router handles specific functionality:
+
+- **agent.py** - Main AI agent operations and LangGraph integration
+- **settings.py** - User settings and configuration management
+- **workspace.py** - Workspace and project management
+- **canvas.py** - Canvas operations and infinite workspace
+- **image_tools.py** - Image processing and generation tools
+- **video_tools.py** - Video generation and processing (upcoming)
+- **comfyui_execution.py** - ComfyUI workflow execution
+- **chat_router.py** - Chat interface and conversation management
+- **websocket_router.py** - WebSocket connections for real-time updates
+
+### Service Layer
+Located in `server/services/`, services provide business logic:
+
+- **langgraph_service.py** - LangGraph agent orchestration and tool execution
+- **db_service.py** - Database operations and models
+- **settings_service.py** - User preferences and API key management
+- **chat_service.py** - Chat history and conversation management
+- **websocket_service.py** - Real-time communication handling
+- **config_service.py** - Application configuration management
+
+### Key Patterns
+
+#### WebSocket Communication
+Real-time updates use Socket.IO:
+```python
+from services.websocket_state import sio
+# Emit events to frontend
+await sio.emit('status_update', data)
+```
+
+#### Agent Integration
+LangGraph agents handle complex AI workflows:
+- Tool calling for image generation
+- Multi-step reasoning for creative tasks
+- State management for long-running operations
+
+#### API Key Management
+Secure handling of multiple AI service credentials:
+- OpenAI, Claude, Replicate APIs
+- Local model configuration (Ollama)
+- ComfyUI integration settings
+
+### Database & Storage
+- SQLite database for user data and settings
+- File-based storage for generated images and projects
+- User data directory structure for organization
+
+### Environment Variables
+Critical configuration in [server/.env](mdc:server/.env):
+- `OPENAI_API_KEY` - OpenAI integration
+- `ANTHROPIC_API_KEY` - Claude integration  
+- `REPLICATE_API_TOKEN` - Replicate models
+- `UI_DIST_DIR` - Frontend build location

@@ -1,4 +1,4 @@
-import { sendMessages } from '@/api/chat'
+import { sendMessages, getChatSession } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { eventBus, TEvents } from '@/lib/event'
@@ -77,6 +77,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const sessionId = session?.id
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (sessionId) {
+      getChatSession(sessionId)
+        .then((sessionMessages) => {
+          setMessages(sessionMessages || [])
+        })
+        .catch((error) => {
+          console.error('Failed to load chat session:', error)
+          setMessages([])
+        })
+    } else {
+      setMessages([])
+    }
+  }, [sessionId])
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
@@ -227,6 +243,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [canvasId, sessionId]
   )
 
+  const handleVideoGenerated = useCallback(
+    (data: TEvents['Socket::Session::VideoGenerated']) => {
+      if (
+        data.canvas_id &&
+        data.canvas_id !== canvasId &&
+        data.session_id !== sessionId
+      ) {
+        return
+      }
+
+      console.log('🎬dispatching video_generated', data)
+      setPending('image') // Use same pending state for video
+    },
+    [canvasId, sessionId]
+  )
+
   const handleAllMessages = useCallback(
     (data: TEvents['Socket::Session::AllMessages']) => {
       if (data.session_id && data.session_id !== sessionId) {
@@ -285,6 +317,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::VideoGenerated', handleVideoGenerated)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
@@ -299,6 +332,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         handleToolCallArguments
       )
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::Session::VideoGenerated', handleVideoGenerated)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
@@ -352,7 +386,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+    (data: Message[], configs: { textModel: Model; imageModel: Model; videoModel?: Model }) => {
       setPending('text')
       setMessages(data)
 
@@ -362,6 +396,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         newMessages: data,
         textModel: configs.textModel,
         imageModel: configs.imageModel,
+        videoModel: configs.videoModel,
         systemPrompt:
           localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })

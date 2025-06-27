@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaaz Frontend Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .pass { color: green; }
+        .fail { color: red; }
+        .info { color: blue; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 200px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Jaaz Frontend Debug Test</h1>
+    <p>This test checks if the frontend can properly load and display video elements.</p>
+
+    <div class="test-section">
+        <h2>📡 Backend API Tests</h2>
+        <div id="api-tests"></div>
+        <button onclick="runApiTests()">Run API Tests</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🎬 Video Element Test</h2>
+        <div id="video-tests"></div>
+        <button onclick="testVideoElement()">Test Video Element</button>
+        <div id="video-container" style="margin-top: 20px;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔌 WebSocket Test</h2>
+        <div id="websocket-tests"></div>
+        <button onclick="testWebSocket()">Test WebSocket</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Canvas Data Test</h2>
+        <div id="canvas-tests"></div>
+        <button onclick="testCanvasData()">Load Canvas Data</button>
+        <pre id="canvas-data"></pre>
+    </div>
+
+    <script>
+        const CANVAS_ID = 'xaLHgjjWumgBuEFAhrCSm';
+        const SESSION_ID = 'ROmlBdKhNg-ogpICwBAWi';
+        const VIDEO_FILE = 'vid__28Xr6ru.mp4';
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'pass' ? 'pass' : type === 'fail' ? 'fail' : 'info';
+            element.innerHTML += `<div class="status ${className}">${message}</div>`;
+        }
+
+        async function runApiTests() {
+            const testElement = 'api-tests';
+            document.getElementById(testElement).innerHTML = '';
+            
+            try {
+                // Test server
+                log(testElement, '🔍 Testing server connection...');
+                const serverResp = await fetch('/api/list_models');
+                if (serverResp.ok) {
+                    log(testElement, '✅ Server is running', 'pass');
+                } else {
+                    log(testElement, `❌ Server error: ${serverResp.status}`, 'fail');
+                }
+
+                // Test video file
+                log(testElement, '🔍 Testing video file access...');
+                const videoResp = await fetch(`/api/file/${VIDEO_FILE}`);
+                if (videoResp.ok) {
+                    log(testElement, '✅ Video file accessible', 'pass');
+                } else {
+                    log(testElement, `❌ Video file error: ${videoResp.status}`, 'fail');
+                }
+
+                // Test canvas API
+                log(testElement, '🔍 Testing canvas API...');
+                const canvasResp = await fetch(`/api/canvas/${CANVAS_ID}`);
+                if (canvasResp.ok) {
+                    const canvasData = await canvasResp.json();
+                    const elements = canvasData.data?.elements || [];
+                    const files = canvasData.data?.files || {};
+                    const videoElements = elements.filter(e => e.type === 'video');
+                    const videoFiles = Object.values(files).filter(f => f.mimeType?.includes('video'));
+                    
+                    log(testElement, `✅ Canvas API working (${elements.length} elements, ${Object.keys(files).length} files)`, 'pass');
+                    log(testElement, `🎬 Found ${videoElements.length} video elements, ${videoFiles.length} video files`, videoElements.length > 0 ? 'pass' : 'fail');
+                } else {
+                    log(testElement, `❌ Canvas API error: ${canvasResp.status}`, 'fail');
+                }
+
+            } catch (error) {
+                log(testElement, `❌ API test error: ${error.message}`, 'fail');
+            }
+        }
+
+        async function testVideoElement() {
+            const testElement = 'video-tests';
+            const container = document.getElementById('video-container');
+            document.getElementById(testElement).innerHTML = '';
+            container.innerHTML = '';
+            
+            try {
+                log(testElement, '🔍 Creating video element...');
+                
+                // Create video element
+                const video = document.createElement('video');
+                video.src = `/api/file/${VIDEO_FILE}`;
+                video.width = 320;
+                video.height = 180;
+                video.controls = true;
+                video.muted = true;
+                video.style.border = '2px solid #007bff';
+                video.style.borderRadius = '8px';
+                
+                // Add event listeners
+                video.addEventListener('loadedmetadata', () => {
+                    log(testElement, `✅ Video metadata loaded (duration: ${video.duration}s)`, 'pass');
+                });
+                
+                video.addEventListener('loadeddata', () => {
+                    log(testElement, '✅ Video data loaded', 'pass');
+                });
+                
+                video.addEventListener('error', (e) => {
+                    log(testElement, `❌ Video error: ${e.target.error?.message || 'Unknown error'}`, 'fail');
+                });
+                
+                video.addEventListener('canplay', () => {
+                    log(testElement, '✅ Video can play', 'pass');
+                });
+                
+                container.appendChild(video);
+                log(testElement, '✅ Video element created and added to page', 'pass');
+                
+            } catch (error) {
+                log(testElement, `❌ Video test error: ${error.message}`, 'fail');
+            }
+        }
+
+        async function testWebSocket() {
+            const testElement = 'websocket-tests';
+            document.getElementById(testElement).innerHTML = '';
+            
+            try {
+                log(testElement, '🔍 Testing WebSocket connection...');
+                
+                const socket = io('/', {
+                    transports: ['polling', 'websocket'],
+                    upgrade: true
+                });
+                
+                socket.on('connect', () => {
+                    log(testElement, `✅ WebSocket connected (ID: ${socket.id})`, 'pass');
+                });
+                
+                socket.on('connect_error', (error) => {
+                    log(testElement, `❌ WebSocket connection error: ${error.message}`, 'fail');
+                });
+                
+                socket.on('session_update', (data) => {
+                    log(testElement, `📨 Received session_update: ${data.type}`, 'info');
+                    if (data.type === 'video_generated') {
+                        log(testElement, '🎬 Video generated event received!', 'pass');
+                    }
+                });
+                
+                // Test socket after 2 seconds
+                setTimeout(() => {
+                    if (socket.connected) {
+                        log(testElement, '✅ WebSocket connection stable', 'pass');
+                    } else {
+                        log(testElement, '❌ WebSocket not connected', 'fail');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log(testElement, `❌ WebSocket test error: ${error.message}`, 'fail');
+            }
+        }
+
+        async function testCanvasData() {
+            const testElement = 'canvas-tests';
+            const dataElement = document.getElementById('canvas-data');
+            document.getElementById(testElement).innerHTML = '';
+            dataElement.textContent = '';
+            
+            try {
+                log(testElement, '🔍 Loading canvas data...');
+                
+                const response = await fetch(`/api/canvas/${CANVAS_ID}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const canvasData = await response.json();
+                const elements = canvasData.data?.elements || [];
+                const files = canvasData.data?.files || {};
+                
+                log(testElement, `✅ Canvas data loaded`, 'pass');
+                log(testElement, `📊 Elements: ${elements.length}, Files: ${Object.keys(files).length}`, 'info');
+                
+                // Check for video elements
+                const videoElements = elements.filter(e => e.type === 'video');
+                const videoFiles = Object.entries(files).filter(([k, v]) => v.mimeType?.includes('video'));
+                
+                if (videoElements.length > 0) {
+                    log(testElement, `✅ Found ${videoElements.length} video elements`, 'pass');
+                    videoElements.forEach((elem, i) => {
+                        log(testElement, `   Video ${i+1}: ID=${elem.id}, pos=(${elem.x},${elem.y}), size=${elem.width}x${elem.height}`, 'info');
+                    });
+                } else {
+                    log(testElement, '❌ No video elements found', 'fail');
+                }
+                
+                if (videoFiles.length > 0) {
+                    log(testElement, `✅ Found ${videoFiles.length} video files`, 'pass');
+                    videoFiles.forEach(([id, file]) => {
+                        log(testElement, `   File ${id}: ${file.dataURL}, duration=${file.duration}s`, 'info');
+                    });
+                } else {
+                    log(testElement, '❌ No video files found', 'fail');
+                }
+                
+                // Display raw data
+                dataElement.textContent = JSON.stringify(canvasData.data, null, 2);
+                
+            } catch (error) {
+                log(testElement, `❌ Canvas data error: ${error.message}`, 'fail');
+            }
+        }
+
+        // Auto-run API tests on load
+        window.addEventListener('load', () => {
+            runApiTests();
+        });
+    </script>
+    
+    <!-- Include Socket.IO client -->
+    <script src="/socket.io/socket.io.js"></script>
+</body>
+</html>

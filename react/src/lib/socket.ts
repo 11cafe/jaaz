@@ -29,8 +29,8 @@ export class SocketIOManager {
       }
 
       this.socket = io(url, {
-        transports: ['websocket'],
-        upgrade: false,
+        transports: ['polling', 'websocket'],
+        upgrade: true,
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
         reconnectionDelay: this.reconnectDelay,
@@ -109,6 +109,9 @@ export class SocketIOManager {
         break
       case ISocket.SessionEventType.ImageGenerated:
         eventBus.emit('Socket::Session::ImageGenerated', data)
+        break
+      case ISocket.SessionEventType.VideoGenerated:
+        eventBus.emit('Socket::Session::VideoGenerated', data)
         break
       case ISocket.SessionEventType.AllMessages:
         eventBus.emit('Socket::Session::AllMessages', data)

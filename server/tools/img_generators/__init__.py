@@ -5,6 +5,7 @@ from .wavespeed import WavespeedGenerator
 from .jaaz import JaazGenerator
 from .openai import OpenAIGenerator
 from .volces import VolcesImageGenerator
+from .fal import FalAIGenerator
 
 __all__ = [
     'ImageGenerator',
@@ -14,4 +15,5 @@ __all__ = [
     'JaazGenerator',
     'OpenAIGenerator',
     'VolcesImageGenerator',
+    'FalAIGenerator',
 ]

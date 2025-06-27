@@ -1,0 +1,125 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Frontend Architecture Guide
+
+## React Application Structure
+
+The frontend is a modern React application ([react/src/App.tsx](mdc:react/src/App.tsx)) built with TypeScript and cutting-edge tools.
+
+### Core Technologies
+- **React 18** with TypeScript for type safety
+- **Vite** for fast development and building
+- **TanStack Router** for file-based routing
+- **TanStack Query** for server state management
+- **Tailwind CSS** for styling
+- **shadcn/ui** for consistent UI components
+
+### Entry Points
+- **Main App**: [react/src/App.tsx](mdc:react/src/App.tsx) - Root component with providers
+- **Main Entry**: [react/src/main.tsx](mdc:react/src/main.tsx) - React DOM rendering
+- **Vite Config**: [react/vite.config.ts](mdc:react/vite.config.ts) - Build configuration
+
+### Directory Structure
+
+#### `/src/components/`
+Reusable UI components organized by feature:
+- `auth/` - Authentication components (LoginDialog)
+- `canvas/` - Infinite canvas and drawing tools
+- `chat/` - Chat interface and message components
+- `comfyui/` - ComfyUI integration components
+- `common/` - Shared components (UpdateNotificationDialog)
+- `settings/` - Settings dialogs and forms
+- `theme/` - Theme provider and dark/light mode
+- `ui/` - shadcn/ui base components
+
+#### `/src/routes/`
+File-based routing with TanStack Router:
+- Automatic route generation from file structure
+- Type-safe navigation and params
+- Route-level code splitting
+
+#### `/src/contexts/`
+React contexts for global state:
+- `AuthContext` - User authentication state
+- `ConfigsProvider` - Application configuration
+- Theme context integration
+
+#### `/src/hooks/`
+Custom React hooks:
+- `use-theme` - Theme management
+- API integration hooks
+- State management utilities
+
+#### `/src/stores/`
+Client-side store management:
+- Zustand or similar for local state
+- WebSocket connection state
+- Canvas state management
+
+#### `/src/api/`
+API client and integration:
+- Backend API calls
+- WebSocket connection management
+- Error handling and retries
+
+#### `/src/types/`
+TypeScript type definitions:
+- API response types
+- Component prop types
+- Shared interfaces
+
+### Key Patterns
+
+#### Context Providers
+Multiple providers wrap the app for different concerns:
+```tsx
+<ThemeProvider>
+  <QueryClientProvider>
+    <AuthProvider>
+      <ConfigsProvider>
+        <RouterProvider />
+      </ConfigsProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+</ThemeProvider>
+```
+
+#### File-based Routing
+Routes are auto-generated from file structure:
+- `routes/index.tsx` → `/`
+- `routes/canvas.tsx` → `/canvas`
+- `routes/settings.tsx` → `/settings`
+
+#### Real-time Updates
+WebSocket integration for live updates:
+- Canvas collaboration
+- Generation progress
+- Status notifications
+
+### UI Components
+
+#### shadcn/ui Integration
+- Consistent design system
+- Accessible components
+- Customizable with Tailwind CSS
+- Configuration in [react/components.json](mdc:react/components.json)
+
+#### Theme System
+- Dark/light mode support
+- CSS variables for theming
+- Persistent theme preferences
+
+### Build & Development
+- **Dev Server**: `npm run dev` - Vite dev server with HMR
+- **Build**: `npm run build` - Production build
+- **Preview**: `npm run preview` - Preview production build
+- **Lint**: ESLint configuration for code quality
+
+### Electron Integration
+- `window.electronAPI` - IPC communication
+- ComfyUI process management
+- File system access
+- Auto-updater integration

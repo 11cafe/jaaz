@@ -8,13 +8,17 @@ type ConfigsStore = {
 
   textModels: Model[]
   imageModels: Model[]
+  videoModels: Model[]
   setTextModels: (models: Model[]) => void
   setImageModels: (models: Model[]) => void
+  setVideoModels: (models: Model[]) => void
 
   textModel?: Model
   imageModel?: Model
+  videoModel?: Model
   setTextModel: (model?: Model) => void
   setImageModel: (model?: Model) => void
+  setVideoModel: (model?: Model) => void
 
   showInstallDialog: boolean
   setShowInstallDialog: (show: boolean) => void
@@ -40,13 +44,17 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   textModels: [],
   imageModels: [],
+  videoModels: [],
   setTextModels: (models) => set({ textModels: models }),
   setImageModels: (models) => set({ imageModels: models }),
+  setVideoModels: (models) => set({ videoModels: models }),
 
   textModel: undefined,
   imageModel: undefined,
+  videoModel: undefined,
   setTextModel: (model) => set({ textModel: model }),
   setImageModel: (model) => set({ imageModel: model }),
+  setVideoModel: (model) => set({ videoModel: model }),
 
   showInstallDialog: false,
   setShowInstallDialog: (show) => set({ showInstallDialog: show }),

@@ -1,0 +1,55 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Jaaz - AI Design Agent Project Overview
+
+## What is Jaaz?
+Jaaz is the world's first open-source, locally deployed creative AI design tool that supports:
+- Image generation and editing with unlimited canvas rapid iteration
+- Integration with both local models (Ollama, ComfyUI) and cloud APIs (OpenAI, Claude, Replicate)
+- Smart prompt agent powered by LLMs for optimized image/storyboard creation
+- Interactive image editing with advanced operations (object insertion, style transfer, multi-character coherence)
+- Infinite canvas & storyboarding capabilities
+- Upcoming video generation and editing features
+
+## Architecture Overview
+
+### Core Components
+This is an Electron-based desktop application with three main parts:
+
+1. **Backend Server** ([server/main.py](mdc:server/main.py)): FastAPI-based Python server
+   - Handles AI model integrations and API communication
+   - Manages workspace and canvas operations
+   - Provides WebSocket for real-time communication
+
+2. **Frontend React App** ([react/src/App.tsx](mdc:react/src/App.tsx)): Modern React/TypeScript UI
+   - Built with Vite, TanStack Router, and TanStack Query
+   - Uses shadcn/ui components and Tailwind CSS
+   - Supports theming and internationalization
+
+3. **Electron Wrapper** ([electron/main.js](mdc:electron/main.js)): Desktop app shell
+   - Manages ComfyUI installation and process lifecycle
+   - Handles IPC communication between renderer and main process
+   - Provides native desktop integration
+
+### Key File Structure
+- `server/` - Python FastAPI backend with routers, services, and models
+- `react/src/` - React frontend with components, hooks, stores, and API clients
+- `electron/` - Electron main process, IPC handlers, and ComfyUI management
+- `docs/` - Documentation and guides
+- `assets/` - Static assets and icons
+- `scripts/` - Build and deployment scripts
+
+## Development Workflow
+- Backend: `cd server && python main.py` (FastAPI with auto-reload)
+- Frontend: `cd react && npm run dev` (Vite dev server)
+- Electron: `npm run dev` (concurrent React + Electron development)
+- Full build: `npm run start` (builds React, then starts Electron)
+
+## Key Technologies
+- **Backend**: Python, FastAPI, SQLAlchemy, WebSockets, LangGraph
+- **Frontend**: React, TypeScript, Vite, TanStack Router/Query, Tailwind CSS
+- **Desktop**: Electron, electron-builder, auto-updater
+- **AI Integration**: Ollama, ComfyUI, Replicate API, OpenAI API, Claude API

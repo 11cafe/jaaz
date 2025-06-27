@@ -41,7 +41,8 @@ export async function createCanvas(data: {
 export async function getCanvas(
   id: string
 ): Promise<{ data: CanvasData; name: string; sessions: Session[] }> {
-  const response = await fetch(`/api/canvas/${id}`)
+  // Add cache-busting parameter to ensure fresh data
+  const response = await fetch(`/api/canvas/${id}?t=${Date.now()}`)
   return await response.json()
 }
 

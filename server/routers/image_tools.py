@@ -53,13 +53,28 @@ async def upload_image(file: UploadFile = File(...)):
     }
 
 
-# 文件下载接口
+# 文件下载接口 (支持图片和视频)
 @router.get("/file/{file_id}")
 async def get_file(file_id: str):
     file_path = os.path.join(FILES_DIR, f'{file_id}')
     print('🦄get_file file_path', file_path)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # 获取文件的MIME类型
+    mime_type, _ = guess_type(file_path)
+    
+    # 为视频文件设置适当的headers
+    if mime_type and mime_type.startswith('video/'):
+        return FileResponse(
+            file_path, 
+            media_type=mime_type,
+            headers={
+                "Accept-Ranges": "bytes",
+                "Content-Type": mime_type
+            }
+        )
+    
     return FileResponse(file_path)
 
 
