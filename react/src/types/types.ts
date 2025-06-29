@@ -67,9 +67,13 @@ export type LLMConfig = {
   max_tokens?: number
 }
 
+export interface AppStateWithVideos extends AppState {
+  videoElements?: any[]
+}
+
 export type CanvasData = {
   elements: Readonly<OrderedExcalidrawElement[]>
-  appState: AppState
+  appState: AppStateWithVideos
   files: BinaryFiles
 }
 

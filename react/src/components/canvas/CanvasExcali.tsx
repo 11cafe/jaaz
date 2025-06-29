@@ -90,12 +90,40 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
+      // Check if element already exists to prevent duplicates
+      const currentElements = excalidrawAPI.getSceneElements()
+      const existingElement = currentElements.find(el => el.id === imageElement.id)
+
+      if (existingElement) {
+        console.log('👇 Image element already exists, skipping duplicate:', imageElement.id)
+        return
+      }
+
       excalidrawAPI.addFiles([file])
 
-      const currentElements = excalidrawAPI.getSceneElements()
-      console.log('👇 adding to currentElements', currentElements)
+      console.log('👇 Adding new image element to canvas:', imageElement.id)
+      console.log('👇 Image element properties:', {
+        id: imageElement.id,
+        type: imageElement.type,
+        locked: imageElement.locked,
+        groupIds: imageElement.groupIds,
+        isDeleted: imageElement.isDeleted,
+        x: imageElement.x,
+        y: imageElement.y,
+        width: imageElement.width,
+        height: imageElement.height
+      })
+
+      // Ensure image is not locked and can be manipulated
+      const unlockedImageElement = {
+        ...imageElement,
+        locked: false,
+        groupIds: [],
+        isDeleted: false
+      }
+
       excalidrawAPI.updateScene({
-        elements: [...(currentElements || []), imageElement],
+        elements: [...(currentElements || []), unlockedImageElement],
       })
 
       localStorage.setItem(
@@ -108,14 +136,23 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
   const handleImageGenerated = useCallback(
     (imageData: ISocket.SessionImageGeneratedEvent) => {
-      console.log('👇image_generated', imageData)
+      console.log('👇 CanvasExcali received image_generated:', imageData)
+
+      // Only handle if it's for this canvas
       if (imageData.canvas_id !== canvasId) {
+        console.log('👇 Image not for this canvas, ignoring')
+        return
+      }
+
+      // Check if this is actually a video generation event that got mislabeled
+      if (imageData.file?.mimeType?.startsWith('video/')) {
+        console.log('👇 This appears to be a video, not an image. Ignoring in image handler.')
         return
       }
 
       addImageToExcalidraw(imageData.element, imageData.file)
     },
-    [addImageToExcalidraw]
+    [addImageToExcalidraw, canvasId]
   )
 
   useEffect(() => {
@@ -142,6 +179,16 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
           }
         }
         return data || null
+      }}
+      // Ensure interactive mode is enabled
+      viewModeEnabled={false}
+      zenModeEnabled={false}
+      // Allow element manipulation  
+      onPointerUpdate={(payload) => {
+        // Minimal logging - only log significant pointer events
+        if (payload.button === 'down' && Math.random() < 0.05) {
+          console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
+        }
       }}
     />
   )

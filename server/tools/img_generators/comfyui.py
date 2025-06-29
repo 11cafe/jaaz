@@ -6,9 +6,43 @@ import json
 import sys
 import copy
 import traceback
+from utils.http_client import HttpClient
 from .base import ImageGenerator, get_image_info_and_save, generate_image_id
-from services.config_service import config_service, FILES_DIR
+from services.config_service import (
+    config_service,
+    FILES_DIR,
+    IMAGE_FORMATS,
+    VIDEO_FORMATS,
+)
 from routers.comfyui_execution import execute
+from routers.video_generators import get_video_info_and_save
+
+
+async def detect_file_type_comprehensive(url):
+    """综合判断文件类型"""
+    try:
+        # 首先尝试通过HTTP头部判断
+        async with HttpClient.create() as client:
+            response = await client.head(url)
+            content_type = response.headers.get("content-type", "").lower()
+
+            if content_type.startswith("image/"):
+                return "image"
+            elif content_type.startswith("video/"):
+                return "video"
+
+        # 如果Content-Type不明确，检查URL扩展名
+        if any(fmt in url.lower() for fmt in IMAGE_FORMATS):
+            return "image"
+        elif any(fmt in url.lower() for fmt in VIDEO_FORMATS):
+            return "video"
+
+        # 默认返回image
+        return "image"
+
+    except Exception:
+        # 出错时回退到扩展名检查
+        return "image" if any(fmt in url.lower() for fmt in IMAGE_FORMATS) else "video"
 
 
 def get_asset_path(filename):
@@ -131,13 +165,22 @@ class ComfyUIWorkflowRunner(ImageGenerator):
         execution = await execute(
             self.workflow, self.base_url, local_paths=True, ctx=ctx
         )
-        print("🦄image execution outputs", execution.outputs)
+        print("🦄workflow execution outputs", execution.outputs)
+
         url = execution.outputs[0]
 
-        # get image dimensions
+        # get image id
         image_id = generate_image_id()
-        mime_type, width, height, extension = await get_image_info_and_save(
+
+        # check is video or image.
+        file_type = await detect_file_type_comprehensive(url)
+        get_info_func = (
+            get_video_info_and_save if file_type == "video" else get_image_info_and_save
+        )
+
+        mime_type, width, height, extension = await get_info_func(
             url, os.path.join(FILES_DIR, f"{image_id}")
         )
+
         filename = f"{image_id}.{extension}"
         return mime_type, width, height, filename

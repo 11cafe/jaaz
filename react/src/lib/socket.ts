@@ -110,6 +110,9 @@ export class SocketIOManager {
       case ISocket.SessionEventType.ImageGenerated:
         eventBus.emit('Socket::Session::ImageGenerated', data)
         break
+      case ISocket.SessionEventType.VideoGenerated:
+        eventBus.emit('Socket::Session::VideoGenerated', data)
+        break
       case ISocket.SessionEventType.AllMessages:
         eventBus.emit('Socket::Session::AllMessages', data)
         break
