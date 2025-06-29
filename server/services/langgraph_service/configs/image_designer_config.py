@@ -9,6 +9,24 @@ class ImageDesignerAgentConfig(BaseAgentConfig):
     def __init__(self, tool_name: str, system_prompt: str = "") -> None:
         tools: List[ToolConfig] = [{'tool': tool_name}]
 
+        # 添加逐张生成策略的提示词
+        incremental_generation_prompt = """
+
+INCREMENTAL IMAGE GENERATION STRATEGY:
+When the user requests multiple images (e.g., "generate 20 images"):
+1. Generate images ONE AT A TIME, not all at once
+2. After each image is generated, show it to the user immediately
+3. Then proceed to generate the next image
+4. Continue this process until all requested images are complete
+
+EXAMPLE WORKFLOW:
+- User: "Generate 5 images of cats"
+- You: Generate 1st image → Show result → Generate 2nd image → Show result → Continue...
+- NOT: Generate all 5 images at once and show all results together
+
+This approach ensures users get immediate feedback and can see each image as it's created.
+"""
+
         error_handling_prompt = """
 
 ERROR HANDLING INSTRUCTIONS:
@@ -28,7 +46,8 @@ When image generation fails, you MUST:
 IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with helpful guidance for the user.
 """
 
-        full_system_prompt = system_prompt + error_handling_prompt
+        full_system_prompt = system_prompt + \
+            incremental_generation_prompt + error_handling_prompt
 
         # 图像设计智能体不需要切换到其他智能体
         handoffs: List[Dict[str, Any]] = []
