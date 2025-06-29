@@ -21,6 +21,12 @@ class PlannerAgentConfig(BaseAgentConfig):
             2. Do NOT call multiple tools simultaneously
             3. Always wait for the result of one tool call before making another
 
+            ALWAYS PAY ATTENTION TO IMAGE QUANTITY!
+            - If user specifies a number (like "20 images", "generate 15 pictures"), you MUST include this exact number in your plan
+            - When transferring to image_designer, clearly communicate the required quantity
+            - NEVER ignore or change the user's specified quantity
+            - If no quantity is specified, assume 1 image
+
             For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
             ```
             [{
