@@ -29,6 +29,7 @@ import ChatTextarea from './ChatTextarea'
 import MessageRegular from './Message/Regular'
 import ToolCallContent from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
+import InterruptedMessage from './Message/InterruptedMessage'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
@@ -379,12 +380,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const onSendMessages = useCallback(
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
       setPending('text')
-      setMessages(data)
+      // 只添加新的用户消息，等待服务器通过 all_messages 事件发送完整历史
+      const newUserMessage = data[data.length - 1]
+      setMessages(prev => [...prev, newUserMessage])
 
       sendMessages({
         sessionId: sessionId!,
         canvasId: canvasId,
-        newMessages: data,
+        newMessages: data, // 发送完整的消息历史，包括中断消息
         textModel: configs.textModel,
         imageModel: configs.imageModel,
         systemPrompt:
@@ -407,6 +410,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleCancelChat = useCallback(() => {
     setPending(false)
   }, [])
+
+  // 检查是否是中断或未完成的工具调用消息
+  const isInterruptedMessage = (content: string): boolean => {
+    return content.includes('中断') || content.includes('未完成')
+  }
 
   return (
     <PhotoProvider>
@@ -432,15 +440,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   {/* Regular message content */}
                   {typeof message.content == 'string' &&
                     (message.role !== 'tool' ? (
-                      <MessageRegular
-                        message={message}
-                        content={message.content}
-                      />
+                      isInterruptedMessage(message.content) ? (
+                        <InterruptedMessage
+                          message={message}
+                          content={message.content}
+                        />
+                      ) : (
+                        <MessageRegular
+                          message={message}
+                          content={message.content}
+                        />
+                      )
                     ) : (
-                      <ToolCallContent
-                        expandingToolCalls={expandingToolCalls}
-                        message={message}
-                      />
+                      isInterruptedMessage(message.content) ? (
+                        <InterruptedMessage
+                          message={message}
+                          content={message.content}
+                        />
+                      ) : (
+                        <ToolCallContent
+                          expandingToolCalls={expandingToolCalls}
+                          message={message}
+                        />
+                      )
                     ))}
 
                   {Array.isArray(message.content) &&

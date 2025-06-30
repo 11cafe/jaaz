@@ -17,8 +17,7 @@ from .handlers import StreamProcessor
 def _fix_chat_history(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """修复聊天历史中不完整的工具调用
 
-    根据LangGraph文档建议，移除没有对应ToolMessage的tool_calls，
-    但对于被中断的工具调用，我们保留它们以维护消息历史的完整性
+    策略：确保每个tool消息都有对应的tool_calls，移除孤立的消息
     参考: https://langchain-ai.github.io/langgraph/troubleshooting/errors/INVALID_CHAT_HISTORY/
     """
     if not messages:
@@ -35,37 +34,63 @@ def _fix_chat_history(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if tool_call_id:
                 tool_call_ids.add(tool_call_id)
 
-    # 第二遍：修复AIMessage中的tool_calls
+    # 第二遍：处理所有消息，确保tool_calls和tool消息的配对
+    valid_tool_call_ids: Set[str] = set()
+
     for msg in messages:
         if msg.get('role') == 'assistant' and msg.get('tool_calls'):
-            # 过滤掉没有对应ToolMessage的tool_calls
+            # 处理assistant消息的tool_calls
             valid_tool_calls: List[Dict[str, Any]] = []
-            removed_calls: List[str] = []
+            removed_tool_calls: List[str] = []
 
             for tool_call in msg.get('tool_calls', []):
                 tool_call_id = tool_call.get('id')
                 if tool_call_id in tool_call_ids:
+                    # 有对应ToolMessage的工具调用，保留
                     valid_tool_calls.append(tool_call)
+                    valid_tool_call_ids.add(tool_call_id)
                 elif tool_call_id:
-                    removed_calls.append(tool_call_id)
+                    # 没有对应ToolMessage的工具调用，记录为移除
+                    removed_tool_calls.append(tool_call_id)
 
-            # 记录修复信息
-            if removed_calls:
-                print(
-                    f"🔧 修复消息历史：移除了 {len(removed_calls)} 个不完整的工具调用: {removed_calls}")
+            # 记录移除的工具调用
+            if removed_tool_calls:
+                print(f"🔧 移除不完整的工具调用: {removed_tool_calls}")
 
-            # 更新消息
-            if valid_tool_calls:
+            # 构建修复后的assistant消息
+            if valid_tool_calls or msg.get('content'):
                 msg_copy = msg.copy()
-                msg_copy['tool_calls'] = valid_tool_calls
+                if valid_tool_calls:
+                    msg_copy['tool_calls'] = valid_tool_calls
+                else:
+                    msg_copy.pop('tool_calls', None)
                 fixed_messages.append(msg_copy)
-            elif msg.get('content'):  # 如果没有有效的tool_calls但有content，保留消息
-                msg_copy = msg.copy()
-                msg_copy.pop('tool_calls', None)  # 移除空的tool_calls
-                fixed_messages.append(msg_copy)
-            # 如果既没有有效tool_calls也没有content，跳过这条消息
+
+                # 为移除的工具调用添加说明消息
+                for removed_id in removed_tool_calls:
+                    # 找到对应的工具名称
+                    tool_name = 'unknown'
+                    for tc in msg.get('tool_calls', []):
+                        if tc.get('id') == removed_id:
+                            tool_name = tc.get('function', {}).get(
+                                'name', 'unknown')
+                            break
+
+                    notification_message = {
+                        'role': 'assistant',
+                        'content': f"🔄 工具调用未完成: {tool_name} (可能被中断或出现错误)"
+                    }
+                    fixed_messages.append(notification_message)
+
+        elif msg.get('role') == 'tool' and msg.get('tool_call_id'):
+            # 处理tool消息，只保留有效的
+            tool_call_id = msg.get('tool_call_id')
+            if tool_call_id in valid_tool_call_ids:
+                fixed_messages.append(msg)
+            else:
+                print(f"🔧 移除孤立的tool消息: {tool_call_id}")
         else:
-            # 非assistant消息或没有tool_calls的消息直接保留
+            # 其他类型的消息直接保留
             fixed_messages.append(msg)
 
     return fixed_messages
