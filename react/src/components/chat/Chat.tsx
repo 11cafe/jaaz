@@ -118,7 +118,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ;(last.content.at(-1) as { text: string }).text += data.text
+              ; (last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -270,6 +270,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     })
   }, [])
 
+  const handleToolCallInterrupted = useCallback(
+    (data: TEvents['Socket::Session::ToolCallInterrupted']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      // 从展开的工具调用列表中移除被中断的工具调用
+      setExpandingToolCalls(
+        produce((prev) => prev.filter((id) => id !== data.tool_call_id))
+      )
+
+      // 显示中断通知
+      toast.warning(`工具调用已中断: ${data.tool_name}`, {
+        closeButton: true,
+        duration: 5 * 1000,
+      })
+
+      // 重置pending状态
+      setPending(false)
+    },
+    [sessionId]
+  )
+
   useEffect(() => {
     const handleScroll = () => {
       if (scrollRef.current) {
@@ -284,6 +307,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
+    eventBus.on('Socket::Session::ToolCallInterrupted', handleToolCallInterrupted)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
@@ -298,6 +322,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
       )
+      eventBus.off('Socket::Session::ToolCallInterrupted', handleToolCallInterrupted)
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)

@@ -10,6 +10,7 @@ export enum SessionEventType {
   Delta = 'delta',
   ToolCall = 'tool_call',
   ToolCallArguments = 'tool_call_arguments',
+  ToolCallInterrupted = 'tool_call_interrupted',
   AllMessages = 'all_messages',
   ToolCallProgress = 'tool_call_progress',
 }
@@ -59,12 +60,18 @@ export interface SessionToolCallProgressEvent extends SessionBaseEvent {
   tool_call_id: string
   update: string
 }
+export interface SessionToolCallInterruptedEvent extends SessionBaseEvent {
+  type: SessionEventType.ToolCallInterrupted
+  tool_call_id: string
+  tool_name: string
+}
 
 export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
   | SessionToolCallArgumentsEvent
   | SessionToolCallProgressEvent
+  | SessionToolCallInterruptedEvent
   | SessionImageGeneratedEvent
   | SessionAllMessagesEvent
   | SessionDoneEvent

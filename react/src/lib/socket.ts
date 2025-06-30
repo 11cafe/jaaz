@@ -107,6 +107,9 @@ export class SocketIOManager {
       case ISocket.SessionEventType.ToolCallProgress:
         eventBus.emit('Socket::Session::ToolCallProgress', data)
         break
+      case ISocket.SessionEventType.ToolCallInterrupted:
+        eventBus.emit('Socket::Session::ToolCallInterrupted', data)
+        break
       case ISocket.SessionEventType.ImageGenerated:
         eventBus.emit('Socket::Session::ImageGenerated', data)
         break

@@ -17,12 +17,14 @@ from .handlers import StreamProcessor
 def _fix_chat_history(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """修复聊天历史中不完整的工具调用
 
-    根据LangGraph文档建议，移除没有对应ToolMessage的tool_calls
+    根据LangGraph文档建议，移除没有对应ToolMessage的tool_calls，
+    但对于被中断的工具调用，我们保留它们以维护消息历史的完整性
     参考: https://langchain-ai.github.io/langgraph/troubleshooting/errors/INVALID_CHAT_HISTORY/
     """
     if not messages:
         return messages
 
+    print('👇messages', messages)
     fixed_messages: List[Dict[str, Any]] = []
     tool_call_ids: Set[str] = set()
 

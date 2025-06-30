@@ -2,6 +2,7 @@
 from typing import Optional, List, Dict, Any, Callable, Awaitable
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 import json
+import asyncio
 
 
 class StreamProcessor:
@@ -14,6 +15,8 @@ class StreamProcessor:
         self.tool_calls: List[ToolCall] = []
         self.last_saved_message_index = 0
         self.last_streaming_tool_call_id: Optional[str] = None
+        # 跟踪正在进行的工具调用
+        self.active_tool_calls: Dict[str, str] = {}
 
     async def process_stream(self, swarm: Any, messages: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
         """处理整个流式响应
@@ -25,17 +28,63 @@ class StreamProcessor:
         """
         self.last_saved_message_index = len(messages) - 1
 
-        async for chunk in swarm.astream(
-            {"messages": messages},
-            config=context,
-            stream_mode=["messages", "custom", 'values']
-        ):
-            await self._handle_chunk(chunk)
+        try:
+            async for chunk in swarm.astream(
+                {"messages": messages},
+                config=context,
+                stream_mode=["messages", "custom", 'values']
+            ):
+                await self._handle_chunk(chunk)
 
-        # 发送完成事件
-        await self.websocket_service(self.session_id, {
-            'type': 'done'
-        })
+            # 发送完成事件
+            await self.websocket_service(self.session_id, {
+                'type': 'done'
+            })
+        except asyncio.CancelledError:
+            # 处理中断的工具调用
+            await self._handle_interrupted_tool_calls()
+            raise
+        except Exception as e:
+            # 处理其他异常时也清理中断的工具调用
+            await self._handle_interrupted_tool_calls()
+            raise
+
+    async def _handle_interrupted_tool_calls(self) -> None:
+        """处理中断的工具调用，生成相应的ToolMessage来保证消息历史完整"""
+        if not self.active_tool_calls:
+            return
+
+        print(f"🔧 处理 {len(self.active_tool_calls)} 个中断的工具调用")
+
+        for tool_call_id, tool_name in self.active_tool_calls.items():
+
+            # 发送中断通知到前端
+            await self.websocket_service(self.session_id, {
+                'type': 'tool_call_interrupted',
+                'tool_call_id': tool_call_id,
+                'tool_name': tool_name
+            })
+
+            # 创建中断的 ToolMessage（用户友好的格式）
+            interrupted_tool_message = {
+                'role': 'tool',
+                'tool_call_id': tool_call_id,
+                'content': f"⚠️ 工具调用已中断: {tool_name}"
+            }
+
+            # 保存中断的ToolMessage到数据库
+            try:
+                await self.db_service.create_message(
+                    self.session_id,
+                    'tool',
+                    json.dumps(interrupted_tool_message)
+                )
+                print(f"💾 已保存中断的工具调用记录: {tool_call_id}")
+            except Exception as e:
+                print(f"❌ 保存中断工具调用记录失败: {e}")
+
+        # 清空活跃工具调用记录
+        self.active_tool_calls.clear()
 
     async def _handle_chunk(self, chunk: Any) -> None:
         """处理单个chunk"""
@@ -54,6 +103,9 @@ class StreamProcessor:
         if not isinstance(oai_messages, list):
             oai_messages = [oai_messages] if oai_messages else []
 
+        # 检查并移除已完成的工具调用
+        self._update_completed_tool_calls(oai_messages)
+
         # 发送所有消息到前端
         await self.websocket_service(self.session_id, {
             'type': 'all_messages',
@@ -70,6 +122,15 @@ class StreamProcessor:
                     json.dumps(new_message)
                 )
             self.last_saved_message_index = i
+
+    def _update_completed_tool_calls(self, messages: List[Dict[str, Any]]) -> None:
+        """更新已完成的工具调用，从活跃列表中移除"""
+        for message in messages:
+            if message.get('role') == 'tool' and message.get('tool_call_id'):
+                tool_call_id = message.get('tool_call_id')
+                if tool_call_id in self.active_tool_calls:
+                    print(f"✅ 工具调用已完成: {tool_call_id}")
+                    del self.active_tool_calls[tool_call_id]
 
     async def _handle_message_chunk(self, ai_message_chunk: AIMessageChunk) -> None:
         """处理消息类型的 chunk"""
@@ -100,9 +161,16 @@ class StreamProcessor:
         print('😘tool_call event', tool_calls)
 
         for tool_call in self.tool_calls:
+            tool_call_id = tool_call.get('id')
+            if tool_call_id:
+                # 记录新的活跃工具调用
+                self.active_tool_calls[tool_call_id] = tool_call.get(
+                    'name', 'unknown')
+                print(f"🟢 开始跟踪工具调用: {tool_call_id} - {tool_call.get('name')}")
+
             await self.websocket_service(self.session_id, {
                 'type': 'tool_call',
-                'id': tool_call.get('id'),
+                'id': tool_call_id,
                 'name': tool_call.get('name'),
                 'arguments': '{}'
             })
