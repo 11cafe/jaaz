@@ -69,7 +69,8 @@ async def serve_react_app():
     return response
 
 
-socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
+socket_app = socketio.ASGIApp(
+    sio, other_asgi_app=app, socketio_path='/socket.io')
 
 if __name__ == "__main__":
     # bypass localhost request for proxy, fix ollama proxy issue
@@ -82,8 +83,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=57988,
                         help='Port to run the server on')
+    parser.add_argument('--reload', action='store_true', default=False,
+                        help='Enable auto-reload for development')
     args = parser.parse_args()
     import uvicorn
     print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
 
-    uvicorn.run(socket_app, host="127.0.0.1", port=args.port)
+    if args.reload:
+        # Development mode with hot reload
+        print("🔥 Hot reload enabled - server will restart on file changes")
+        uvicorn.run(
+            "main:socket_app",
+            host="127.0.0.1",
+            port=args.port,
+            reload=True,
+            reload_dirs=["."],
+            reload_excludes=["user_data/*", "*.pyc",
+                             "__pycache__/*", "*.log", "venv/*"]
+        )
+    else:
+        # Production mode
+        uvicorn.run(socket_app, host="127.0.0.1", port=args.port)
