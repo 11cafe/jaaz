@@ -30,7 +30,7 @@ async def generate_image_by_doubao_seedream_3(
     return await generate_image_with_provider(
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        model="doubao/doubao-seedream-3-0-t2i-250415",
+        model="volces/doubao-seedream-3-0-t2i-250415",
         tool_call_id=tool_call_id,
         config=config,
         input_images=None,

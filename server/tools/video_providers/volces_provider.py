@@ -36,12 +36,12 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
     def _build_request_payload(
         self,
         prompt: str,
-        model: str,
+        model: str | None = None,
         resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
         camera_fixed: bool = True,
-        input_image_data: Optional[str] = None,
+        input_image_data: Optional[str] | None = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
         """Build request payload for Volces API"""
@@ -61,14 +61,27 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
         content: List[Dict[str, Any]] = [
             {"type": "text", "text": prompt + " " + command}]
 
-        if input_image_data:
+        if isinstance(input_image_data, list) and len(input_image_data) == 1:
+            # image-to-video
             content.append({
                 "type": "image_url",
-                "image_url": {"url": input_image_data}
+                "image_url": {"url": input_image_data[0]}
+            })
+        elif isinstance(input_image_data, list) and len(input_image_data) == 2:
+            # first-last-frame-to-video
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": input_image_data[0]},
+                "role": "first_frame"
+            })
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": input_image_data[1]},
+                "role": "last_frame"
             })
 
         payload = {
-            "model": str(self.model_name.split("by")[0]).rstrip("_"),
+            "model": str(self.model_name.split("by")[0]).rstrip("_") if model is None else model,
             "content": content,
         }
 
@@ -126,7 +139,7 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
             headers = self._build_headers()
 
             # Use the first input image if provided (already processed as base64)
-            input_image_data = input_images[0] if input_images and len(
+            input_image_data = input_images if input_images and len(
                 input_images) > 0 else None
 
             # Build request payload
@@ -141,8 +154,7 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
                 **kwargs
             )
 
-            print(
-                f"🎥 Starting Volces video generation with payload: {json.dumps(payload, indent=2)}")
+            print("🎥 Starting Volces video generation")
 
             # Make API request to create task
             async with HttpClient.create() as client:

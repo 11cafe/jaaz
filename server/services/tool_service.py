@@ -10,6 +10,8 @@ from tools.generate_image_by_flux_kontext_pro import generate_image_by_flux_kont
 from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
 from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
 from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
+from tools.generate_video_by_seedance_v1_lite import generate_video_by_seedance_v1_lite_i2v
+from tools.generate_video_by_seedance_v1_lite import generate_video_by_seedance_v1_lite_t2v
 
 
 class ToolService:
@@ -114,6 +116,10 @@ class ToolService:
             if model_type == 'video':
                 if 'doubao-seedance-1-0-pro-250528' in model_name:
                     return ('generate_video_by_seedance_v1', generate_video_by_seedance_v1)
+                if 'doubao-seedance-1-0-lite-i2v-250428' in model_name:
+                    return ('generate_video_by_seedance_v1_lite_i2v', generate_video_by_seedance_v1_lite_i2v)
+                if 'doubao-seedance-1-0-lite-t2v-250428' in model_name:
+                    return ('generate_video_by_seedance_v1_lite_t2v', generate_video_by_seedance_v1_lite_t2v)
 
             print(
                 f"⚠️ 未找到对应的工具: model_name={model_name}, model_type={model_type}")
