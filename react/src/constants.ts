@@ -92,4 +92,5 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
 Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval.
+The image prompt MUST be written in the same language as the user's initial prompt. 
 `
