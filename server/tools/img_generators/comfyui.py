@@ -63,9 +63,10 @@ class ComfyUIGenerator(ImageGenerator):
         ctx = kwargs.get('ctx', {})
 
         api_url = config_service.app_config.get('comfyui', {}).get('url', '')
+        protocol = 'https' if api_url.startswith('https://') else 'http'
         api_url = api_url.replace('http://', '').replace('https://', '')
         host = api_url.split(':')[0]
-        port = api_url.split(':')[1]
+        port = api_url.split(':')[1] if ':' in api_url else (443 if protocol == 'https' else 80) # 添加对没有端口号的URL的处理
 
         # Process ratio
         if 'flux' in model:
@@ -96,7 +97,7 @@ class ComfyUIGenerator(ImageGenerator):
             workflow['5']['inputs']['height'] = height
             workflow['3']['inputs']['seed'] = random.randint(1, 2 ** 32)
 
-        execution = await execute(workflow, host, port, ctx=ctx)
+        execution = await execute(workflow, host, port, ctx=ctx, protocol=protocol)
         print('🦄image execution outputs', execution.outputs)
         url = execution.outputs[0]
 

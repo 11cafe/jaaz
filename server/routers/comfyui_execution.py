@@ -16,14 +16,14 @@ from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
 
 from services.websocket_service import send_to_websocket
 
-async def check_comfy_server_running(port, host):
+async def check_comfy_server_running(port, host, protocol="http"):
     async with httpx.AsyncClient(timeout=10) as client:
-        url = f'http://{host}:{port}/api/prompt'
+        url = f'{protocol}://{host}:{port}/api/prompt'
         response = await client.get(url)
         return response.status_code == 200
 
-async def execute(workflow: dict, host, port, wait=True, verbose=False, local_paths=False, timeout=300, ctx: dict = {}):
-    if not await check_comfy_server_running(port, host):
+async def execute(workflow: dict, host, port, wait=True, verbose=False, local_paths=False, timeout=300, ctx: dict = {}, protocol="http"):
+    if not await check_comfy_server_running(port, host, protocol=protocol):
         pprint(f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]")
         raise typer.Exit(code=1)
 
@@ -37,7 +37,7 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
     else:
         print(f"Queuing comfyui workflow")
 
-    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx)
+    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx, protocol=protocol)
 
     try:
         if wait:
@@ -83,7 +83,7 @@ class ExecutionProgress(Progress):
 
 
 class WorkflowExecution:
-    def __init__(self, workflow, host, port, verbose, progress, local_paths, timeout=30, ctx: dict = {}):
+    def __init__(self, workflow, host, port, verbose, progress, local_paths, timeout=30, ctx: dict = {}, protocol="http"):
         self.workflow = workflow
         self.host = host
         self.port = port
@@ -103,15 +103,17 @@ class WorkflowExecution:
         self.ws = None
         self.timeout = timeout
         self.ctx = ctx
+        self.protocol = protocol
+        self.ws_protocol = "wss" if protocol == "https" else "ws"
 
     async def connect(self):
-        self.ws = await websockets.connect(f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
+        self.ws = await websockets.connect(f"{self.ws_protocol}://{self.host}:{self.port}/ws?clientId={self.client_id}")
 
     async def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.post(f"http://{self.host}:{self.port}/prompt", json=data)
+                response = await client.post(f"{self.protocol}://{self.host}:{self.port}/prompt", json=data)
                 body = response.json()
                 self.prompt_id = body["prompt_id"]
             except httpx.HTTPStatusError as e:
@@ -164,7 +166,7 @@ class WorkflowExecution:
 
     def format_image_path(self, img):
         query = urllib.parse.urlencode(img)
-        return f"http://{self.host}:{self.port}/view?{query}"
+        return f"{self.protocol}://{self.host}:{self.port}/view?{query}"
 
     async def on_message(self, message):
         data = message["data"] if "data" in message else {}
