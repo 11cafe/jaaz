@@ -42,10 +42,19 @@ class OpenAIGenerator(ImageGenerator):
                     size=kwargs.get("size", "auto"),
                 )
 
-            image_b64 = result.data[0].b64_json
+            image_data = result.data[0]
+            if hasattr(image_data, 'b64_json') and image_data.b64_json:
+                image_content = image_data.b64_json
+                is_b64 = True
+            elif hasattr(image_data, 'url') and image_data.url:
+                image_content = image_data.url
+                is_b64 = False
+            else:
+                raise ValueError('No valid image data found in response')
+
             image_id = generate_image_id()
             mime_type, width, height, extension = await get_image_info_and_save(
-                image_b64, os.path.join(FILES_DIR, f'{image_id}'), is_b64=True
+                image_content, os.path.join(FILES_DIR, f'{image_id}'), is_b64=is_b64
             )
             filename = f'{image_id}.{extension}'
             return mime_type, width, height, filename
