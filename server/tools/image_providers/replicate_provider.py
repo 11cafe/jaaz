@@ -112,12 +112,12 @@ class ReplicateImageProvider(ImageProviderBase):
                 }
             }
 
-            # Add input image if provided
-            if input_images and len(input_images) > 0:
+            if input_images:
+                # For Replicate format, we take the first image as input_image
                 data['input']['input_image'] = input_images[0]
-                # Use flux-kontext-pro model for image editing
-                model = 'black-forest-labs/flux-kontext-pro'
-                url = self._build_url(model)
+                if len(input_images) > 1:
+                    print(
+                        "Warning: Replicate format only supports single image input. Using first image.")
 
             # Make request
             res = await self._make_request(url, headers, data)
