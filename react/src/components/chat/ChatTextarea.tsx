@@ -1,6 +1,6 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage } from '@/api/upload'
+import { uploadImage, uploadImageToJaaz } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
@@ -109,48 +109,71 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       toast.warning(t('chat:textarea.selectTool'))
     }
 
-    let value: MessageContent[] | string = prompt
+    let text_content: MessageContent[] | string = prompt
     if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
     }
 
+    // 使用XML格式让LLM更容易识别图片信息
     if (images.length > 0) {
-      images.forEach((image) => {
-        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
+      text_content += `\n\n<input_images count="${images.length}">`
+      images.forEach((image, index) => {
+        text_content += `\n  <image index="${index + 1}" file_id="${image.file_id}" width="${image.width}" height="${image.height}" />`
       })
+      text_content += `\n</input_images>`
+      text_content += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
+    }
 
-      // Fetch images as base64
-      const imagePromises = images.map(async (image) => {
-        const response = await fetch(`/api/file/${image.file_id}`)
-        const blob = await response.blob()
+    // 获取图片URL
+    const imagePromises = images.map(async (image) => {
+      const response = await fetch(`/api/file/${image.file_id}`)
+      const blob = await response.blob()
+
+      // If user is logged in, upload to Jaaz server to get URL
+      if (authStatus.is_logged_in) {
+        try {
+          const file = new File([blob], `image-${image.file_id}`, { type: blob.type })
+          const jaazUrl = await uploadImageToJaaz(file)
+          return jaazUrl
+        } catch (error) {
+          console.error('Failed to upload to Jaaz, falling back to base64:', error)
+          // Fallback to base64 if upload fails
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.readAsDataURL(blob)
+          })
+        }
+      } else {
+        // If not logged in, use base64
         return new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onloadend = () => resolve(reader.result as string)
           reader.readAsDataURL(blob)
         })
-      })
+      }
+    })
 
-      const base64Images = await Promise.all(imagePromises)
+    const imageUrlList = await Promise.all(imagePromises)
 
-      value = [
-        {
-          type: 'text',
-          text: value,
+    const final_content = [
+      {
+        type: 'text',
+        text: text_content,
+      },
+      ...images.map((image, index) => ({
+        type: 'image_url',
+        image_url: {
+          url: imageUrlList[index],
         },
-        ...images.map((image, index) => ({
-          type: 'image_url',
-          image_url: {
-            url: base64Images[index],
-          },
-        })),
-      ] as MessageContent[]
-    }
+      })),
+    ] as MessageContent[]
 
     const newMessage = messages.concat([
       {
         role: 'user',
-        content: value,
+        content: final_content,
       },
     ])
 

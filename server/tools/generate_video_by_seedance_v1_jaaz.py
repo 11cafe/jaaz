@@ -24,7 +24,7 @@ class GenerateVideoBySeedanceV1InputSchema(BaseModel):
     )
     input_images: list[str] | None = Field(
         default=None,
-        description="Optional. Images to use as reference or first frame. Pass a list of image_id here, e.g. ['im_jurheut7.png']."
+        description="Optional. Images to use as reference or first frame. Only one image is allowed, e.g. ['im_jurheut7.png']."
     )
     camera_fixed: bool = Field(
         default=True,
