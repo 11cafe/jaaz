@@ -50,17 +50,46 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
     {
-      file_id: string
+      file_id?: string
       width: number
       height: number
+      url?: string // S3 URL if uploaded to Jaaz
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
+  // New mutation that handles both local and Jaaz uploads based on login status
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file),
+    mutationFn: async (file: File) => {
+      if (authStatus.is_logged_in) {
+        // Upload to Jaaz if logged in
+        const s3Url = await uploadImageToJaaz(file)
+
+        // Get image dimensions
+        const dimensions = await new Promise<{ width: number; height: number }>(
+          (resolve) => {
+            const img = new Image()
+            img.onload = () => {
+              resolve({ width: img.naturalWidth, height: img.naturalHeight })
+            }
+            img.src = URL.createObjectURL(file)
+          }
+        )
+
+        return {
+          url: s3Url,
+          width: dimensions.width,
+          height: dimensions.height,
+          file_id: undefined,
+        }
+      } else {
+        // Upload to local server if not logged in
+        const result = await uploadImage(file)
+        return { ...result, url: undefined }
+      }
+    },
     onSuccess: (data) => {
       console.log('🦄uploadImageMutation onSuccess', data)
       setImages((prev) => [
@@ -69,8 +98,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           file_id: data.file_id,
           width: data.width,
           height: data.height,
+          url: data.url,
         },
       ])
+    },
+    onError: (error) => {
+      console.error('Upload failed:', error)
+      toast.error('图片上传失败')
     },
   })
 
@@ -119,39 +153,29 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     if (images.length > 0) {
       text_content += `\n\n<input_images count="${images.length}">`
       images.forEach((image, index) => {
-        text_content += `\n  <image index="${index + 1}" file_id="${image.file_id}" width="${image.width}" height="${image.height}" />`
+        const imageId = image.file_id || `image-${index}`
+        text_content += `\n  <image index="${index + 1}" file_id="${imageId}" width="${image.width}" height="${image.height}" />`
       })
       text_content += `\n</input_images>`
       text_content += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
     }
 
-    // 获取图片URL
+    // 获取图片URL - 如果已经有S3 URL就直接使用，否则获取本地URL
     const imagePromises = images.map(async (image) => {
-      const response = await fetch(`/api/file/${image.file_id}`)
-      const blob = await response.blob()
-
-      // If user is logged in, upload to Jaaz server to get URL
-      if (authStatus.is_logged_in) {
-        try {
-          const file = new File([blob], `image-${image.file_id}`, { type: blob.type })
-          const jaazUrl = await uploadImageToJaaz(file)
-          return jaazUrl
-        } catch (error) {
-          console.error('Failed to upload to Jaaz, falling back to base64:', error)
-          // Fallback to base64 if upload fails
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader()
-            reader.onloadend = () => resolve(reader.result as string)
-            reader.readAsDataURL(blob)
-          })
-        }
-      } else {
-        // If not logged in, use base64
+      if (image.url) {
+        // Already have S3 URL from Jaaz upload
+        return image.url
+      } else if (image.file_id) {
+        // Get local URL and convert to base64
+        const response = await fetch(`/api/file/${image.file_id}`)
+        const blob = await response.blob()
         return new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onloadend = () => resolve(reader.result as string)
           reader.readAsDataURL(blob)
         })
+      } else {
+        throw new Error('Invalid image data')
       }
     })
 
@@ -293,9 +317,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {images.map((image) => (
+            {images.map((image, index) => (
               <motion.div
-                key={image.file_id}
+                key={image.file_id || `image-${index}`}
                 className="relative size-10"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -303,8 +327,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
               >
                 <img
-                  key={image.file_id}
-                  src={`/api/file/${image.file_id}`}
+                  src={
+                    image.url ||
+                    (image.file_id ? `/api/file/${image.file_id}` : '')
+                  }
                   alt="Uploaded image"
                   className="w-full h-full object-cover rounded-md"
                   draggable={false}
@@ -314,9 +340,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   size="icon"
                   className="absolute -top-1 -right-1 size-4"
                   onClick={() =>
-                    setImages((prev) =>
-                      prev.filter((i) => i.file_id !== image.file_id)
-                    )
+                    setImages((prev) => prev.filter((_, i) => i !== index))
                   }
                 >
                   <XIcon className="size-3" />
