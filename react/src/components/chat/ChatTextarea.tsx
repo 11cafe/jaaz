@@ -56,6 +56,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       url?: string // S3 URL if uploaded to Jaaz
     }[]
   >([])
+  const [uploadingImages, setUploadingImages] = useState<
+    {
+      id: string
+      file: File
+      previewUrl: string
+    }[]
+  >([])
   const [isFocused, setIsFocused] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -83,15 +90,32 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           width: dimensions.width,
           height: dimensions.height,
           file_id: undefined,
+          uploadId: file.name + Date.now(),
         }
       } else {
         // Upload to local server if not logged in
         const result = await uploadImage(file)
-        return { ...result, url: undefined }
+        return { ...result, url: undefined, uploadId: file.name + Date.now() }
       }
     },
-    onSuccess: (data) => {
+    onMutate: (file: File) => {
+      // Add to uploading images immediately
+      const uploadId = file.name + Date.now()
+      const previewUrl = URL.createObjectURL(file)
+      setUploadingImages((prev) => [
+        ...prev,
+        { id: uploadId, file, previewUrl },
+      ])
+      return { uploadId }
+    },
+    onSuccess: (data, file, context) => {
       console.log('🦄uploadImageMutation onSuccess', data)
+      // Remove from uploading images
+      setUploadingImages((prev) =>
+        prev.filter((img) => img.id !== context?.uploadId)
+      )
+
+      // Add to completed images
       setImages((prev) => [
         ...prev,
         {
@@ -102,9 +126,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         },
       ])
     },
-    onError: (error) => {
+    onError: (error, file, context) => {
       console.error('Upload failed:', error)
       toast.error('图片上传失败')
+      // Remove from uploading images on error
+      setUploadingImages((prev) =>
+        prev.filter((img) => img.id !== context?.uploadId)
+      )
     },
   })
 
@@ -272,6 +300,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
   }, [uploadImageMutation])
 
+  // Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      uploadingImages.forEach((img) => {
+        URL.revokeObjectURL(img.previewUrl)
+      })
+    }
+  }, [uploadingImages])
+
   return (
     <motion.div
       ref={dropAreaRef}
@@ -309,7 +346,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       </AnimatePresence>
 
       <AnimatePresence>
-        {images.length > 0 && (
+        {(images.length > 0 || uploadingImages.length > 0) && (
           <motion.div
             className="flex items-center gap-2 w-full"
             initial={{ opacity: 0, height: 0 }}
@@ -317,6 +354,42 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
+            {/* Show uploading images first */}
+            {uploadingImages.map((uploadingImage) => (
+              <motion.div
+                key={uploadingImage.id}
+                className="relative size-10"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+              >
+                <img
+                  src={uploadingImage.previewUrl}
+                  alt="Uploading image"
+                  className="w-full h-full object-cover rounded-md opacity-50"
+                  draggable={false}
+                />
+                {/* Upload spinner */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
+                  <Loader2 className="size-4 animate-spin text-white" />
+                </div>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute -top-1 -right-1 size-4"
+                  onClick={() =>
+                    setUploadingImages((prev) =>
+                      prev.filter((img) => img.id !== uploadingImage.id)
+                    )
+                  }
+                >
+                  <XIcon className="size-3" />
+                </Button>
+              </motion.div>
+            ))}
+
+            {/* Show completed images */}
             {images.map((image, index) => (
               <motion.div
                 key={image.file_id || `image-${index}`}
