@@ -23,7 +23,7 @@
   pointer-events: auto;
 }
 
-.excalidraw .Stack.Stack_vertical.App-menu_top__left>div {
+.excalidraw .Stack.Stack_vertical.App-menu_top__left > div {
   display: none !important;
 }
 
@@ -36,7 +36,10 @@
   display: none !important;
 } */
 
-.excalidraw .dropdown-menu .dropdown-menu-item[data-testid='toolbar-laser']+div {
+.excalidraw
+  .dropdown-menu
+  .dropdown-menu-item[data-testid='toolbar-laser']
+  + div {
   display: none !important;
 }
 
@@ -67,9 +70,11 @@
 .excalidraw .popover .context-menu {
   border-radius: 10px !important;
   border-color: color-mix(in oklab, var(--primary) 10%, transparent) !important;
-  background-color: color-mix(in oklab,
-      var(--background) 70%,
-      transparent) !important;
+  background-color: color-mix(
+    in oklab,
+    var(--background) 70%,
+    transparent
+  ) !important;
   backdrop-filter: blur(60px) !important;
   box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1) !important;
   font-size: 14px !important;
@@ -78,4 +83,19 @@
 .excalidraw .popover .context-menu .context-menu-item-separator {
   border-color: color-mix(in oklab, var(--primary) 8%, transparent) !important;
   margin: 4px 0 !important;
+}
+
+/* Hide "Copy as PNG to clipboard" menu item */
+.excalidraw .popover .context-menu li[data-testid='copyAsPng'] {
+  display: none !important;
+}
+
+/* Hide "Copy as SVG to clipboard" menu item */
+.excalidraw .popover .context-menu li[data-testid='copyAsSvg'] {
+  display: none !important;
+}
+
+/* Hide the separator line after copyAsSvg */
+.excalidraw .popover .context-menu li[data-testid='copyAsSvg'] + hr {
+  display: none !important;
 }
