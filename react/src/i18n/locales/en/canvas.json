@@ -45,5 +45,19 @@
   "popbar": {
     "addToChat": "Add to chat",
     "magicGenerate": "✨ Magic Generate"
+  },
+  "contextMenu": {
+    "copy": "Copy",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "export": "Export Selected",
+    "share": "Share Selected",
+    "noSelection": "No elements selected",
+    "exportAll": "Export All",
+    "shareCanvas": "Share Canvas",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out"
   }
 }

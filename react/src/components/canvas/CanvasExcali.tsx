@@ -23,6 +23,7 @@ import {
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { VideoElement } from './VideoElement'
+import ExcalidrawContextMenu from './ExcalidrawContextMenu'
 
 import '@/assets/style/canvas.css'
 
@@ -55,7 +56,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     if (!appState) return
 
     // Check if any selected element is embeddable type
-    const selectedElements = elements.filter((element) => 
+    const selectedElements = elements.filter((element) =>
       appState.selectedElementIds[element.id]
     )
     const hasEmbeddableSelected = selectedElements.some(
@@ -370,42 +371,44 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   }, [handleImageGenerated, handleVideoGenerated])
 
   return (
-    <Excalidraw
-      theme={theme as Theme}
-      langCode={i18n.language}
-      excalidrawAPI={(api) => {
-        setExcalidrawAPI(api)
-      }}
-      onChange={handleChange}
-      initialData={() => {
-        const data = initialData
-        console.log('👇initialData', data)
-        if (data?.appState) {
-          data.appState = {
-            ...data.appState,
-            collaborators: undefined!,
+    <ExcalidrawContextMenu>
+      <Excalidraw
+        theme={theme as Theme}
+        langCode={i18n.language}
+        excalidrawAPI={(api) => {
+          setExcalidrawAPI(api)
+        }}
+        onChange={handleChange}
+        initialData={() => {
+          const data = initialData
+          console.log('👇initialData', data)
+          if (data?.appState) {
+            data.appState = {
+              ...data.appState,
+              collaborators: undefined!,
+            }
           }
-        }
-        return data || null
-      }}
-      renderEmbeddable={renderEmbeddable}
-      // Allow all URLs for embeddable content
-      validateEmbeddable={(url: string) => {
-        console.log('👇 Validating embeddable URL:', url)
-        // Allow all URLs - return true for everything
-        return true
-      }}
-      // Ensure interactive mode is enabled
-      viewModeEnabled={false}
-      zenModeEnabled={false}
-      // Allow element manipulation
-      onPointerUpdate={(payload) => {
-        // Minimal logging - only log significant pointer events
-        if (payload.button === 'down' && Math.random() < 0.05) {
-          // console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
-        }
-      }}
-    />
+          return data || null
+        }}
+        renderEmbeddable={renderEmbeddable}
+        // Allow all URLs for embeddable content
+        validateEmbeddable={(url: string) => {
+          console.log('👇 Validating embeddable URL:', url)
+          // Allow all URLs - return true for everything
+          return true
+        }}
+        // Ensure interactive mode is enabled
+        viewModeEnabled={false}
+        zenModeEnabled={false}
+        // Allow element manipulation
+        onPointerUpdate={(payload) => {
+          // Minimal logging - only log significant pointer events
+          if (payload.button === 'down' && Math.random() < 0.05) {
+            // console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
+          }
+        }}
+      />
+    </ExcalidrawContextMenu>
   )
 }
 

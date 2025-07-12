@@ -47,6 +47,20 @@
     "addToChat": "添加到对话",
     "magicGenerate": "✨ 魔法生成"
   },
+  "contextMenu": {
+    "copy": "复制",
+    "duplicate": "复制",
+    "delete": "删除",
+    "export": "导出选中",
+    "share": "分享选中",
+    "noSelection": "未选中元素",
+    "exportAll": "导出全部",
+    "shareCanvas": "分享画布",
+    "lock": "锁定",
+    "unlock": "解锁",
+    "zoomIn": "放大",
+    "zoomOut": "缩小"
+  },
   "assets": "素材库",
   "myAssets": "我的生成",
   "mediaFiles": "个媒体文件",
