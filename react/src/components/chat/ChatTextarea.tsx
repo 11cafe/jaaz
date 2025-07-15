@@ -1,6 +1,6 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage } from '@/api/upload'
+import { uploadImage, uploadImageToJaaz } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import {
@@ -20,7 +20,6 @@ import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -54,33 +53,67 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
     {
-      file_id: string
+      file_id?: string
       width: number
       height: number
+      url?: string // S3 URL if uploaded to Jaaz
+    }[]
+  >([])
+  const [uploadingImages, setUploadingImages] = useState<
+    {
+      id: string
+      file: File
+      previewUrl: string
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
+  // New mutation that handles both local and Jaaz uploads based on login status
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file),
-    onSuccess: (data) => {
+    mutationFn: async (file: File) => {
+      // Upload to local server
+      const result = await uploadImage(file)
+      return { ...result, url: undefined, uploadId: file.name + Date.now() }
+    },
+    onMutate: (file: File) => {
+      // Add to uploading images immediately
+      const uploadId = file.name + Date.now()
+      const previewUrl = URL.createObjectURL(file)
+      setUploadingImages((prev) => [
+        ...prev,
+        { id: uploadId, file, previewUrl },
+      ])
+      return { uploadId }
+    },
+    onSuccess: (data, file, context) => {
       console.log('🦄uploadImageMutation onSuccess', data)
+      // Remove from uploading images
+      setUploadingImages((prev) =>
+        prev.filter((img) => img.id !== context?.uploadId)
+      )
+
+      // Add to completed images
       setImages((prev) => [
         ...prev,
         {
           file_id: data.file_id,
           width: data.width,
           height: data.height,
+          url: data.url,
         },
       ])
     },
-    onError: (error) => {
+    onError: (error, file, context) => {
       console.error('🦄uploadImageMutation onError', error)
       toast.error('Failed to upload image', {
         description: <div>{error.toString()}</div>,
       })
+      // Remove from uploading images on error
+      setUploadingImages((prev) =>
+        prev.filter((img) => img.id !== context?.uploadId)
+      )
     },
   })
 
@@ -119,19 +152,28 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       toast.warning(t('chat:textarea.selectTool'))
     }
 
-    let value: MessageContent[] | string = prompt
+    let text_content: MessageContent[] | string = prompt
     if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
     }
 
+    // 使用XML格式让LLM更容易识别图片信息
     if (images.length > 0) {
-      images.forEach((image) => {
-        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
+      text_content += `\n\n<input_images count="${images.length}">`
+      images.forEach((image, index) => {
+        const imageId = image.file_id || `image-${index}`
+        text_content += `\n  <image index="${index + 1}" file_id="${imageId}" width="${image.width}" height="${image.height}" />`
       })
+      text_content += `\n</input_images>`
+      text_content += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
+    }
 
-      // Fetch images as base64
-      const imagePromises = images.map(async (image) => {
+    // 获取图片 base64
+    const imagePromises = images.map(async (image) => {
+      // console.log('🦄imagePromises', image)
+      if (image.file_id) {
+        // Get local URL and convert to base64
         const response = await fetch(`/api/file/${image.file_id}`)
         const blob = await response.blob()
         return new Promise<string>((resolve) => {
@@ -139,28 +181,30 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           reader.onloadend = () => resolve(reader.result as string)
           reader.readAsDataURL(blob)
         })
-      })
+      } else {
+        throw new Error('Invalid image data')
+      }
+    })
 
-      const base64Images = await Promise.all(imagePromises)
+    const imageUrlList = await Promise.all(imagePromises)
 
-      value = [
-        {
-          type: 'text',
-          text: value,
+    const final_content = [
+      {
+        type: 'text',
+        text: text_content,
+      },
+      ...images.map((image, index) => ({
+        type: 'image_url',
+        image_url: {
+          url: imageUrlList[index],
         },
-        ...images.map((image, index) => ({
-          type: 'image_url',
-          image_url: {
-            url: base64Images[index],
-          },
-        })),
-      ] as MessageContent[]
-    }
+      })),
+    ] as MessageContent[]
 
     const newMessage = messages.concat([
       {
         role: 'user',
-        content: value,
+        content: final_content,
       },
     ])
 
@@ -262,6 +306,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
   }, [uploadImageMutation])
 
+  // Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      uploadingImages.forEach((img) => {
+        URL.revokeObjectURL(img.previewUrl)
+      })
+    }
+  }, [uploadingImages])
+
   return (
     <motion.div
       ref={dropAreaRef}
@@ -299,7 +352,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       </AnimatePresence>
 
       <AnimatePresence>
-        {images.length > 0 && (
+        {(images.length > 0 || uploadingImages.length > 0) && (
           <motion.div
             className="flex items-center gap-2 w-full"
             initial={{ opacity: 0, height: 0 }}
@@ -307,9 +360,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {images.map((image) => (
+            {/* Show uploading images first */}
+            {uploadingImages.map((uploadingImage) => (
               <motion.div
-                key={image.file_id}
+                key={uploadingImage.id}
                 className="relative size-10"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -317,8 +371,45 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
               >
                 <img
-                  key={image.file_id}
-                  src={`/api/file/${image.file_id}`}
+                  src={uploadingImage.previewUrl}
+                  alt="Uploading image"
+                  className="w-full h-full object-cover rounded-md opacity-50"
+                  draggable={false}
+                />
+                {/* Upload spinner */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
+                  <Loader2 className="size-4 animate-spin text-white" />
+                </div>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute -top-1 -right-1 size-4"
+                  onClick={() =>
+                    setUploadingImages((prev) =>
+                      prev.filter((img) => img.id !== uploadingImage.id)
+                    )
+                  }
+                >
+                  <XIcon className="size-3" />
+                </Button>
+              </motion.div>
+            ))}
+
+            {/* Show completed images */}
+            {images.map((image, index) => (
+              <motion.div
+                key={image.file_id || `image-${index}`}
+                className="relative size-10"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+              >
+                <img
+                  src={
+                    image.url ||
+                    (image.file_id ? `/api/file/${image.file_id}` : '')
+                  }
                   alt="Uploaded image"
                   className="w-full h-full object-cover rounded-md"
                   draggable={false}
@@ -328,9 +419,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   size="icon"
                   className="absolute -top-1 -right-1 size-4"
                   onClick={() =>
-                    setImages((prev) =>
-                      prev.filter((i) => i.file_id !== image.file_id)
-                    )
+                    setImages((prev) => prev.filter((_, i) => i !== index))
                   }
                 >
                   <XIcon className="size-3" />

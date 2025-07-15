@@ -43,8 +43,23 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 3. If it is a video generation task, use video generation tools to generate the video. You can choose to generate the necessary images first, and then use the images to generate the video, or directly generate the video using text prompt.
 """
 
+
 class ImageVideoCreatorAgentConfig(BaseAgentConfig):
     def __init__(self, tool_list: List[ToolInfoJson]) -> None:
+
+        image_input_detection_prompt = """
+IMAGE INPUT DETECTION:
+When the user's message contains input images in XML format like:
+<input_images></input_images>
+
+You MUST:
+1. Parse the XML to extract file_id attributes from <image> tags
+2. Use tools that support input_images parameter when images are present
+3. Pass the extracted file_id(s) in the input_images parameter as a list
+4. If input_images count > 1 , only use generate_image_by_gpt_image_1_jaaz (supports multiple images)
+5. For video generation → use video tools with input_images if images are present
+"""
+
         batch_generation_prompt = """
 
 BATCH GENERATION RULES:
@@ -74,6 +89,7 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
 """
 
         full_system_prompt = system_prompt + \
+            image_input_detection_prompt + \
             batch_generation_prompt + error_handling_prompt
 
         # 图像设计智能体不需要切换到其他智能体

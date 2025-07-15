@@ -26,16 +26,16 @@ const MessageImage = ({ content }: MessageImageProps) => {
     excalidrawAPI?.scrollToContent(id, { animate: true })
   }
   const id = filesArray.find((file) =>
-    content.image_url.url?.includes(file.url)
+    content.image_url?.url?.includes(file.url)
   )?.id
 
   return (
     <div>
-      <PhotoView src={content.image_url.url}>
+      <PhotoView src={content.image_url?.url}>
         <div className="relative">
           <img
             className="hover:scale-105 transition-transform duration-300"
-            src={content.image_url.url}
+            src={content.image_url?.url}
             alt="Image"
           />
 
