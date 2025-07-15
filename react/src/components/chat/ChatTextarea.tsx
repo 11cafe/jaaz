@@ -20,7 +20,6 @@ import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -74,33 +73,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   // New mutation that handles both local and Jaaz uploads based on login status
   const { mutate: uploadImageMutation } = useMutation({
     mutationFn: async (file: File) => {
-      if (authStatus.is_logged_in) {
-        // Upload to Jaaz if logged in
-        const s3Url = await uploadImageToJaaz(file)
-
-        // Get image dimensions
-        const dimensions = await new Promise<{ width: number; height: number }>(
-          (resolve) => {
-            const img = new Image()
-            img.onload = () => {
-              resolve({ width: img.naturalWidth, height: img.naturalHeight })
-            }
-            img.src = URL.createObjectURL(file)
-          }
-        )
-
-        return {
-          url: s3Url,
-          width: dimensions.width,
-          height: dimensions.height,
-          file_id: undefined,
-          uploadId: file.name + Date.now(),
-        }
-      } else {
-        // Upload to local server if not logged in
-        const result = await uploadImage(file)
-        return { ...result, url: undefined, uploadId: file.name + Date.now() }
-      }
+      // Upload to local server
+      const result = await uploadImage(file)
+      return { ...result, url: undefined, uploadId: file.name + Date.now() }
     },
     onMutate: (file: File) => {
       // Add to uploading images immediately
@@ -130,7 +105,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         },
       ])
     },
-    onError: (error) => {
+    onError: (error, file, context) => {
       console.error('🦄uploadImageMutation onError', error)
       toast.error('Failed to upload image', {
         description: <div>{error.toString()}</div>,
@@ -194,12 +169,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       text_content += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
     }
 
-    // 获取图片URL - 如果已经有S3 URL就直接使用，否则获取本地URL
+    // 获取图片 base64
     const imagePromises = images.map(async (image) => {
-      if (image.url) {
-        // Already have S3 URL from Jaaz upload
-        return image.url
-      } else if (image.file_id) {
+      // console.log('🦄imagePromises', image)
+      if (image.file_id) {
         // Get local URL and convert to base64
         const response = await fetch(`/api/file/${image.file_id}`)
         const blob = await response.blob()
