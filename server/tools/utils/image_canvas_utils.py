@@ -39,12 +39,8 @@ class CanvasLockManager:
 canvas_lock_manager = CanvasLockManager()
 
 
-async def generate_new_image_element(canvas_id: str, fileid: str, image_data: Dict[str, Any]) -> Dict[str, Any]:
+async def generate_new_image_element(canvas_data: Dict[str, Any], fileid: str, image_data: Dict[str, Any]) -> Dict[str, Any]:
     """Generate new image element for canvas"""
-    canvas: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
-    if canvas is None:
-        canvas = {'data': {}}
-    canvas_data: Dict[str, Any] = canvas.get('data', {})
 
 
     new_x, new_y = await find_next_best_element_position(canvas_data)
@@ -87,6 +83,18 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
     """Save image to canvas with proper locking and positioning"""
     # Use lock to ensure atomicity of the save process
     async with canvas_lock_manager.lock_canvas(canvas_id):
+        # Fetch canvas data once inside the lock
+        canvas: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
+        if canvas is None:
+            canvas = {'data': {}}
+        canvas_data: Dict[str, Any] = canvas.get('data', {})
+
+        # Ensure 'elements' and 'files' keys exist
+        if 'elements' not in canvas_data:
+            canvas_data['elements'] = []
+        if 'files' not in canvas_data:
+            canvas_data['files'] = {}
+
         file_id = generate_file_id()
         url = f'/api/file/{filename}'
 
@@ -98,33 +106,22 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
         }
 
         new_image_element: Dict[str, Any] = await generate_new_image_element(
-            canvas_id,
+            canvas_data,
             file_id,
             {
                 'width': width,
                 'height': height,
             })
 
-        # Update the canvas data, add the new image element
-        canvas_data: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
-        if canvas_data is None:
-            canvas_data = {'data': {}}
-        if 'data' not in canvas_data:
-            canvas_data['data'] = {}
-        if 'elements' not in canvas_data['data']:
-            canvas_data['data']['elements'] = []
-        if 'files' not in canvas_data['data']:
-            canvas_data['data']['files'] = {}
-
-        elements_list = cast(List[Dict[str, Any]],
-                             canvas_data['data']['elements'])
+        # Update the canvas data with the new element and file info
+        elements_list = cast(List[Dict[str, Any]], canvas_data['elements'])
         elements_list.append(new_image_element)
-        canvas_data['data']['files'][file_id] = file_data
+        canvas_data['files'][file_id] = file_data
 
         image_url = f"/api/file/{filename}"
 
-        # Save canvas data to database
-        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
+        # Save the updated canvas data back to the database
+        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data))
 
         # Broadcast image generation message to frontend
         await broadcast_session_update(session_id, canvas_id, {

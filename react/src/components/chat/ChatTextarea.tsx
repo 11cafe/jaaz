@@ -3,7 +3,11 @@ import { cancelMagicGenerate } from '@/api/magic'
 import { uploadImage, uploadImageToJaaz } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
-import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
+import {
+  eventBus,
+  TCanvasAddImagesToChatEvent,
+  TMaterialAddImagesToChatEvent,
+} from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, MessageContent, Model } from '@/types/types'
 import { ModelInfo, ToolInfo } from '@/api/model'
@@ -126,9 +130,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         },
       ])
     },
-    onError: (error, file, context) => {
-      console.error('Upload failed:', error)
-      toast.error('图片上传失败')
+    onError: (error) => {
+      console.error('🦄uploadImageMutation onError', error)
+      toast.error('Failed to upload image', {
+        description: <div>{error.toString()}</div>,
+      })
       // Remove from uploading images on error
       setUploadingImages((prev) =>
         prev.filter((img) => img.id !== context?.uploadId)
@@ -294,9 +300,36 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
       textareaRef.current?.focus()
     }
+
+    const handleMaterialAddImagesToChat = async (
+      data: TMaterialAddImagesToChatEvent
+    ) => {
+      data.forEach(async (image: TMaterialAddImagesToChatEvent[0]) => {
+        // Convert file path to blob and upload
+        try {
+          const fileUrl = `/api/serve_file?file_path=${encodeURIComponent(image.filePath)}`
+          const response = await fetch(fileUrl)
+          const blob = await response.blob()
+          const file = new File([blob], image.fileName, {
+            type: `image/${image.fileType}`,
+          })
+          uploadImageMutation(file)
+        } catch (error) {
+          console.error('Failed to load image from material:', error)
+          toast.error('Failed to load image from material', {
+            description: `${error}`,
+          })
+        }
+      })
+
+      textareaRef.current?.focus()
+    }
+
     eventBus.on('Canvas::AddImagesToChat', handleAddImagesToChat)
+    eventBus.on('Material::AddImagesToChat', handleMaterialAddImagesToChat)
     return () => {
       eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
+      eventBus.off('Material::AddImagesToChat', handleMaterialAddImagesToChat)
     }
   }, [uploadImageMutation])
 

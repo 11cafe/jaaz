@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getProxySettings, updateProxySettings } from '@/api/settings'
 
-type ProxyMode = 'none' | 'system' | 'custom'
+type ProxyMode = 'no_proxy' | 'system' | 'custom'
 
 interface ProxyConfig {
   mode: ProxyMode
@@ -21,7 +21,7 @@ const SettingProxy = () => {
   const [errorMessage, setErrorMessage] = useState('')
   const [testing, setTesting] = useState(false)
   const [proxyConfig, setProxyConfig] = useState<ProxyConfig>({
-    mode: 'none',
+    mode: 'system',
     url: ''
   })
 
@@ -31,13 +31,13 @@ const SettingProxy = () => {
         const settings = await getProxySettings()
 
         // Extract proxy config from the response
-        const proxyValue = (settings.proxy as string) || ''
+        const proxyValue = (settings.proxy as string) || 'system'
 
-        let mode: ProxyMode = 'none'
+        let mode: ProxyMode = 'system'
         let url = ''
 
-        if (proxyValue === '') {
-          mode = 'none'
+        if (proxyValue === 'no_proxy') {
+          mode = 'no_proxy'
         } else if (proxyValue === 'system') {
           mode = 'system'
         } else {
@@ -72,8 +72,8 @@ const SettingProxy = () => {
 
       let proxyValue: string
       switch (proxyConfig.mode) {
-        case 'none':
-          proxyValue = ''
+        case 'no_proxy':
+          proxyValue = 'no_proxy'
           break
         case 'system':
           proxyValue = 'system'
@@ -87,7 +87,7 @@ const SettingProxy = () => {
           }
           break
         default:
-          proxyValue = ''
+          proxyValue = 'system'
       }
 
       console.log('Saving proxy settings:', { proxy: proxyValue })
@@ -147,7 +147,7 @@ const SettingProxy = () => {
                   <SelectValue placeholder={t('settings:proxy:selectMode')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t('settings:proxy:modes.none')}</SelectItem>
+                  <SelectItem value="no_proxy">{t('settings:proxy:modes.no_proxy')}</SelectItem>
                   <SelectItem value="system">{t('settings:proxy:modes.system')}</SelectItem>
                   <SelectItem value="custom">{t('settings:proxy:modes.custom')}</SelectItem>
                 </SelectContent>

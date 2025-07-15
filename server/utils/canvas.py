@@ -1,48 +1,58 @@
 from typing import Optional, Dict, Any, Union
 from services.db_service import db_service
 
-async def find_next_best_element_position(canvas_data, max_num_per_row=4):
-
+async def find_next_best_element_position(canvas_data, max_num_per_row=4, spacing=20):
+    """
+    Calculates the next best position for a new element on the canvas.
+    This final version uses a robust row detection algorithm to handle complex layouts.
+    """
     elements = canvas_data.get("elements", [])
-
-    # 查找最后一个图片或视频元素（同时考虑两种类型）
-    last_x: Union[int, float] = 0
-    last_y: Union[int, float] = 0
-    last_width: Union[int, float] = 0
-    last_height: Union[int, float] = 0
     
-    # 同时考虑图片和视频元素，确保不重叠
     media_elements = [
-        element for element in elements 
-        if element.get("type") in ["image", "embeddable", "video"]
+        e for e in elements 
+        if e.get("type") in ["image", "embeddable", "video"] and not e.get("isDeleted")
     ]
 
-    # Sort elements by updated timestamp to find the most recently created element
-    media_elements.sort(key=lambda e: e.get("updated", 0))
+    if not media_elements:
+        return 0, 0
 
-    last_media_element = media_elements[-1] if len(media_elements) > 0 else None
+    # Sort elements by their top-left corner
+    media_elements.sort(key=lambda e: (e.get("y", 0), e.get("x", 0)))
 
-    if last_media_element is not None:
-        last_x = last_media_element.get("x", 0)
-        last_y = last_media_element.get("y", 0)
-        last_width = last_media_element.get("width", 0)
-        last_height = last_media_element.get("height", 0)
-        
-        # 判断同一y坐标上是否已有max_num_per_row个组件
-        same_y_elements = [
-            element for element in media_elements 
-            if element.get("y", 0) == last_y
-        ]
-        
-        # 如果同一y坐标上已有max_num_per_row个组件，则换行
-        if len(same_y_elements) >= max_num_per_row:
-            new_x = 0  # 换行后从x=0开始
-            new_y = last_y + last_height + 20  # 换行，y坐标增加高度加间距
-        else:
-            new_x = last_x + last_width + 20
-            new_y = last_y
+    # Group elements into rows based on vertical overlap
+    rows = []
+    for element in media_elements:
+        y, height = element.get("y", 0), element.get("height", 0)
+        placed = False
+        for row in rows:
+            # Check if the element vertically overlaps with any element in the row
+            if any(max(y, r.get("y", 0)) < min(y + height, r.get("y", 0) + r.get("height", 0)) for r in row):
+                row.append(element)
+                placed = True
+                break
+        if not placed:
+            rows.append([element])
+
+    # Sort rows by their average y-coordinate
+    rows.sort(key=lambda row: sum(e.get("y", 0) for e in row) / len(row))
+
+    if not rows:
+        return 0, 0
+
+    last_row = rows[-1]
+    last_row.sort(key=lambda e: e.get("x", 0))
+
+    if len(last_row) < max_num_per_row:
+        # Add to the last row
+        rightmost_element = last_row[-1]
+        new_x = rightmost_element.get("x", 0) + rightmost_element.get("width", 0) + spacing
+        # Align with the top of the last row for consistency
+        new_y = min(e.get("y", 0) for e in last_row)
     else:
+        # Start a new row
         new_x = 0
-        new_y = 0
+        # Position below the entire last row
+        bottom_of_last_row = max(e.get("y", 0) + e.get("height", 0) for e in last_row)
+        new_y = bottom_of_last_row + spacing
 
     return new_x, new_y

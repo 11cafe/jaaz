@@ -7,6 +7,7 @@ pyinstaller
 openai
 ollama
 httpx
+aiohttp
 gunicorn
 aiosqlite
 requests
@@ -28,3 +29,5 @@ langchain-openai==0.3.21
 python-socketio==5.13.0
 pymediainfo
 openai-agents
+socksio # For vpn from command line like export https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897 all_proxy=socks5://127.0.0.1:7897
+piexif # For EXIF metadata handling in JPEG files 

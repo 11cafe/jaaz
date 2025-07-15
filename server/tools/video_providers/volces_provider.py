@@ -79,7 +79,6 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
                 "image_url": {"url": input_image_data[1]},
                 "role": "last_frame"
             })
-            
 
         payload = {
             "model": str(self.model_name.split("by")[0]).rstrip("_") if model is None else model,
@@ -93,28 +92,29 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
         polling_url = f"{self.base_url}/contents/generations/tasks/{task_id}"
         status = "submitted"
 
-        async with HttpClient.create() as client:
+        async with HttpClient.create_aiohttp() as session:
             while status not in ("succeeded", "failed", "cancelled"):
                 print(
                     f"🎥 Polling Volces generation {task_id}, current status: {status} ...")
                 await asyncio.sleep(3)  # Wait 3 seconds between polls
 
-                poll_response = await client.get(polling_url, headers=headers)
-                poll_res = poll_response.json()
-                status = poll_res.get("status", None)
+                async with session.get(polling_url, headers=headers) as poll_response:
+                    poll_res = await poll_response.json()
+                    status = poll_res.get("status", None)
 
-                if status == "succeeded":
-                    output = poll_res.get("content", {}).get("video_url", None)
-                    if output and isinstance(output, str):
-                        return output
-                    else:
+                    if status == "succeeded":
+                        output = poll_res.get(
+                            "content", {}).get("video_url", None)
+                        if output and isinstance(output, str):
+                            return output
+                        else:
+                            raise Exception(
+                                "No video URL found in successful response")
+                    elif status in ("failed", "cancelled"):
+                        detail_error = poll_res.get(
+                            "detail", f"Task failed with status: {status}")
                         raise Exception(
-                            "No video URL found in successful response")
-                elif status in ("failed", "cancelled"):
-                    detail_error = poll_res.get(
-                        "detail", f"Task failed with status: {status}")
-                    raise Exception(
-                        f"Volces video generation failed: {detail_error}")
+                            f"Volces video generation failed: {detail_error}")
 
         raise Exception(f"Task polling failed with final status: {status}")
 
@@ -159,21 +159,20 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
                 f"🎥 Starting Volces video generation")
 
             # Make API request to create task
-            async with HttpClient.create() as client:
-                response = await client.post(api_url, headers=headers, json=payload)
+            async with HttpClient.create_aiohttp() as session:
+                async with session.post(api_url, headers=headers, json=payload) as response:
+                    if response.status != 200:
+                        try:
+                            error_data = await response.json()
+                            error_message = error_data.get(
+                                "error", f"HTTP {response.status}")
+                        except Exception:
+                            error_message = f"HTTP {response.status}"
+                        raise Exception(
+                            f"Volces task creation failed: {error_message}")
 
-                if response.status_code != 200:
-                    try:
-                        error_data = response.json()
-                        error_message = error_data.get(
-                            "error", f"HTTP {response.status_code}")
-                    except Exception:
-                        error_message = f"HTTP {response.status_code}"
-                    raise Exception(
-                        f"Volces task creation failed: {error_message}")
-
-                result = response.json()
-                task_id = result.get("id", None)
+                    result = await response.json()
+                    task_id = result.get("id", None)
 
                 if not task_id:
                     print("🎥 Failed to create Volces video generation task:", result)

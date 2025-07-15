@@ -10,6 +10,7 @@ class ImageProviderBase(ABC):
         model: str,
         aspect_ratio: str = "1:1",
         input_images: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         **kwargs: Any
     ) -> Tuple[str, int, int, str]:
         """
@@ -20,6 +21,7 @@ class ImageProviderBase(ABC):
             model: Model name to use for generation
             aspect_ratio: Image aspect ratio (1:1, 16:9, 4:3, 3:4, 9:16)
             input_images: Optional input images for reference or editing
+            metadata: Optional metadata to be saved in PNG info
             **kwargs: Additional provider-specific parameters
 
         Returns:

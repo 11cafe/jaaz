@@ -43,21 +43,18 @@ type ChatInterfaceProps = {
   canvasId: string
   sessionList: Session[]
   setSessionList: Dispatch<SetStateAction<Session[]>>
+  sessionId: string
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   canvasId,
   sessionList,
   setSessionList,
+  sessionId: searchSessionId,
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const { initCanvas, setInitCanvas } = useConfigs()
-
-  const search = useSearch({ from: '/canvas/$id' }) as {
-    sessionId: string
-  }
-  const searchSessionId = search.sessionId || ''
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -456,10 +453,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex-1 px-4 pb-50 pt-15">
+            <div className="flex flex-col flex-1 px-4 pb-50 pt-15">
               {/* Messages */}
               {messages.map((message, idx) => (
-                <div key={`${idx}`}>
+                <div key={`${idx}`} className="flex flex-col gap-4 mb-2">
                   {/* Regular message content */}
                   {typeof message.content == 'string' &&
                     (message.role !== 'tool' ? (

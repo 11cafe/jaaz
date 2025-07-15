@@ -103,7 +103,8 @@ async def save_video_to_canvas(
         if "files" not in canvas_data["data"]:
             canvas_data["data"]["files"] = {}
 
-        canvas_data["data"]["elements"].append(new_video_element)  # type: ignore
+        canvas_data["data"]["elements"].append(
+            new_video_element)  # type: ignore
         canvas_data["data"]["files"][file_id] = file_data
 
         # Save updated canvas data
@@ -207,9 +208,9 @@ async def get_video_info_and_save(
     url: str, file_path_without_extension: str
 ) -> Tuple[str, int, int, str]:
     # Fetch the video asynchronously
-    async with HttpClient.create(url=None) as client:
-        response = await client.get(url)
-        video_content = response.content
+    async with HttpClient.create_aiohttp() as session:
+        async with session.get(url) as response:
+            video_content = await response.read()
 
     # Save to temporary mp4 file first
     temp_path = f"{file_path_without_extension}.mp4"

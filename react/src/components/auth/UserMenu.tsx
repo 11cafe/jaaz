@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
@@ -36,14 +36,16 @@ export function UserMenu() {
     const initials = username ? username.substring(0, 2).toUpperCase() : 'U'
 
     return (
-      <DropdownMenu onOpenChange={(open) => {
-        if (open) {
-          refreshBalance()
-        }
-      }}>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (open) {
+            refreshBalance()
+          }
+        }}
+      >
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
+          <Button variant="ghost" className="relative h-6 w-6 rounded-full">
+            <Avatar className="h-6 w-6">
               <AvatarImage src={image_url} alt={username} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
@@ -55,7 +57,9 @@ export function UserMenu() {
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('common:auth.balance')}</DropdownMenuLabel>
           <DropdownMenuItem className="flex items-center justify-between">
-            <span>{balanceLoading ? '...' : `$ ${parseFloat(balance).toFixed(2)}`}</span>
+            <span>
+              {balanceLoading ? '...' : `$ ${parseFloat(balance).toFixed(2)}`}
+            </span>
             <Button
               size="sm"
               variant="outline"

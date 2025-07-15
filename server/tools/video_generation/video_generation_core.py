@@ -27,6 +27,7 @@ async def generate_video_with_provider(
     config: Any,
     input_images: Optional[list[str]] = None,
     camera_fixed: bool = True,
+    **kwargs: Any
 ) -> str:
     """
     Universal video generation function supporting different models and providers
@@ -96,7 +97,8 @@ async def generate_video_with_provider(
             duration=duration,
             aspect_ratio=aspect_ratio,
             input_images=processed_input_images,
-            camera_fixed=camera_fixed
+            camera_fixed=camera_fixed,
+            **kwargs
         )
 
         # Process video result (save, update canvas, notify)

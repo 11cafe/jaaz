@@ -42,7 +42,7 @@
     "mode": "代理模式",
     "selectMode": "选择代理模式",
     "modes": {
-      "none": "不使用代理",
+      "no_proxy": "不使用代理",
       "system": "系统代理",
       "custom": "自定义代理"
     },

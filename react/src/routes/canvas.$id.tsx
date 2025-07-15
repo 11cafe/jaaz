@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/resizable'
 import { CanvasProvider } from '@/contexts/canvas'
 import { Session } from '@/types/types'
-import { createFileRoute, useParams } from '@tanstack/react-router'
+import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -28,7 +28,10 @@ function Canvas() {
   const [canvasName, setCanvasName] = useState('')
   const [sessionList, setSessionList] = useState<Session[]>([])
   // initialVideos removed - using native Excalidraw embeddable elements instead
-
+  const search = useSearch({ from: '/canvas/$id' }) as {
+    sessionId: string
+  }
+  const searchSessionId = search.sessionId || ''
   useEffect(() => {
     let mounted = true
 
@@ -104,12 +107,13 @@ function Canvas() {
 
           <ResizableHandle />
 
-          <ResizablePanel defaultSize={25} maxSize={35} minSize={25}>
+          <ResizablePanel defaultSize={25} minSize={25}>
             <div className="flex-1 flex-grow bg-accent/50 w-full">
               <ChatInterface
                 canvasId={id}
                 sessionList={sessionList}
                 setSessionList={setSessionList}
+                sessionId={searchSessionId}
               />
             </div>
           </ResizablePanel>

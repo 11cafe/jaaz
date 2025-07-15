@@ -1,5 +1,6 @@
 import json
 import os
+from socket import timeout
 import sys
 import time
 import urllib.error
@@ -13,12 +14,13 @@ import websockets
 import typer
 from rich import print as pprint
 from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
+from utils.http_client import HttpClient
 
 from services.websocket_service import send_to_websocket
 
 
 async def check_comfy_server_running(base_url):
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with HttpClient.create(timeout=10) as client:
         url = f"{base_url}/api/prompt"
         response = await client.get(url)
         return response.status_code == 200
@@ -152,7 +154,7 @@ class WorkflowExecution:
 
     async def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
-        async with httpx.AsyncClient() as client:
+        async with HttpClient.create() as client:
             try:
                 response = await client.post(f"{self.base_url}/prompt", json=data)
                 body = response.json()
@@ -178,8 +180,23 @@ class WorkflowExecution:
         async for message in self.ws:
             if isinstance(message, str):
                 message = json.loads(message)
+                if message.get("data", {}).get("prompt_id") != self.prompt_id:
+                    continue
                 if not await self.on_message(message):
-                    break
+                    # get task_id and check if task_id is saved to prompt
+                    async with HttpClient.create() as client:
+                        try:
+                            response = await client.get(f"{self.base_url}/history/{self.prompt_id}")
+                            if response.status_code != 200:
+                                raise Exception(response)
+                            response_body = response.json()
+                            if self.prompt_id in response_body:
+                                break
+                            else:
+                                continue
+                        except Exception as e:
+                            pprint(f"[bold red]Error getting history\n{str(e)}[/bold red]")
+                            raise Exception(message)
 
     def update_overall_progress(self):
         self.progress.update(
@@ -214,7 +231,7 @@ class WorkflowExecution:
         data = message["data"] if "data" in message else {}
         if "prompt_id" not in data or data["prompt_id"] != self.prompt_id:
             return True
-        
+
         if message["type"] == "status":
             return await self.on_status(data)
         elif message["type"] == "executing":
@@ -339,7 +356,7 @@ class WorkflowExecution:
 async def upload_image(image, base_url):
     files = {"image": image}
     data = {"type": "input", "overwrite": "false"}
-    async with httpx.AsyncClient() as client:
+    async with HttpClient.create() as client:
         try:
             response = await client.post(
                 f"{base_url}/upload/image", files=files, data=data

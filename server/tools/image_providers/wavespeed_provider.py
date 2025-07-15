@@ -19,7 +19,6 @@ class WavespeedResponse(BaseModel):
 class WavespeedProvider(ImageProviderBase):
     """WaveSpeed image generation provider implementation"""
 
-
     def _build_headers(self) -> dict[str, str]:
         """Build request headers"""
         config = config_service.app_config.get('wavespeed', {})
@@ -70,23 +69,23 @@ class WavespeedProvider(ImageProviderBase):
 
     async def _poll_for_result(self, result_url: str, headers: dict[str, str]) -> str:
         """Poll for image generation result"""
-        async with HttpClient.create() as client:
+        async with HttpClient.create_aiohttp() as session:
             for _ in range(60):  # 最多等60秒
                 await asyncio.sleep(1)
-                result_resp = await client.get(result_url, headers=headers)
-                result_data = result_resp.json()
-                print("WaveSpeed polling result:", result_data)
+                async with session.get(result_url, headers=headers) as result_resp:
+                    result_data = await result_resp.json()
+                    print("WaveSpeed polling result:", result_data)
 
-                data = result_data.get("data", {})
-                outputs = data.get("outputs", [])
-                status = data.get("status")
+                    data = result_data.get("data", {})
+                    outputs = data.get("outputs", [])
+                    status = data.get("status")
 
-                if status in ("succeeded", "completed") and outputs:
-                    return outputs[0]
+                    if status in ("succeeded", "completed") and outputs:
+                        return outputs[0]
 
-                if status == "failed":
-                    raise Exception(
-                        f"WaveSpeed generation failed: {result_data}")
+                    if status == "failed":
+                        raise Exception(
+                            f"WaveSpeed generation failed: {result_data}")
 
             raise Exception("WaveSpeed image generation timeout")
 
@@ -118,14 +117,15 @@ class WavespeedProvider(ImageProviderBase):
 
             endpoint = f"{self.api_url.rstrip('/')}/{request_model}"
 
-            async with HttpClient.create() as client:
-                response = await client.post(endpoint, json=payload, headers=headers)
-                response_json = response.json()
+            async with HttpClient.create_aiohttp() as session:
+                async with session.post(endpoint, json=payload, headers=headers) as response:
+                    response_json = await response.json()
 
-                if response.status_code != 200 or response_json.get("code") != 200:
-                    raise Exception(f"WaveSpeed API error: {response_json}")
+                    if response.status != 200 or response_json.get("code") != 200:
+                        raise Exception(
+                            f"WaveSpeed API error: {response_json}")
 
-                result_url = response_json["data"]["urls"]["get"]
+                    result_url = response_json["data"]["urls"]["get"]
 
                 # Poll for the result
                 image_url = await self._poll_for_result(result_url, headers)

@@ -4,8 +4,8 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-
-// Create or append to a log file in the user's home directory
+// to import a ts module, we need to import like below
+// const gemini = require('./dist/gemin_service')
 const logPath = path.join(os.homedir(), 'jaaz-log.txt')
 // Check if the log file exists and delete it
 if (fs.existsSync(logPath)) {

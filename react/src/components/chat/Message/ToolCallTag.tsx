@@ -48,7 +48,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   }
 
   return (
-    <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-md shadow-sm overflow-hidden mb-4">
+    <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-md shadow-sm overflow-hidden">
       {/* Header */}
       <div
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-colors"

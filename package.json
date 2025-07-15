@@ -1,6 +1,6 @@
 {
   "name": "jaaz",
-  "version": "1.0.19",
+  "version": "1.0.22",
   "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
@@ -15,6 +15,9 @@
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
+    "build:ts": "cd electron && tsc",
+    "watch:ts": "cd electron && tsc --watch",
+    "clean:ts": "cd electron && rm -rf dist",
     "test": "vitest",
     "test:run": "vitest run",
     "test:watch": "vitest --watch"
@@ -78,13 +81,18 @@
   },
   "devDependencies": {
     "@electron/notarize": "^3.0.1",
+    "@types/electron": "^1.4.38",
+    "@types/node": "^20.19.4",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^35.1.0",
     "electron-builder": "^24.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
     "vitest": "^3.2.1"
   },
   "dependencies": {
+    "@google/gemini-cli-core": "^0.1.9",
     "7zip-min": "^2.1.0",
     "electron-updater": "^6.6.2",
     "got": "11.8.6",

@@ -1,22 +1,21 @@
 """
 HTTP 客户端工厂和管理器
 
-本模块提供了统一的 HTTP 客户端创建和管理功能，基于 httpx 库封装，支持：
+本模块提供了统一的 HTTP 客户端创建和管理功能，支持 httpx 和 aiohttp 库：
 - 自动 SSL 证书验证
 - 连接池管理和超时控制
 - 同步和异步客户端支持
+- 支持代理环境变量 (trust_env=True)
 
 使用指南：
-1. 单次/少量请求：使用 HttpClient.create() 自动管理资源
+1. httpx 客户端：
    async with HttpClient.create() as client:
        response = await client.get("https://api.example.com/data")
 
-2. 长期持有客户端：使用 HttpClient.create_async_client() 手动管理
-   client = HttpClient.create_async_client()
-   try:
-       response = await client.get("https://api.example.com/data")
-   finally:
-       await client.aclose()
+2. aiohttp 客户端：
+   async with HttpClient.create_aiohttp() as session:
+       async with session.get("https://api.example.com/data") as response:
+           data = await response.json()
 
 3. 同步请求：使用 HttpClient.create_sync()
    with HttpClient.create_sync() as client:
@@ -28,6 +27,7 @@ import httpx
 from typing import Optional, Dict, Any, AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
 import logging
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class HttpClient:
 
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
-        """获取客户端配置"""
+        """获取 httpx 客户端配置"""
 
         config = {
             'verify': cls._get_ssl_context(),
@@ -63,6 +63,23 @@ class HttpClient:
                 max_connections=200,
                 keepalive_expiry=300.0
             ),
+            **kwargs
+        }
+
+        return config
+
+    @classmethod
+    def _get_aiohttp_config(cls, trust_env: bool = True, **kwargs: Any) -> Dict[str, Any]:
+        """获取 aiohttp 客户端配置"""
+        config = {
+            'connector': aiohttp.TCPConnector(
+                ssl=cls._get_ssl_context(),
+                limit=200,
+                limit_per_host=50,
+                keepalive_timeout=300,
+            ),
+            'timeout': aiohttp.ClientTimeout(total=300),
+            'trust_env': trust_env,  # 启用环境变量代理支持
             **kwargs
         }
 
@@ -103,3 +120,31 @@ class HttpClient:
         """直接创建同步客户端（需要手动关闭）"""
         config = cls._get_client_config(**kwargs)
         return httpx.Client(**config)
+
+    # ========== aiohttp 工厂方法 ==========
+    @classmethod
+    @asynccontextmanager
+    async def create_aiohttp(cls, trust_env: bool = True, **kwargs: Any) -> AsyncGenerator['aiohttp.ClientSession', None]:
+        """创建 aiohttp 客户端上下文管理器
+        
+        Args:
+            trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
+            **kwargs: 其他 aiohttp.ClientSession 参数
+        """
+        config = cls._get_aiohttp_config(trust_env=trust_env, **kwargs)
+        session = aiohttp.ClientSession(**config)
+        try:
+            yield session
+        finally:
+            await session.close()
+
+    @classmethod
+    def create_aiohttp_client(cls, trust_env: bool = True, **kwargs: Any) -> 'aiohttp.ClientSession':
+        """直接创建 aiohttp 客户端（需要手动关闭）
+        
+        Args:
+            trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
+            **kwargs: 其他 aiohttp.ClientSession 参数
+        """
+        config = cls._get_aiohttp_config(trust_env=trust_env, **kwargs)
+        return aiohttp.ClientSession(**config)

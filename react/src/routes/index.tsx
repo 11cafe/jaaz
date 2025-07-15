@@ -1,7 +1,6 @@
 import { createCanvas } from '@/api/canvas'
 import ChatTextarea from '@/components/chat/ChatTextarea'
 import CanvasList from '@/components/home/CanvasList'
-import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConfigs } from '@/contexts/configs'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
@@ -12,6 +11,7 @@ import { nanoid } from 'nanoid'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import TopMenu from '@/components/TopMenu'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -41,7 +41,7 @@ function Home() {
   return (
     <div className="flex flex-col h-screen">
       <ScrollArea className="h-full">
-        <HomeHeader />
+        <TopMenu />
 
         <div className="relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-460px)] pt-[60px] select-none">
           <motion.div

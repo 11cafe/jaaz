@@ -45,5 +45,19 @@
   "popbar": {
     "addToChat": "Add to chat",
     "magicGenerate": "✨ Magic Generate"
-  }
+  },
+  "myAssets": "My Assets",
+  "selectAFolder": "Select a folder",
+  "selectAFolderDescription": "Select a folder to view its images and videos",
+  "noMediaFiles": "No media files",
+  "noMediaFilesDescription": "No images or videos in this folder",
+  "mediaFiles": "media files",
+  "openInExplorer": "Open in system file browser",
+  "basicInfo": "Basic info",
+  "fileName": "File name",
+  "fileSize": "File size",
+  "modifiedTime": "Modified time",
+  "dimensions": "Dimensions",
+  "filePath": "File path",
+  "pngMetadata": "PNG Metadata"
 }

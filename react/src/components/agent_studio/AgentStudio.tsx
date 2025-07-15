@@ -12,9 +12,9 @@ import {
 import debounce from 'lodash.debounce'
 
 import '@xyflow/react/dist/style.css'
-import HomeHeader from '../home/HomeHeader'
 import AgentNode from './AgentNode'
 import { Textarea } from '../ui/textarea'
+import TopMenu from '../TopMenu'
 
 const LOCAL_STORAGE_KEY = 'agent-studio-graph'
 
@@ -81,7 +81,7 @@ export default function AgentStudio() {
 
   return (
     <div>
-      <HomeHeader />
+      <TopMenu />
       <div style={{ width: '100vw', height: '100vh' }}>
         <ReactFlow
           nodes={nodes}

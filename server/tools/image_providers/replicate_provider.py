@@ -7,6 +7,7 @@ from services.config_service import FILES_DIR
 from utils.http_client import HttpClient
 from services.config_service import config_service
 
+
 class ReplicateImageProvider(ImageProviderBase):
     """Replicate image generation provider implementation"""
 
@@ -34,20 +35,15 @@ class ReplicateImageProvider(ImageProviderBase):
         Returns:
             dict[str, Any]: Response data from Replicate API
         """
-        async with HttpClient.create() as client:
+        async with HttpClient.create_aiohttp() as session:
             print(
                 f'🦄 Replicate API request: {url}, model: {data["input"]["prompt"]}')
-            response = await client.post(url, headers=headers, json=data)
+            async with session.post(url, headers=headers, json=data) as response:
+                # Parse JSON data
+                json_data = await response.json()
+                print('🦄 Replicate API response', json_data)
 
-            if not response.content:
-                raise Exception(
-                    'Image generation failed: Empty response from server')
-
-            # Parse JSON data
-            json_data = response.json()
-            print('🦄 Replicate API response', json_data)
-
-            return json_data
+                return json_data
 
     async def _process_response(self, res: dict[str, Any]) -> tuple[str, int, int, str]:
         """

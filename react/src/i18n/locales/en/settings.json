@@ -42,7 +42,7 @@
     "mode": "Proxy Mode",
     "selectMode": "Select proxy mode",
     "modes": {
-      "none": "No Proxy",
+      "no_proxy": "No Proxy",
       "system": "System Proxy",
       "custom": "Custom Proxy"
     },

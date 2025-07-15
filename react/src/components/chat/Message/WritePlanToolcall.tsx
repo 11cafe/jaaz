@@ -17,7 +17,7 @@ export default function WritePlanToolCall({ args }: { args: string }) {
   } catch (error) {}
 
   return (
-    <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-md shadow-sm overflow-hidden mb-4">
+    <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-md shadow-sm overflow-hidden">
       {/* Header */}
       <div
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition-colors"

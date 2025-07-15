@@ -7,6 +7,7 @@ from tools.write_plan import write_plan_tool
 from tools.generate_image_by_gpt_image_1_jaaz import generate_image_by_gpt_image_1_jaaz
 from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaaz
 from tools.generate_image_by_imagen_4_replicate import generate_image_by_imagen_4_replicate
+from tools.generate_image_by_ideogram3_bal_jaaz import generate_image_by_ideogram3_bal_jaaz
 # from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
 from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
 from tools.generate_image_by_flux_kontext_pro_replicate import generate_image_by_flux_kontext_pro_replicate
@@ -17,9 +18,10 @@ from tools.generate_image_by_doubao_seedream_3_volces import generate_image_by_d
 from tools.generate_video_by_seedance_v1_jaaz import generate_video_by_seedance_v1_jaaz
 from tools.generate_video_by_seedance_v1_pro_volces import generate_video_by_seedance_v1_pro_volces
 from tools.generate_video_by_seedance_v1_lite_volces import generate_video_by_seedance_v1_lite_t2v, generate_video_by_seedance_v1_lite_i2v
-
+from tools.generate_video_by_kling_v2_jaaz import generate_video_by_kling_v2_jaaz
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from tools.generate_image_by_recraft_v3_replicate import generate_image_by_recraft_v3_replicate
+from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -41,6 +43,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "image",
         "provider": "jaaz",
         "tool_function": generate_image_by_recraft_v3_jaaz,
+    },
+    "generate_image_by_ideogram3_bal_jaaz": {
+        "display_name": "Ideogram 3 Balanced",
+        "type": "image",
+        "provider": "jaaz",
+        "tool_function": generate_image_by_ideogram3_bal_jaaz,
     },
     # "generate_image_by_flux_1_1_pro_jaaz": {
     #     "display_name": "Flux 1.1 Pro",
@@ -77,6 +85,18 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "video",
         "provider": "jaaz",
         "tool_function": generate_video_by_seedance_v1_jaaz,
+    },
+    "generate_video_by_hailuo_02_jaaz": {
+        "display_name": "Hailuo 02",
+        "type": "video",
+        "provider": "jaaz",
+        "tool_function": generate_video_by_hailuo_02_jaaz,
+    },
+    "generate_video_by_kling_v2_jaaz": {
+        "display_name": "Doubao Kling v2",
+        "type": "video",
+        "provider": "jaaz",
+        "tool_function": generate_video_by_kling_v2_jaaz,
     },
     "generate_video_by_seedance_v1_pro_volces": {
         "display_name": "Doubao Seedance v1 by volces",

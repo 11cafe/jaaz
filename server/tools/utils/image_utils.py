@@ -1,9 +1,10 @@
 import os
-import aiofiles
-from PIL import Image
+import traceback
+from PIL import Image, PngImagePlugin
 from io import BytesIO
 import base64
-from typing import Tuple
+import json
+from typing import Any, Optional, Tuple
 from nanoid import generate
 from utils.http_client import HttpClient
 from services.config_service import FILES_DIR
@@ -17,49 +18,102 @@ def generate_image_id() -> str:
 async def get_image_info_and_save(
     url: str,
     file_path_without_extension: str,
-    is_b64: bool = False
+    is_b64: bool = False,
+    metadata: Optional[dict[str, Any]] = None
 ) -> Tuple[str, int, int, str]:
     """
-    Download image from URL or decode base64, get image info and save to file
+    Download image from URL or decode base64, convert to PNG and save with metadata
 
     Args:
         url: Image URL or base64 string
         file_path_without_extension: File path without extension
         is_b64: Whether the url is a base64 string
+        metadata: Optional metadata to be saved in PNG info
 
     Returns:
-        tuple[str, int, int, str]: (mime_type, width, height, extension)
+        tuple[str, int, int, str]: (mime_type, width, height, extension) - always PNG
     """
     try:
         if is_b64:
             image_data = base64.b64decode(url)
         else:
             # Fetch the image asynchronously
-            async with HttpClient.create() as client:
-                response = await client.get(url)
-                # Read the image content as bytes
-                image_data = response.content
+            async with HttpClient.create_aiohttp() as session:
+                async with session.get(url) as response:
+                    # Read the image content as bytes
+                    image_data = await response.read()
 
         # Open image to get info
         image = Image.open(BytesIO(image_data))
         width, height = image.size
+        
+        # Store original format for debugging
+        original_format = image.format or 'Unknown'
+        print(f"Converting {original_format} image to PNG: {width}x{height}")
 
-        # Determine format and extension
-        format_name = image.format or 'PNG'
-        extension = format_name.lower()
-        if extension == 'jpeg':
-            extension = 'jpg'
+        # Handle different color modes properly for PNG conversion
+        if image.mode == 'P':
+            # Palette mode - convert to RGBA to preserve potential transparency
+            if 'transparency' in image.info:
+                image = image.convert('RGBA')
+            else:
+                image = image.convert('RGB')
+        elif image.mode == 'LA':
+            # Grayscale with alpha - convert to RGBA
+            image = image.convert('RGBA')
+        elif image.mode == 'L':
+            # Grayscale - can stay as L or convert to RGB
+            # PNG supports grayscale, so we can keep it
+            pass
+        elif image.mode == 'CMYK':
+            # CMYK mode - convert to RGB
+            image = image.convert('RGB')
+        elif image.mode in ('RGB', 'RGBA'):
+            # Already compatible with PNG
+            pass
+        else:
+            # For any other modes, convert to RGB as a safe fallback
+            print(f"Warning: Unusual color mode {image.mode}, converting to RGB")
+            image = image.convert('RGB')
 
-        # Determine MIME type
-        mime_type = f"image/{extension}"
-        if extension == 'jpg':
-            mime_type = "image/jpeg"
+        # Unified format: always PNG
+        extension = 'png'
+        mime_type = 'image/png'
 
-        # Save file
+        # Prepare PNG info for metadata
+        pnginfo = PngImagePlugin.PngInfo()
+        
+        # Add original format info
+        pnginfo.add_text("original_format", original_format)
+        
+        if metadata:
+            for key, value in metadata.items():
+                try:
+                    # Handle different value types
+                    if isinstance(value, (dict, list)):
+                        # Serialize complex types as JSON
+                        text_value = json.dumps(value, ensure_ascii=False)
+                    elif value is None:
+                        text_value = "null"
+                    else:
+                        # Convert to string
+                        text_value = str(value)
+                    
+                    pnginfo.add_text(str(key), text_value)
+                except Exception as e:
+                    print(f"Warning: Failed to add metadata key '{key}': {e}")
+                    traceback.print_stack()
+
+        # Save as PNG with metadata
         file_path = f"{file_path_without_extension}.{extension}"
-        async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(image_data)
-
+        
+        # Save with optimizations and metadata
+        if metadata or original_format != 'PNG':
+            image.save(file_path, format='PNG', optimize=True, pnginfo=pnginfo)
+        else:
+            image.save(file_path, format='PNG', optimize=True)
+        
+        print(f"Successfully saved as PNG: {file_path}")
         return mime_type, width, height, extension
 
     except Exception as e:

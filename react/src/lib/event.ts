@@ -16,6 +16,14 @@ export type TCanvasMagicGenerateEvent = {
   timestamp: string
 }
 
+export type TMaterialAddImagesToChatEvent = {
+  filePath: string
+  fileName: string
+  fileType: string
+  width?: number
+  height?: number
+}[]
+
 export type TEvents = {
   // ********** Socket events - Start **********
   'Socket::Session::Error': ISocket.SessionErrorEvent
@@ -35,6 +43,10 @@ export type TEvents = {
   'Canvas::AddImagesToChat': TCanvasAddImagesToChatEvent
   'Canvas::MagicGenerate': TCanvasMagicGenerateEvent
   // ********** Canvas events - End **********
+
+  // ********** Material events - Start **********
+  'Material::AddImagesToChat': TMaterialAddImagesToChatEvent
+  // ********** Material events - End **********
 }
 
 export const eventBus = mitt<TEvents>()

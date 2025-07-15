@@ -3,7 +3,7 @@ Image generation core module
 Contains the main orchestration logic for image generation across different providers
 """
 
-from typing import Optional
+from typing import Optional, Dict, Any
 from common import DEFAULT_PORT
 from tools.utils.image_utils import process_input_image
 from ..image_providers.image_base_provider import ImageProviderBase
@@ -17,6 +17,7 @@ from ..image_providers.wavespeed_provider import WavespeedProvider
 from .image_canvas_utils import (
     save_image_to_canvas,
 )
+import time
 
 IMAGE_PROVIDERS: dict[str, ImageProviderBase] = {
     'jaaz': JaazImageProvider(),
@@ -67,12 +68,23 @@ async def generate_image_with_provider(
 
         print(
             f"Using {len(processed_input_images)} input images for generation")
+            
+    # Prepare metadata with all generation parameters
+    metadata: Dict[str, Any] = {
+        'prompt': prompt,
+        'model': model,
+        'provider': provider,
+        'aspect_ratio': aspect_ratio,
+        'input_images': input_images or [],
+    }
+    
     # Generate image using the selected provider
     mime_type, width, height, filename = await provider_instance.generate(
         prompt=prompt,
         model=model,
         aspect_ratio=aspect_ratio,
-        input_images=processed_input_images
+        input_images=processed_input_images,
+        metadata=metadata
     )
 
     # Save image to canvas

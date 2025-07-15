@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import HomeHeader from '../home/HomeHeader'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import { Switch } from '../ui/switch'
 import { Input } from '../ui/input'
@@ -14,11 +13,14 @@ import {
   saveEnabledKnowledgeDataToSettings,
   type KnowledgeBase,
   type KnowledgeListParams,
-  getKnowledgeById
+  getKnowledgeById,
 } from '@/api/knowledge'
+import TopMenu from '../TopMenu'
 
 // 获取本地设置的API
-async function getSettings(): Promise<{ enabled_knowledge_data?: KnowledgeBase[] }> {
+async function getSettings(): Promise<{
+  enabled_knowledge_data?: KnowledgeBase[]
+}> {
   try {
     const response = await fetch('/api/settings')
     if (!response.ok) {
@@ -38,10 +40,13 @@ export default function Knowledge() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [enabledKnowledge, setEnabledKnowledge] = useState<Set<string>>(new Set())
+  const [enabledKnowledge, setEnabledKnowledge] = useState<Set<string>>(
+    new Set()
+  )
 
   // 详情弹窗状态
-  const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeBase | null>(null)
+  const [selectedKnowledge, setSelectedKnowledge] =
+    useState<KnowledgeBase | null>(null)
   const [showDetailDialog, setShowDetailDialog] = useState(false)
 
   const pageSize = 12
@@ -52,7 +57,7 @@ export default function Knowledge() {
       try {
         const settings = await getSettings()
         const enabledData = settings.enabled_knowledge_data || []
-        const enabledIds = enabledData.map(kb => kb.id)
+        const enabledIds = enabledData.map((kb) => kb.id)
         setEnabledKnowledge(new Set(enabledIds))
       } catch (error) {
         console.error('Failed to load enabled knowledge from settings:', error)
@@ -120,7 +125,7 @@ export default function Knowledge() {
 
       for (const id of newEnabled) {
         // Find in current list first
-        let kb = knowledgeList.find(k => k.id === id)
+        let kb = knowledgeList.find((k) => k.id === id)
 
         // If not found or missing content, fetch full data
         if (!kb || !kb.content) {
@@ -130,7 +135,7 @@ export default function Knowledge() {
           } catch (error) {
             console.error(`Failed to fetch knowledge ${id}:`, error)
             // Use partial data if available
-            kb = knowledgeList.find(k => k.id === id)
+            kb = knowledgeList.find((k) => k.id === id)
           }
         }
 
@@ -141,7 +146,9 @@ export default function Knowledge() {
 
       // Save complete data to settings
       await saveEnabledKnowledgeDataToSettings(enabledKnowledgeData)
-      console.log(`Saved ${enabledKnowledgeData.length} enabled knowledge items to settings`)
+      console.log(
+        `Saved ${enabledKnowledgeData.length} enabled knowledge items to settings`
+      )
       toast.success('知识库设置已保存')
     } catch (error) {
       console.error('Failed to save knowledge data to settings:', error)
@@ -184,7 +191,7 @@ export default function Knowledge() {
 
   return (
     <div>
-      <HomeHeader />
+      <TopMenu />
       <div className="flex flex-col px-6">
         <h1 className="text-2xl font-bold mb-4">知识库</h1>
 
@@ -229,7 +236,10 @@ export default function Knowledge() {
               {knowledgeList.map((knowledge) => {
                 const isEnabled = enabledKnowledge.has(knowledge.id)
                 return (
-                  <Card key={knowledge.id} className="relative cursor-pointer hover:shadow-md transition-shadow overflow-hidden">
+                  <Card
+                    key={knowledge.id}
+                    className="relative cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                  >
                     {/* Cover Image */}
                     {knowledge.cover && (
                       <div
@@ -239,7 +249,7 @@ export default function Knowledge() {
                       />
                     )}
 
-                    <CardHeader className={knowledge.cover ? "pb-2" : "pb-2"}>
+                    <CardHeader className={knowledge.cover ? 'pb-2' : 'pb-2'}>
                       <div className="flex items-start justify-between">
                         <h3
                           className="text-lg font-semibold truncate flex-1 mr-2"
@@ -345,12 +355,24 @@ export default function Knowledge() {
               {/* 基本信息 */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium text-muted-foreground">创建时间：</span>
-                  <span>{new Date(selectedKnowledge.created_at).toLocaleString('zh-CN')}</span>
+                  <span className="font-medium text-muted-foreground">
+                    创建时间：
+                  </span>
+                  <span>
+                    {new Date(selectedKnowledge.created_at).toLocaleString(
+                      'zh-CN'
+                    )}
+                  </span>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">更新时间：</span>
-                  <span>{new Date(selectedKnowledge.updated_at).toLocaleString('zh-CN')}</span>
+                  <span className="font-medium text-muted-foreground">
+                    更新时间：
+                  </span>
+                  <span>
+                    {new Date(selectedKnowledge.updated_at).toLocaleString(
+                      'zh-CN'
+                    )}
+                  </span>
                 </div>
               </div>
 

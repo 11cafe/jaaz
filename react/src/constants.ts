@@ -2,7 +2,7 @@ import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
 export const BASE_API_URL = import.meta.env.DEV
-  ? 'http://localhost:3000'
+  ? 'https://jaaz.app'
   : 'https://jaaz.app'
 
 export const PROVIDER_NAME_MAPPING: {
