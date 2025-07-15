@@ -1,6 +1,6 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage, uploadImageToJaaz } from '@/api/upload'
+import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import {
@@ -10,7 +10,7 @@ import {
 } from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, MessageContent, Model } from '@/types/types'
-import { ModelInfo, ToolInfo } from '@/api/model'
+import { ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
@@ -20,7 +20,6 @@ import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -135,34 +134,16 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       text_content += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
     }
 
-    // 获取图片URL
+    // fetch image base64
     const imagePromises = images.map(async (image) => {
       const response = await fetch(`/api/file/${image.file_id}`)
       const blob = await response.blob()
 
-      // If user is logged in, upload to Jaaz server to get URL
-      if (authStatus.is_logged_in) {
-        try {
-          const file = new File([blob], `image-${image.file_id}`, { type: blob.type })
-          const jaazUrl = await uploadImageToJaaz(file)
-          return jaazUrl
-        } catch (error) {
-          console.error('Failed to upload to Jaaz, falling back to base64:', error)
-          // Fallback to base64 if upload fails
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader()
-            reader.onloadend = () => resolve(reader.result as string)
-            reader.readAsDataURL(blob)
-          })
-        }
-      } else {
-        // If not logged in, use base64
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(blob)
-        })
-      }
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
     })
 
     const imageUrlList = await Promise.all(imagePromises)
