@@ -125,36 +125,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
 
+    // 使用XML格式让LLM更容易识别图片信息
     if (images.length > 0) {
-      images.forEach((image) => {
-        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
+      value += `\n\n<input_images count="${images.length}">`
+      images.forEach((image, index) => {
+        value += `\n  <image index="${index + 1}" file_id="${image.file_id}" width="${image.width}" height="${image.height}" />`
       })
-
-      // Fetch images as base64
-      const imagePromises = images.map(async (image) => {
-        const response = await fetch(`/api/file/${image.file_id}`)
-        const blob = await response.blob()
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(blob)
-        })
-      })
-
-      const base64Images = await Promise.all(imagePromises)
-
-      value = [
-        {
-          type: 'text',
-          text: value,
-        },
-        ...images.map((image, index) => ({
-          type: 'image_url',
-          image_url: {
-            url: base64Images[index],
-          },
-        })),
-      ] as MessageContent[]
+      value += `\n</input_images>`
+      value += `\n\n<instruction>Please use the input_images as input for image generation or editing.</instruction>`
     }
 
     const newMessage = messages.concat([
