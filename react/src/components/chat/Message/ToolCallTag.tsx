@@ -17,14 +17,112 @@ type ToolCallTagProps = {
   toolCall: ToolCall
   isExpanded: boolean
   onToggleExpand: () => void
+  sessionId?: string
+  canvasId?: string
 }
 
 const ToolCallTag: React.FC<ToolCallTagProps> = ({
   toolCall,
   isExpanded,
   onToggleExpand,
+  sessionId,
+  canvasId,
 }) => {
   const { name, arguments: inputs } = toolCall.function
+  const [isPendingConfirmation, setIsPendingConfirmation] = useState(false)
+  const [isConfirmed, setIsConfirmed] = useState(false)
+  const [isCancelled, setIsCancelled] = useState(false)
+
+  // 监听确认相关事件
+  useEffect(() => {
+    const handlePendingConfirmation = (data: TEvents['Socket::Session::ToolCallPendingConfirmation']) => {
+      if (data.id === toolCall.id) {
+        setIsPendingConfirmation(true)
+      }
+    }
+
+    const handleConfirmed = (data: TEvents['Socket::Session::ToolCallConfirmed']) => {
+      if (data.id === toolCall.id) {
+        setIsConfirmed(true)
+        setIsPendingConfirmation(false)
+      }
+    }
+
+    const handleCancelled = (data: TEvents['Socket::Session::ToolCallCancelled']) => {
+      if (data.id === toolCall.id) {
+        setIsCancelled(true)
+        setIsPendingConfirmation(false)
+      }
+    }
+
+    eventBus.on('Socket::Session::ToolCallPendingConfirmation', handlePendingConfirmation)
+    eventBus.on('Socket::Session::ToolCallConfirmed', handleConfirmed)
+    eventBus.on('Socket::Session::ToolCallCancelled', handleCancelled)
+
+    return () => {
+      eventBus.off('Socket::Session::ToolCallPendingConfirmation', handlePendingConfirmation)
+      eventBus.off('Socket::Session::ToolCallConfirmed', handleConfirmed)
+      eventBus.off('Socket::Session::ToolCallCancelled', handleCancelled)
+    }
+  }, [toolCall.id])
+
+  const handleConfirm = async () => {
+    if (!sessionId) return
+
+    try {
+      const response = await fetch('/api/tool/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          tool_call_id: toolCall.id,
+          confirmed: true,
+          tool_arguments: {
+            name: name,
+            ...JSON.parse(inputs)
+          },
+          canvas_id: canvasId
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to confirm tool execution')
+      }
+    } catch (error) {
+      console.error('Error confirming tool execution:', error)
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!sessionId) return
+
+    try {
+      const response = await fetch('/api/tool/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          tool_call_id: toolCall.id,
+          confirmed: false,
+          tool_arguments: {
+            name: name,
+            ...JSON.parse(inputs)
+          },
+          canvas_id: canvasId
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to cancel tool execution')
+      }
+    } catch (error) {
+      console.error('Error cancelling tool execution:', error)
+    }
+  }
 
   if (name == 'prompt_user_multi_choice') {
     return <MultiChoicePrompt />
@@ -46,6 +144,9 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
       console.error('Error parsing args:', error)
     }
   }
+
+  // 检查是否需要确认（视频生成工具）
+  const needsConfirmation = name === 'generate_video_by_kling_v2_jaaz'
 
   return (
     <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-md shadow-sm overflow-hidden">
@@ -120,6 +221,50 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 确认按钮区域 */}
+            {needsConfirmation && isPendingConfirmation && !isConfirmed && !isCancelled && (
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
+                  请确认是否要生成视频？这将消耗计算资源。
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleConfirm}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    确认生成
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCancel}
+                    className="border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    取消
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* 状态显示 */}
+            {isConfirmed && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  已确认，正在生成视频...
+                </p>
+              </div>
+            )}
+
+            {isCancelled && (
+              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-950/30 border border-gray-200 dark:border-gray-800 rounded-md">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  已取消视频生成
+                </p>
+              </div>
+            )}
+
             {toolCall.result && <ToolCallContentV2 content={toolCall.result} />}
           </div>
         </div>

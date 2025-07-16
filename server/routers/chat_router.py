@@ -1,11 +1,13 @@
-#server/routers/chat_router.py
+# server/routers/chat_router.py
 from fastapi import APIRouter, Request
 from services.chat_service import handle_chat
 from services.magic_service import handle_magic
 from services.stream_service import get_stream_task
+from services.tool_confirmation_service import handle_tool_confirmation
 from typing import Dict
 
 router = APIRouter(prefix="/api")
+
 
 @router.post("/chat")
 async def chat(request: Request):
@@ -24,6 +26,7 @@ async def chat(request: Request):
     data = await request.json()
     await handle_chat(data)
     return {"status": "done"}
+
 
 @router.post("/cancel/{session_id}")
 async def cancel_chat(session_id: str):
@@ -45,6 +48,26 @@ async def cancel_chat(session_id: str):
         return {"status": "cancelled"}
     return {"status": "not_found_or_done"}
 
+
+@router.post("/tool/confirm")
+async def confirm_tool(request: Request):
+    """
+    Endpoint to handle tool confirmation requests.
+
+    Receives a JSON payload from the client, passes it to the tool confirmation handler,
+    and returns a success status.
+
+    Request body:
+        JSON object containing tool confirmation data.
+
+    Response:
+        {"status": "done"}
+    """
+    data = await request.json()
+    await handle_tool_confirmation(data)
+    return {"status": "done"}
+
+
 @router.post("/magic")
 async def magic(request: Request):
     """
@@ -62,6 +85,7 @@ async def magic(request: Request):
     data = await request.json()
     await handle_magic(data)
     return {"status": "done"}
+
 
 @router.post("/magic/cancel/{session_id}")
 async def cancel_magic(session_id: str) -> Dict[str, str]:

@@ -2,9 +2,6 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_providers.jaaz_kling_provider import JaazKlingProvider
-from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
-from .utils.image_utils import process_input_image
 
 
 class GenerateVideoByKlingV2InputSchema(BaseModel):
@@ -58,52 +55,16 @@ async def generate_video_by_kling_v2_jaaz(
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
 
-    try:
-        # Validate input_images is provided and not empty
-        if not input_images or len(input_images) == 0:
-            raise ValueError(
-                "input_images is required and cannot be empty. Please provide at least one image.")
+    # Send confirmation request instead of immediately executing
+    from services.websocket_service import send_to_websocket
+    await send_to_websocket(session_id, {
+        'type': 'tool_call_pending_confirmation',
+        'id': tool_call_id,
+        'name': 'generate_video_by_kling_v2_jaaz'
+    })
 
-        # Send start notification
-        await send_video_start_notification(
-            session_id,
-            f"Starting Kling video generation..."
-        )
-
-        # Process input images (use first image as start_image)
-        first_image = input_images[0]
-        processed_image = await process_input_image(first_image)
-        if not processed_image:
-            raise ValueError(
-                f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
-
-        processed_start_image = processed_image
-        print(
-            f"Using first input image as start image for Kling video generation: {first_image}")
-
-        # Create Kling provider and generate video
-        provider = JaazKlingProvider()
-        video_url = await provider.generate(
-            prompt=prompt,
-            model="kling-v2.1-standard",
-            negative_prompt=negative_prompt,
-            guidance_scale=guidance_scale,
-            aspect_ratio=aspect_ratio,
-            duration=duration,
-            start_image=processed_start_image,
-        )
-
-        # Process video result (save, update canvas, notify)
-        return await process_video_result(
-            video_url=video_url,
-            session_id=session_id,
-            canvas_id=canvas_id,
-            provider_name="jaaz_kling",
-        )
-
-    except Exception as e:
-        print(f"Error in Kling video generation: {e}")
-        raise e
+    # Return a placeholder message indicating confirmation is needed
+    return "Video generation pending user confirmation. Please confirm in the chat interface to proceed."
 
 
 # Export the tool for easy import
