@@ -67,8 +67,6 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   }, [toolCall.id])
 
   const handleConfirm = async () => {
-    if (!sessionId) return
-
     try {
       const response = await fetch('/api/tool/confirm', {
         method: 'POST',
@@ -76,14 +74,8 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: sessionId,
           tool_call_id: toolCall.id,
           confirmed: true,
-          tool_arguments: {
-            name: name,
-            ...JSON.parse(inputs)
-          },
-          canvas_id: canvasId
         }),
       })
 
@@ -96,8 +88,6 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   }
 
   const handleCancel = async () => {
-    if (!sessionId) return
-
     try {
       const response = await fetch('/api/tool/confirm', {
         method: 'POST',
@@ -105,14 +95,8 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: sessionId,
           tool_call_id: toolCall.id,
           confirmed: false,
-          tool_arguments: {
-            name: name,
-            ...JSON.parse(inputs)
-          },
-          canvas_id: canvasId
         }),
       })
 

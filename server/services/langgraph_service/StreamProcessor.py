@@ -16,8 +16,6 @@ class StreamProcessor:
         self.tool_calls: List[ToolCall] = []
         self.last_saved_message_index = 0
         self.last_streaming_tool_call_id: Optional[str] = None
-        # tool_call_id -> tool_data
-        self.pending_confirmations: Dict[str, Dict[str, Any]] = {}
 
     async def process_stream(self, swarm: StateGraph, messages: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
         """处理整个流式响应
@@ -116,29 +114,12 @@ class StreamProcessor:
         print('😘tool_call event', tool_calls)
 
         for tool_call in self.tool_calls:
-            tool_name = tool_call.get('name')
-
-            # 存储工具调用信息用于确认
-            self.pending_confirmations[tool_call.get('id')] = {
-                'name': tool_name,
-                'arguments': tool_call.get('args', '{}')
-            }
-
-            # 对于需要确认的工具，发送确认请求
-            if tool_name == 'generate_video_by_kling_v2_jaaz':
-                await self.websocket_service(self.session_id, {
-                    'type': 'tool_call_pending_confirmation',
-                    'id': tool_call.get('id'),
-                    'name': tool_name
-                })
-            else:
-                # 对于其他工具，正常发送工具调用事件
-                await self.websocket_service(self.session_id, {
-                    'type': 'tool_call',
-                    'id': tool_call.get('id'),
-                    'name': tool_name,
-                    'arguments': '{}'
-                })
+            await self.websocket_service(self.session_id, {
+                'type': 'tool_call',
+                'id': tool_call.get('id'),
+                'name': tool_call.get('name'),
+                'arguments': '{}'
+            })
 
     async def _handle_tool_call_chunks(self, tool_call_chunks: List[Any]) -> None:
         """处理工具调用参数流"""
@@ -153,12 +134,5 @@ class StreamProcessor:
                         'id': self.last_streaming_tool_call_id,
                         'text': tool_call_chunk.get('args')
                     })
-
-                    # 更新待确认的工具调用参数
-                    if self.last_streaming_tool_call_id in self.pending_confirmations:
-                        current_args = self.pending_confirmations[self.last_streaming_tool_call_id].get(
-                            'arguments', '')
-                        self.pending_confirmations[self.last_streaming_tool_call_id][
-                            'arguments'] = current_args + tool_call_chunk.get('args', '')
                 else:
                     print('🟠no last_streaming_tool_call_id', tool_call_chunk)
