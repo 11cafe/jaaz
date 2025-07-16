@@ -1,26 +1,116 @@
-Open Source License for Jaaz
-Jaaz is released under a modified Apache License 2.0, with the following additional terms and conditions tailored to its local-first, multimodal AI Agent architecture:
+Jaaz 许可协议 (Jaaz Licensing Policy)
+English Version
+This project adopts a User-Segmented Dual Licensing model.
 
-1. Permitted Use & Commercial Restrictions
-   You are free to use Jaaz for research, personal use, or internal business purposes, including as a component within a larger local or cloud-based system. However, a commercial license must be obtained under the following conditions:
-   a. Multi-tenant Hosting or SaaS Use
-   Operating Jaaz as a multi-tenant service, such as offering hosted design or generation services to external clients via Jaaz APIs or frontend, requires a commercial license or written authorization.
-   Tenant Definition: Each isolated workspace or client instance (whether via API, UI, or CLI) is considered a tenant under this clause.
-   b. Branding and Attribution
-   When using the Jaaz frontend interface (including default dashboards or tools):
-   You may not remove, obscure, or alter the Jaaz logo, name, or copyright without written consent.
-   This clause does not apply to headless API-only usage or frontend-overridden deployments with explicit written authorization.
-   c. Model Integration & Distribution
-   Jaaz supports the integration of local and external models. You are responsible for ensuring compliance with third-party model licenses. Redistribution of bundled models requires adherence to each model’s respective license.
-2. Contributions and Upstream Rights
-   By contributing to the Jaaz project (via pull requests, issues, or other means), you agree that:
-   a. License Adjustments
-   The maintainers reserve the right to update this license to strengthen or relax conditions as the project evolves, with prior notice in the main repository.
-   b. Commercial Use of Contributions
-   All contributed code, configurations, and documentation may be used by the maintainers for both open-source and commercial purposes, including but not limited to Jaaz’s paid enterprise deployments, cloud integrations, and private model offerings.
-3. Intellectual Property & UI
-   The visual and interaction design of Jaaz (including iconography, component arrangement, and prompt UX) is protected under applicable UI/UX design rights and may not be copied or resold as a derivative product without permission.
-4. Base License
-   Aside from the above specific terms, Jaaz adheres to the Apache License 2.0. Full license text available at:
-   http://www.apache.org/licenses/LICENSE-2.0
-   © 2025 Jaaz Contributors & 11cafe Studio. All rights reserved.
+Core Principle:
+
+For Individuals and Organizations with 10 or Fewer Users: The GNU Affero General Public License v3.0 (AGPLv3) applies by default.
+
+For Organizations with More Than 10 Users: A Commercial License is required.
+
+Definition: "10 or Fewer Users"
+This refers to a total of no more than ten (10) individuals within your organization (including but not limited to companies, non-profit organizations, government agencies, and educational institutions) who can access, use, or in any way, directly or indirectly, benefit from the functionality of the Jaaz software. This includes developers, testers, operations personnel, end-users, and individuals who interact with Jaaz's functionality through integrated systems.
+
+1. Open Source License: AGPLv3 - For Individuals and Organizations with 10 or Fewer Users
+
+If you are an individual user, or if your organization meets the "10 or Fewer Users" definition above, you are free to use, modify, and distribute Jaaz under the terms of the AGPLv3. The full text of the AGPLv3 can be accessed at: https://www.gnu.org/licenses/agpl-3.0.html.
+
+Core Obligation: A key requirement of the AGPLv3 is that if you modify Jaaz and make its functionality available to users over a network, you must also make the corresponding complete source code of your modified version available to those users under the AGPLv3 license. If you wish to avoid this source code disclosure obligation, even if you meet the "10 or Fewer Users" criteria, you must obtain a commercial license (see below).
+
+Please read and fully understand all terms and conditions of the AGPLv3 before using the software.
+
+2. Commercial License - For Organizations with More Than 10 Users or Those Bypassing AGPLv3 Obligations
+
+Mandatory Requirement: If your organization does not meet the "10 or Fewer Users" definition (i.e., has 11 or more individuals who can access, use, or benefit from the software), you MUST obtain and sign a commercial license from us to use Jaaz.
+
+Voluntary Option: Even if your organization meets the "10 or Fewer Users" condition, you MUST also obtain a commercial license if your use case cannot comply with the AGPLv3 terms (especially the obligation to disclose source code), or if you require specific commercial terms not provided by the AGPLv3 (such as warranties, indemnification, or avoiding copyleft restrictions).
+
+Common scenarios requiring a commercial license include (but are not limited to):
+
+Your organization's size exceeds 10 users.
+
+(Regardless of organization size) You wish to distribute a modified version of Jaaz without disclosing the source code of your modifications under the AGPLv3.
+
+(Regardless of organization size) You wish to provide a network service (SaaS) based on a modified version of Jaaz without making the modified source code available to your users under the AGPLv3.
+
+(Regardless of organization size) Your company policy, client contracts, or project requirements prohibit the use of AGPLv3-licensed software or require closed-source distribution and confidentiality.
+
+A commercial license will grant you the right to be exempted from AGPLv3 obligations (such as source code disclosure) and may include additional commercial assurances.
+
+To Obtain a Commercial License: Please contact the Jaaz team by email at bd@jaaz.ai (请替换为您的商务邮箱) to discuss commercial licensing.
+
+3. Contributions
+
+We welcome community contributions to Jaaz. All contributions submitted to this project (e.g., via a Pull Request) are considered to be offered under the AGPLv3 license.
+
+By submitting a contribution, you agree that your code will be licensed to the project and all its subsequent users under the AGPLv3 license (regardless of whether those users ultimately follow the AGPLv3 or a commercial license).
+
+You also understand and agree that your contribution may be included in versions of Jaaz that are distributed under a commercial license.
+
+4. Additional Terms
+
+Intellectual Property & UI: The visual and interaction design of Jaaz (including iconography, component arrangement, and prompt UX) is protected under applicable UI/UX design rights and may not be copied or resold as a derivative product without permission.
+
+Policy Updates: The project maintainers reserve the right to update this licensing policy (including the definition and threshold of user numbers) as needed. Any such updates will be announced through the project's official channels (such as the code repository or official website).
+
+The specific terms and conditions for the commercial license will be governed by the formal commercial license agreement signed by both parties.
+
+© 2025 Jaaz Contributors & 11cafe Studio. All rights reserved.
+
+中文版本 (Chinese Version)
+本项目采用区分用户的双重许可 (User-Segmented Dual Licensing) 模式。
+
+核心原则：
+
+个人用户 和 10人及以下企业/组织: 默认适用 GNU Affero 通用公共许可证 v3.0 (AGPLv3)。
+
+超过10人的企业/组织: 必须 获取 商业许可证 (Commercial License)。
+
+定义：“10人及以下”
+指在您的组织（包括公司、非营利组织、政府机构、教育机构等任何实体）中，能够访问、使用或以任何方式直接或间接受益于本软件（Jaaz）功能的个人总数不超过10人。这包括但不限于开发者、测试人员、运营人员、最终用户、以及通过集成系统间接使用者等。
+
+1. 开源许可证 (Open Source License): AGPLv3 - 适用于个人及10人及以下组织
+
+如果您是个人用户，或者您的组织满足上述“10人及以下”的定义，您可以在 AGPLv3 的条款下自由使用、修改和分发 Jaaz。AGPLv3 的完整文本可以访问 https://www.gnu.org/licenses/agpl-3.0.html 获取。
+
+核心义务： AGPLv3 的一个关键要求是，如果您修改了 Jaaz 并通过网络提供服务，您必须以 AGPLv3 许可证向服务的接收者提供相应的完整源代码。即使您符合“10人及以下”的标准，如果您希望避免此源代码公开义务，您也需要考虑获取商业许可证（见下文）。
+
+使用前请务必仔细阅读并理解 AGPLv3 的所有条款。
+
+2. 商业许可证 (Commercial License) - 适用于超过10人的组织，或希望规避 AGPLv3 义务的用户
+
+强制要求： 如果您的组织不满足上述“10人及以下”的定义（即有11人或更多人可以访问、使用或受益于本软件），您必须联系我们获取并签署一份商业许可证才能使用 Jaaz。
+
+自愿选择： 即使您的组织满足“10人及以下”的条件，但如果您的使用场景无法满足 AGPLv3 的条款要求（特别是关于源代码公开的义务），或者您需要 AGPLv3 未提供的特定商业条款（如保证、赔偿、无 Copyleft 限制等），您也必须联系我们获取并签署一份商业许可证。
+
+需要商业许可证的常见情况包括（但不限于）：
+
+您的组织规模超过10人。
+
+（无论组织规模）您希望分发修改过的 Jaaz 版本，但不希望根据 AGPLv3 公开您修改部分的源代码。
+
+（无论组织规模）您希望基于修改过的 Jaaz 提供网络服务（SaaS），但不希望根据 AGPLv3 向服务使用者提供修改后的源代码。
+
+（无论组织规模）您的公司政策、客户合同或项目要求不允许使用 AGPLv3 许可的软件，或要求闭源分发及保密。
+
+商业许可证将为您提供豁免 AGPLv3 义务（如源代码公开）的权利，并可能包含额外的商业保障条款。
+
+获取商业许可： 请通过邮箱 bd@jaaz.ai (please replace with your business email) 联系 Jaaz 开发团队洽谈商业授权事宜。
+
+3. 贡献 (Contributions)
+
+我们欢迎社区对 Jaaz 的贡献。所有向本项目提交的贡献（例如通过 Pull Request）都将被视为在 AGPLv3 许可证下提供。
+
+通过向本项目提交贡献，即表示您同意您的代码以 AGPLv3 许可证授权给本项目及所有后续使用者（无论这些使用者最终遵循 AGPLv3 还是商业许可）。
+
+您也理解并同意，您的贡献可能会被包含在根据商业许可证分发的 Jaaz 版本中。
+
+4. 其他条款 (Additional Terms)
+
+知识产权与用户界面 (Intellectual Property & UI)： Jaaz 的视觉与交互设计（包括图标、组件布局和提示工程用户体验）受适用的 UI/UX 设计权保护，未经许可，不得抄袭或作为衍生产品转售。
+
+政策更新 (Policy Updates)： 项目维护者保留根据需要更新本许可政策（包括用户规模定义和阈值）的权利。相关更新将通过项目官方渠道（如代码仓库、官方网站）进行通知。
+
+关于商业许可证的具体条款和条件，以双方签署的正式商业许可协议为准。
+
+© 2025 Jaaz 贡献者 & 11cafe Studio. 版权所有。
