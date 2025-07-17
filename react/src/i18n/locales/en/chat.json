@@ -6,7 +6,7 @@
     "selectModel": "Please select a text model! Go to Settings to set your API keys if you haven't done so.",
     "selectTool": "Please go to settings to add image or video generation tools, or you won't be able to generate any images or videos!!",
     "enterPrompt": "Please enter a prompt",
-    "quantity": "Quantity"
+    "quantity": "Image Quantity"
   },
   "messages": {
     "imagePositioning": "Go to image",

@@ -14,7 +14,16 @@ import { ModelInfo, ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
-import { ArrowUp, Loader2, PlusIcon, Square, XIcon, RectangleVertical, ChevronDown, Hash } from 'lucide-react'
+import {
+  ArrowUp,
+  Loader2,
+  PlusIcon,
+  Square,
+  XIcon,
+  RectangleVertical,
+  ChevronDown,
+  Hash,
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -407,7 +416,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       />
 
       <div className="flex items-center justify-between gap-2 w-full">
-        <div className="flex items-center gap-2 max-w-[calc(100%-50px)]">
+        <div className="flex items-center gap-2 max-w-[calc(100%-50px)] flex-wrap">
           <input
             ref={imageInputRef}
             type="file"
@@ -418,7 +427,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           />
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
             onClick={() => imageInputRef.current?.click()}
           >
             <PlusIcon className="size-4" />
@@ -431,7 +440,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="h-9 px-3 flex items-center gap-2"
+                className="flex items-center gap-1"
+                size={'sm'}
               >
                 <RectangleVertical className="size-4" />
                 <span className="text-sm">{selectedAspectRatio}</span>
@@ -458,8 +468,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           <div className="relative" ref={quantitySliderRef}>
             <Button
               variant="outline"
-              className="h-9 px-3 flex items-center gap-2"
+              className="flex items-center gap-1"
               onClick={() => setShowQuantitySlider(!showQuantitySlider)}
+              size={'sm'}
             >
               <Hash className="size-4" />
               <span className="text-sm">{quantity}</span>
@@ -470,7 +481,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <AnimatePresence>
               {showQuantitySlider && (
                 <motion.div
-                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-background border border-border rounded-lg p-4 shadow-lg min-w-48"
+                  className="absolute bottom-full mb-2 left-0  bg-background border border-border rounded-lg p-4 shadow-lg min-w-48"
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -478,8 +489,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 >
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{t('chat:textarea.quantity')}</span>
-                      <span className="text-sm text-muted-foreground">{quantity}</span>
+                      <span className="text-sm font-medium">
+                        {t('chat:textarea.quantity', 'Image Quantity')}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {quantity}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">1</span>
@@ -496,7 +511,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                                   [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
                                   [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
                       />
-                      <span className="text-xs text-muted-foreground">{MAX_QUANTITY}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {MAX_QUANTITY}
+                      </span>
                     </div>
                   </div>
                   {/* Arrow pointing down */}
