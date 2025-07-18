@@ -6,6 +6,11 @@ import { ModelInfo } from '@/api/model'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
+import { toast } from 'sonner'
+import { useLanguage } from '@/hooks/use-language'
+
+// Track if warning has been shown
+let hasShownWarning = false;
 
 type ChatMagicGeneratorProps = {
     sessionId: string
@@ -25,6 +30,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
     scrollToBottom
 }) => {
     const { t } = useTranslation()
+    const { currentLanguage } = useLanguage()
     const { textModels, selectedTools, providers } = useConfigs()
     const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
     const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
@@ -43,8 +49,15 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
         async (data: TCanvasMagicGenerateEvent) => {
             if (!textModel) return
 
+            if (!hasShownWarning && textModel.provider === 'openai') {
+                toast.warning(t('canvas:messages.gptImagePermissionRequired'))
+                hasShownWarning = true;
+            }
+
             // 设置pending状态为text，表示正在处理
             setPending('text')
+
+            const languageName = `common:languages.${currentLanguage}`
 
             // 创建包含图片的消息
             const magicMessage: Message = {
@@ -52,7 +65,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 content: [
                     {
                         type: 'text',
-                        text: '✨ Magic Magic! Wait about 1~2 minutes please...'
+                        text: `Please analyze this image and generate a new one based on it. Always respond in ${t(languageName)}!`
                     },
                     {
                         type: 'image_url',
@@ -87,7 +100,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 setPending(false)
             }
         },
-        [sessionId, canvasId, messages, setMessages, setPending, selectedTools, scrollToBottom, textModel]
+        [sessionId, canvasId, messages, setMessages, setPending, selectedTools, scrollToBottom, textModel, currentLanguage, t]
     )
 
     useEffect(() => {

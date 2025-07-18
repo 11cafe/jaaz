@@ -48,6 +48,8 @@ async def generate_image_by_magic_jaaz(
 
     print(f"🎨 使用 jaaz 生成魔法图片: {prompt} {aspect_ratio}")
 
+    # initial_prompt = f"Please analyze this image and generate a new one based on it. If there are characters, try to maintain their appearance and temperament consistency.\n\n"
+
     # Generate image using the selected provider
     mime_type, width, height, filename = await provider_instance.generate(
         prompt=prompt,
