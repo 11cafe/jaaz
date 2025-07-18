@@ -7,6 +7,7 @@ from typing import Dict, Any, List
 
 # Import service modules
 from services.db_service import db_service
+from services.langgraph_service.agent_service import langgraph_magic_agent
 from services.OpenAIAgents_service import create_magic_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
@@ -56,8 +57,13 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     if len(messages) > 0:
         await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]))
 
-    # Create and start magic generation task
-    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id))
+    task = None
+    if text_model.get('provider') == 'jaaz':
+        task = asyncio.create_task(
+            _process_magic_generation_by_jaaz(messages, session_id, canvas_id, text_model))
+    else:
+        task = asyncio.create_task(
+            _process_magic_generation(messages, session_id, canvas_id))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -80,7 +86,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
 async def _process_magic_generation(messages: List[Dict[str, Any]], session_id: str, canvas_id: str) -> None:
     """
     Process magic generation in a separate async task.
-    
+
     Args:
         messages: List of messages
         session_id: Session ID
@@ -98,3 +104,34 @@ async def _process_magic_generation(messages: List[Dict[str, Any]], session_id: 
         'type': 'all_messages',
         'messages': all_messages
     })
+
+
+async def _process_magic_generation_by_jaaz(messages: List[Dict[str, Any]], session_id: str, canvas_id: str, text_model: ModelInfo) -> None:
+    """
+    Process magic generation using LangGraph agents.
+
+    Args:
+        messages: List of messages
+        session_id: Session ID
+        canvas_id: Canvas ID
+    """
+    try:
+        # 使用 LangGraph 魔法智能体处理
+        # 工具已在 MagicDrawAgentConfig 中指定
+        print(f"🚀 开始魔法图片生成处理...")
+        await langgraph_magic_agent(
+            messages=messages,
+            canvas_id=canvas_id,
+            session_id=session_id,
+            text_model=text_model
+        )
+
+        print(f"✨ Magic generation completed for session {session_id}")
+
+    except Exception as e:
+        print(f"❌ Magic generation failed for session {session_id}: {e}")
+        # 发送错误消息到前端
+        await send_to_websocket(session_id, {
+            'type': 'error',
+            'error': f'Magic generation failed: {str(e)}'
+        })

@@ -22,6 +22,7 @@ from tools.generate_video_by_kling_v2_jaaz import generate_video_by_kling_v2_jaa
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from tools.generate_image_by_recraft_v3_replicate import generate_image_by_recraft_v3_replicate
 from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_jaaz
+from tools.generate_image_by_magic_jaaz import generate_image_by_magic_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -142,6 +143,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "image",
         "provider": "replicate",
         "tool_function": generate_image_by_flux_kontext_max_replicate,
+    },
+    "generate_image_by_magic_jaaz": {
+        "display_name": "Magic Image Generation (GPT Image 1)",
+        "type": "image",
+        "provider": "jaaz",
+        "tool_function": generate_image_by_magic_jaaz,
     },
 }
 

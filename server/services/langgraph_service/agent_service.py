@@ -135,6 +135,60 @@ async def langgraph_multi_agent(
         await _handle_error(e, session_id)
 
 
+async def langgraph_magic_agent(
+    messages: List[Dict[str, Any]],
+    canvas_id: str,
+    session_id: str,
+    text_model: ModelInfo,
+    system_prompt: Optional[str] = None
+) -> None:
+    """魔法图片生成智能体处理函数
+
+    Args:
+        messages: 消息历史
+        canvas_id: 画布ID
+        session_id: 会话ID
+        text_model: 文本模型配置
+        system_prompt: 系统提示词（可选）
+    """
+    try:
+        # 0. 修复消息历史
+        fixed_messages = _fix_chat_history(messages)
+
+        # 1. 提取图片数据
+        image_data = _extract_image_data_from_messages(fixed_messages)
+        print(f"🎨 提取到图片数据: {'有' if image_data else '无'}")
+
+        # 2. 创建文本模型实例
+        text_model_instance = _create_text_model(text_model)
+
+        # 3. 创建魔法智能体（工具已在配置中指定）
+        magic_agents = AgentManager.create_magic_agents(
+            text_model_instance
+        )
+
+        # 4. 创建智能体群组，默认从 intent_agent 开始
+        swarm = create_swarm(
+            agents=magic_agents,  # type: ignore
+            default_active_agent='intent_agent'
+        )
+
+        # 5. 创建上下文，包含图片数据
+        context = {
+            'canvas_id': canvas_id,
+            'session_id': session_id,
+            'input_image_data': image_data
+        }
+
+        # 6. 流处理
+        processor = StreamProcessor(
+            session_id, db_service, send_to_websocket)  # type: ignore
+        await processor.process_stream(swarm, fixed_messages, context)
+
+    except Exception as e:
+        await _handle_error(e, session_id)
+
+
 def _create_text_model(text_model: ModelInfo) -> Any:
     """创建语言模型实例"""
     model = text_model.get('model')
@@ -178,3 +232,45 @@ async def _handle_error(error: Exception, session_id: str) -> None:
         'type': 'error',
         'error': str(error)
     }))
+
+
+def _extract_image_data_from_messages(messages: List[Dict[str, Any]]) -> Optional[str]:
+    """从消息中提取图片数据
+
+    Args:
+        messages: 消息列表
+
+    Returns:
+        图片的 base64 数据，如果没有图片则返回 None
+    """
+    if not messages:
+        return None
+
+    # 获取最后一条用户消息
+    last_user_message = None
+    for msg in reversed(messages):
+        if msg.get('role') == 'user':
+            last_user_message = msg
+            break
+
+    if not last_user_message:
+        return None
+
+    content = last_user_message.get('content')
+    if not content:
+        return None
+
+    # 处理 content 可能是字符串或列表的情况
+    if isinstance(content, str):
+        return None  # 字符串内容中没有图片数据
+
+    if isinstance(content, list):
+        # 查找图片类型的内容
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'image_url':
+                image_url = item.get('image_url', {}).get('url', '')
+                if image_url:
+                    print(f"📸 找到图片数据，类型: {type(image_url)}")
+                    return image_url
+
+    return None

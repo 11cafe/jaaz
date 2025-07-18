@@ -10,6 +10,7 @@ const CanvasPopbarWrapper = () => {
   const { excalidrawAPI } = useCanvas()
   const { textModels } = useConfigs()
   const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
+  const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
 
 
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
@@ -36,9 +37,9 @@ const CanvasPopbarWrapper = () => {
     const hasSelectedImages = selectedImages.length > 0
     setShowAddToChat(hasSelectedImages)
 
-    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 openai key
+    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 openai key 或 jaaz key
     const selectedCount = Object.keys(selectedIds).length
-    setShowMagicGenerate(selectedCount >= 2 && hasOpenaiProvider)
+    setShowMagicGenerate(selectedCount >= 2 && (hasOpenaiProvider || hasJaazProvider))
 
     // 如果既没有选中图片，也没有满足魔法生成条件，隐藏弹窗
     if (!hasSelectedImages && selectedCount < 2) {

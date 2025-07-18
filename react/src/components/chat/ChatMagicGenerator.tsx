@@ -25,15 +25,23 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
     scrollToBottom
 }) => {
     const { t } = useTranslation()
-    const { textModel, selectedTools, providers } = useConfigs()
+    const { textModels, selectedTools, providers } = useConfigs()
+    const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
+    const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
+
+    // 使用 gpt4o
+    let textModel: Model | undefined = undefined
+    if (hasJaazProvider) {
+        // 在 textModels 中找到 provider 为 jaaz 和 model 为 gpt-4o-mini 的模型
+        textModel = textModels.find((model) => model.provider === 'jaaz' && model.model === 'gpt-4o-mini')
+    } else if (hasOpenaiProvider) {
+        // 在 textModels 中找到 provider 为 openai 和 model 为 gpt-4o-mini 的模型
+        textModel = textModels.find((model) => model.provider === 'openai' && model.model === 'gpt-4o-mini')
+    }
 
     const handleMagicGenerate = useCallback(
         async (data: TCanvasMagicGenerateEvent) => {
-            if (!textModel) {
-                return
-            }
-
-            // TODO: 检查 OpenAI API Key 是否已配置,或者登录云端账号, 如果未配置,则提示用户
+            if (!textModel) return
 
             // 设置pending状态为text，表示正在处理
             setPending('text')
@@ -79,7 +87,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 setPending(false)
             }
         },
-        [sessionId, canvasId, messages, setMessages, setPending, textModel, selectedTools, providers, scrollToBottom]
+        [sessionId, canvasId, messages, setMessages, setPending, selectedTools, scrollToBottom, textModel]
     )
 
     useEffect(() => {
