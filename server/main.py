@@ -4,8 +4,10 @@ import io
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+print('Importing websocket_router')
 from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
-from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings
+print('Importing routers')
+from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings, tool_confirmation
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
@@ -14,13 +16,19 @@ from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
 import socketio # type: ignore
+print('Importing websocket_state')
 from services.websocket_state import sio
+print('Importing websocket_service')
 from services.websocket_service import broadcast_init_done
+print('Importing config_service')
 from services.config_service import config_service
+print('Importing tool_service')
 from services.tool_service import tool_service
 
 async def initialize():
+    print('Initializing config_service')
     await config_service.initialize()
+    print('Initializing broadcast_init_done')
     await broadcast_init_done()
 
 root_dir = os.path.dirname(__file__)
@@ -34,9 +42,11 @@ async def lifespan(app: FastAPI):
     yield
     # onshutdown
 
+print('Creating FastAPI app')
 app = FastAPI(lifespan=lifespan)
 
 # Include routers
+print('Including routers')
 app.include_router(config_router.router)
 app.include_router(settings.router)
 app.include_router(root_router.router)
@@ -45,6 +55,7 @@ app.include_router(workspace.router)
 app.include_router(image_router.router)
 app.include_router(ssl_test.router)
 app.include_router(chat_router.router)
+app.include_router(tool_confirmation.router)
 
 # Mount the React build directory
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
@@ -75,7 +86,7 @@ async def serve_react_app():
     response.headers["Expires"] = "0"
     return response
 
-
+print('Creating socketio app')
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
 
 if __name__ == "__main__":

@@ -26,10 +26,7 @@ import certifi
 import httpx
 from typing import Optional, Dict, Any, AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
-import logging
 import aiohttp
-
-logger = logging.getLogger(__name__)
 
 
 class HttpClient:
@@ -45,8 +42,7 @@ class HttpClient:
                 cls._ssl_context = ssl.create_default_context(
                     cafile=certifi.where())
             except Exception as e:
-                logger.warning(
-                    f"Failed to create SSL context with certifi: {e}")
+                print(f"⚠️ Failed to create SSL context with certifi: {e}")
                 cls._ssl_context = ssl.create_default_context()
         return cls._ssl_context
 
@@ -126,7 +122,7 @@ class HttpClient:
     @asynccontextmanager
     async def create_aiohttp(cls, trust_env: bool = True, **kwargs: Any) -> AsyncGenerator['aiohttp.ClientSession', None]:
         """创建 aiohttp 客户端上下文管理器
-        
+
         Args:
             trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
             **kwargs: 其他 aiohttp.ClientSession 参数
@@ -141,7 +137,7 @@ class HttpClient:
     @classmethod
     def create_aiohttp_client(cls, trust_env: bool = True, **kwargs: Any) -> 'aiohttp.ClientSession':
         """直接创建 aiohttp 客户端（需要手动关闭）
-        
+
         Args:
             trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
             **kwargs: 其他 aiohttp.ClientSession 参数

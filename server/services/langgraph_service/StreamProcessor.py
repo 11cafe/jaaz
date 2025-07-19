@@ -113,13 +113,32 @@ class StreamProcessor:
         self.tool_calls = [tc for tc in tool_calls if tc.get('name')]
         print('😘tool_call event', tool_calls)
 
+        # 需要确认的工具列表
+        TOOLS_REQUIRING_CONFIRMATION = {
+            'generate_video_by_kling_v2_jaaz',
+            'generate_video_by_seedance_v1_pro_volces',
+            'generate_video_by_seedance_v1_lite_i2v',
+            'generate_video_by_seedance_v1_lite_t2v',
+            'generate_video_by_seedance_v1_jaaz',
+            'generate_video_by_hailuo_02_jaaz',
+        }
+
         for tool_call in self.tool_calls:
-            await self.websocket_service(self.session_id, {
-                'type': 'tool_call',
-                'id': tool_call.get('id'),
-                'name': tool_call.get('name'),
-                'arguments': '{}'
-            })
+            tool_name = tool_call.get('name')
+
+            # 检查是否需要确认
+            if tool_name in TOOLS_REQUIRING_CONFIRMATION:
+                # 对于需要确认的工具，不在这里发送事件，让工具函数自己处理
+                print(
+                    f'🔄 Tool {tool_name} requires confirmation, skipping StreamProcessor event')
+                continue
+            else:
+                await self.websocket_service(self.session_id, {
+                    'type': 'tool_call',
+                    'id': tool_call.get('id'),
+                    'name': tool_name,
+                    'arguments': '{}'
+                })
 
     async def _handle_tool_call_chunks(self, tool_call_chunks: List[Any]) -> None:
         """处理工具调用参数流"""

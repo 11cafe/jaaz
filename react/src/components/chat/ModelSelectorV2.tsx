@@ -116,7 +116,7 @@ const ModelSelector: React.FC = () => {
           )
         }}
       >
-        <SelectTrigger className="w-fit max-w-[100px] bg-background">
+        <SelectTrigger className="w-fit max-w-[100px] bg-background" size="sm">
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
@@ -142,6 +142,7 @@ const ModelSelector: React.FC = () => {
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
+            size={'sm'}
             variant="outline"
             className="w-fit max-w-[40%] bg-background justify-between overflow-hidden"
           >

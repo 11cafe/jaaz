@@ -5,6 +5,9 @@ from langchain_core.runnables import RunnableConfig
 from tools.video_providers.jaaz_hailuo_provider import JaazHailuoProvider
 from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
+from services.tool_confirmation_manager import tool_confirmation_manager
+from services.websocket_service import send_to_websocket
+import json
 
 
 class GenerateVideoByHailuoInputSchema(BaseModel):
@@ -53,6 +56,31 @@ async def generate_video_by_hailuo_02_jaaz(
 
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
+
+    # 检查是否需要确认
+    arguments = {
+        'prompt': prompt,
+        'prompt_enhancer': prompt_enhancer,
+        'resolution': resolution,
+        'duration': duration,
+        'input_images': input_images,
+    }
+
+    # 发送确认请求
+    await send_to_websocket(session_id, {
+        'type': 'tool_call_pending_confirmation',
+        'id': tool_call_id,
+        'name': 'generate_video_by_hailuo_02_jaaz',
+        'arguments': json.dumps(arguments)
+    })
+
+    # 等待确认
+    confirmed = await tool_confirmation_manager.request_confirmation(
+        tool_call_id, session_id, 'generate_video_by_hailuo_02_jaaz', arguments
+    )
+
+    if not confirmed:
+        return "Video generation cancelled by user."
 
     try:
         # Send start notification

@@ -15,19 +15,11 @@ type CanvasMagicGeneratorProps = {
     selectedElements: OrderedExcalidrawElement[]
 }
 
-// Track if warning has been shown
-let hasShownWarning = false;
-
 const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicGeneratorProps) => {
     const { t } = useTranslation()
     const { excalidrawAPI } = useCanvas()
 
     const handleMagicGenerate = async () => {
-        if (!hasShownWarning) {
-            toast.warning(t('canvas:messages.gptImagePermissionRequired'))
-            hasShownWarning = true;
-        }
-
         if (!excalidrawAPI) return;
 
         // 获取选中的元素
@@ -49,7 +41,8 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
             },
             files,
             mimeType: 'image/png',
-            quality: 0.8,
+            maxWidthOrHeight: 2048,
+            quality: 1,
         });
 
         // 转base64

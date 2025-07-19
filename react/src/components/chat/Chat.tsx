@@ -33,11 +33,15 @@ import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
+import ShareTemplateDialog from './ShareTemplateDialog'
 
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 import { ModelInfo, ToolInfo } from '@/api/model'
+import { Button } from '@/components/ui/button'
+import { Share2 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -55,6 +59,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const { initCanvas, setInitCanvas } = useConfigs()
+  const { authStatus } = useAuth()
+  const [showShareDialog, setShowShareDialog] = useState(false)
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -80,6 +86,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
+  const [pendingToolConfirmations, setPendingToolConfirmations] = useState<
+    string[]
+  >([])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(false)
@@ -203,6 +212,116 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId]
   )
 
+  const handleToolCallPendingConfirmation = useCallback(
+    (data: TEvents['Socket::Session::ToolCallPendingConfirmation']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      const existToolCall = messages.find(
+        (m) =>
+          m.role === 'assistant' &&
+          m.tool_calls &&
+          m.tool_calls.find((t) => t.id == data.id)
+      )
+
+      if (existToolCall) {
+        return
+      }
+
+      setMessages(
+        produce((prev) => {
+          console.log('👇tool_call_pending_confirmation event get', data)
+          setPending('tool')
+          prev.push({
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                type: 'function',
+                function: {
+                  name: data.name,
+                  arguments: data.arguments,
+                },
+                id: data.id,
+              },
+            ],
+          })
+        })
+      )
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          prev.push(data.id)
+        })
+      )
+
+      // 自动展开需要确认的工具调用
+      setExpandingToolCalls(
+        produce((prev) => {
+          if (!prev.includes(data.id)) {
+            prev.push(data.id)
+          }
+        })
+      )
+    },
+    [sessionId]
+  )
+
+  const handleToolCallConfirmed = useCallback(
+    (data: TEvents['Socket::Session::ToolCallConfirmed']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          return prev.filter((id) => id !== data.id)
+        })
+      )
+
+      setExpandingToolCalls(
+        produce((prev) => {
+          if (!prev.includes(data.id)) {
+            prev.push(data.id)
+          }
+        })
+      )
+    },
+    [sessionId]
+  )
+
+  const handleToolCallCancelled = useCallback(
+    (data: TEvents['Socket::Session::ToolCallCancelled']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          return prev.filter((id) => id !== data.id)
+        })
+      )
+
+      // 更新工具调用的状态
+      setMessages(
+        produce((prev) => {
+          prev.forEach((msg) => {
+            if (msg.role === 'assistant' && msg.tool_calls) {
+              msg.tool_calls.forEach((tc) => {
+                if (tc.id === data.id) {
+                  // 添加取消状态标记
+                  tc.result = '工具调用已取消'
+                }
+              })
+            }
+          })
+        })
+      )
+    },
+    [sessionId]
+  )
+
   const handleToolCallArguments = useCallback(
     (data: TEvents['Socket::Session::ToolCallArguments']) => {
       if (data.session_id && data.session_id !== sessionId) {
@@ -224,6 +343,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               (t) => t.id == data.id
             )
             if (toolCall) {
+              // 检查是否是待确认的工具调用，如果是则跳过参数追加
+              if (pendingToolConfirmations.includes(data.id)) {
+                return
+              }
               toolCall.function.arguments += data.text
             }
           }
@@ -231,7 +354,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [sessionId, scrollToBottom, pendingToolConfirmations]
   )
 
   const handleToolCallResult = useCallback(
@@ -333,6 +456,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
+    eventBus.on(
+      'Socket::Session::ToolCallPendingConfirmation',
+      handleToolCallPendingConfirmation
+    )
+    eventBus.on('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
+    eventBus.on('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
     eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
@@ -345,6 +474,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       eventBus.off('Socket::Session::Delta', handleDelta)
       eventBus.off('Socket::Session::ToolCall', handleToolCall)
+      eventBus.off(
+        'Socket::Session::ToolCallPendingConfirmation',
+        handleToolCallPendingConfirmation
+      )
+      eventBus.off(
+        'Socket::Session::ToolCallConfirmed',
+        handleToolCallConfirmed
+      )
+      eventBus.off(
+        'Socket::Session::ToolCallCancelled',
+        handleToolCallCancelled
+      )
       eventBus.off(
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
@@ -438,25 +579,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <PhotoProvider>
-      <div className="flex flex-col h-screen relative">
+      <div className='flex flex-col h-screen relative'>
         {/* Chat messages */}
 
-        <header className="flex px-2 py-2 absolute top-0 z-1 w-full">
-          <SessionSelector
-            session={session}
-            sessionList={sessionList}
-            onClickNewChat={onClickNewChat}
-            onSelectSession={onSelectSession}
-          />
-          <Blur className="absolute top-0 left-0 right-0 h-full" />
+        <header className='flex items-center px-2 py-2 absolute top-0 z-1 w-full'>
+          <div className='flex-1 min-w-0'>
+            <SessionSelector
+              session={session}
+              sessionList={sessionList}
+              onClickNewChat={onClickNewChat}
+              onSelectSession={onSelectSession}
+            />
+          </div>
+
+          {/* Share Template Button */}
+          {/* {authStatus.is_logged_in && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2 shrink-0"
+              onClick={() => setShowShareDialog(true)}
+            >
+              <Share2 className="h-4 w-4 mr-1" />
+            </Button>
+          )} */}
+
+          <Blur className='absolute top-0 left-0 right-0 h-full -z-1' />
         </header>
 
-        <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
+        <ScrollArea className='h-[calc(100vh-45px)]' viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex flex-col flex-1 px-4 pb-50 pt-15">
+            <div className='flex flex-col flex-1 px-4 pb-50 pt-15'>
               {/* Messages */}
               {messages.map((message, idx) => (
-                <div key={`${idx}`} className="flex flex-col gap-4 mb-2">
+                <div key={`${idx}`} className='flex flex-col gap-4 mb-2'>
                   {/* Regular message content */}
                   {typeof message.content == 'string' &&
                     (message.role !== 'tool' ? (
@@ -506,6 +662,37 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               ])
                             }
                           }}
+                          requiresConfirmation={pendingToolConfirmations.includes(
+                            toolCall.id
+                          )}
+                          onConfirm={() => {
+                            // 发送确认事件到后端
+                            fetch('/api/tool_confirmation', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                session_id: sessionId,
+                                tool_call_id: toolCall.id,
+                                confirmed: true,
+                              }),
+                            })
+                          }}
+                          onCancel={() => {
+                            // 发送取消事件到后端
+                            fetch('/api/tool_confirmation', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                session_id: sessionId,
+                                tool_call_id: toolCall.id,
+                                confirmed: false,
+                              }),
+                            })
+                          }}
                         />
                       )
                     })}
@@ -517,28 +704,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
             </div>
           ) : (
-            <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
+            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-16 select-none'>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-muted-foreground text-3xl"
+                className='text-muted-foreground text-3xl'
               >
-                <ShinyText text="Hello, Jaaz!" />
+                <ShinyText text='Hello, Jaaz!' />
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-muted-foreground text-2xl"
+                className='text-muted-foreground text-2xl'
               >
-                <ShinyText text="How can I help you today?" />
+                <ShinyText text='How can I help you today?' />
               </motion.span>
             </motion.div>
           )}
         </ScrollArea>
 
-        <div className="p-2 gap-2 sticky bottom-0">
+        <div className='p-2 gap-2 sticky bottom-0'>
           <ChatTextarea
             sessionId={sessionId!}
             pending={!!pending}
@@ -558,6 +745,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           />
         </div>
       </div>
+
+      {/* Share Template Dialog */}
+      <ShareTemplateDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        canvasId={canvasId}
+        sessionId={sessionId || ''}
+        messages={messages}
+      />
     </PhotoProvider>
   )
 }

@@ -92,12 +92,14 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       return !(props as any).inline && match ? (
         <pre
           {...props}
-          className={`${className} text-sm w-full max-w-full overflow-x-auto p-3 rounded-lg mt-2 bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black whitespace-pre break-all`}
+          className={`${className} text-sm w-full max-w-full overflow-x-auto p-3 rounded-lg mt-2 bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black whitespace-pre-wrap break-all`}
         >
           <code
             className={match[1]}
             style={{
               wordBreak: 'break-all',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
             }}
           >
             {children}

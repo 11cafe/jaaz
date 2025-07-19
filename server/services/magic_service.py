@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 # Import service modules
 from services.db_service import db_service
-from services.OpenAIAgents_service import create_magic_response
+from services.OpenAIAgents_service import create_magic_response, create_jaaz_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from models.config_model import ModelInfo
@@ -57,7 +57,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]))
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id))
+    task = asyncio.create_task(_process_magic_generation(text_model.get('provider'), messages, session_id, canvas_id))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -77,17 +77,25 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     print('✨ magic_service 处理完成')
 
 
-async def _process_magic_generation(messages: List[Dict[str, Any]], session_id: str, canvas_id: str) -> None:
+async def _process_magic_generation(
+    provider: str,
+    messages: List[Dict[str, Any]],
+    session_id: str,
+    canvas_id: str,
+) -> None:
     """
     Process magic generation in a separate async task.
-    
+
     Args:
         messages: List of messages
         session_id: Session ID
         canvas_id: Canvas ID
     """
     # Create AI response using OpenAI API
-    ai_response = await create_magic_response(messages, session_id, canvas_id)
+    if provider == 'jaaz':
+        ai_response = await create_jaaz_response(messages, session_id, canvas_id)
+    else:
+        ai_response = await create_magic_response(messages, session_id, canvas_id)
 
     # Save AI response to database
     await db_service.create_message(session_id, 'assistant', json.dumps(ai_response))
@@ -98,3 +106,4 @@ async def _process_magic_generation(messages: List[Dict[str, Any]], session_id: 
         'type': 'all_messages',
         'messages': all_messages
     })
+

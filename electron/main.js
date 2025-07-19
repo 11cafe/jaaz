@@ -203,10 +203,14 @@ const startPythonApi = async () => {
   console.log('BASE_API_URL:', env.BASE_API_URL)
 
   // Apply proxy settings and get environment variables
-  const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()
+  try {
+    const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()
 
-  // Merge proxy environment variables into env
-  Object.assign(env, proxyEnvVars)
+    // Merge proxy environment variables into env
+    Object.assign(env, proxyEnvVars)
+  } catch (error) {
+    console.error('Failed to get proxy environment variables:', error)
+  }
 
   // Determine the Python executable path (considering packaged app)
   const isWindows = process.platform === 'win32'

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { AuthStatus, getAuthStatus } from '../api/auth'
 
@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus>({
     status: 'logged_out',
-    is_logged_in: false
+    is_logged_in: false,
   })
   const [isLoading, setIsLoading] = useState(true)
 

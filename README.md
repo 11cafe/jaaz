@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <a href="https://jaaz.app" target="_blank"> Jaaz.app</a>
   <p align="center">The World's First Open source AI Design Agent</p>
@@ -11,11 +10,10 @@ The world's first open-source multimodal creative agent, a creative tool that pr
 
 [Join our Discord](https://discord.gg/dS7kuT66wc) to get latest updates!
 
-
 <div align="center"> <a href="https://jaaz.app/api/downloads/mac-latest"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://jaaz.app/api/downloads/windows-latest"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
-
 ## ✨ Getting started & staying tuned with us.
+
 Star us, and you will receive all release notifications from GitHub without any delay!
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/1c9a3661-80a4-4fba-a30f-f469898b0aec" />
 
@@ -62,13 +60,11 @@ Intelligently invoke custom comfyui workflows
 
 <img width="900" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
 
-
 ## Cases
 
 - Prompt: Help me place this character in six different scenes, all in front of landmark buildings from around the world. The lighting is harmonious. He takes photos from all over the world, realistic, with warm light, high picture quality, and a picture ratio of 9:16
 
 ![814c563b08f6ef44de0c2c31f0fdd00b-min](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
-
 
 <img width="1000" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/56a15432-65ff-4e71-a2f2-4f159ffb304a" />
@@ -85,7 +81,6 @@ Intelligently invoke custom comfyui workflows
 To use deepseek as a provider, setup as below
 
 <img width="900" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
-
 
 ## Manual Install (For Linux or local builds)
 
@@ -110,6 +105,10 @@ First git clone this repo:
 ## Development
 
 🟠 **Need Python version >=3.12**
+
+VSCode/Cursor Install Extensions：
+
+- Black Formatter by ms-python (ms-python.black-formatter)
 
 `cd react`
 

@@ -2,8 +2,12 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_generation.video_generation_core import generate_video_with_provider
+from tools.video_providers.jaaz_provider import JaazVideoProvider
+from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
+from services.tool_confirmation_manager import tool_confirmation_manager
+from services.websocket_service import send_to_websocket
+import json
 
 
 class GenerateVideoBySeedanceV1InputSchema(BaseModel):
@@ -47,32 +51,86 @@ async def generate_video_by_seedance_v1_jaaz(
     camera_fixed: bool = True,
 ) -> str:
     """
-    Generate a video using Seedance V1 model via configured provider
+    Generate a video using Seedance V1 model via Jaaz provider
     """
-    # Process input images if provided (only use the first one)
-    processed_input_images = None
-    if input_images and len(input_images) > 0:
-        # Only process the first image
-        first_image = input_images[0]
-        processed_image = await process_input_image(first_image)
-        if processed_image:
-            processed_input_images = [processed_image]
-            print(f"Using input image for video generation: {first_image}")
-        else:
-            raise ValueError(
-                f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
+    print(f'🛠️ Seedance Video Generation tool_call_id: {tool_call_id}')
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
+    print(f'🛠️ canvas_id {canvas_id} session_id {session_id}')
 
-    return await generate_video_with_provider(
-        prompt=prompt,
-        resolution=resolution,
-        duration=duration,
-        aspect_ratio=aspect_ratio,
-        model="doubao-seedance-1-0-pro-250528",
-        tool_call_id=tool_call_id,
-        config=config,
-        input_images=processed_input_images,
-        camera_fixed=camera_fixed,
+    # Inject the tool call id into the context
+    ctx['tool_call_id'] = tool_call_id
+
+    # 检查是否需要确认
+    arguments = {
+        'prompt': prompt,
+        'resolution': resolution,
+        'duration': duration,
+        'aspect_ratio': aspect_ratio,
+        'input_images': input_images,
+        'camera_fixed': camera_fixed,
+    }
+
+    # 发送确认请求
+    await send_to_websocket(session_id, {
+        'type': 'tool_call_pending_confirmation',
+        'id': tool_call_id,
+        'name': 'generate_video_by_seedance_v1_jaaz',
+        'arguments': json.dumps(arguments)
+    })
+
+    # 等待确认
+    confirmed = await tool_confirmation_manager.request_confirmation(
+        tool_call_id, session_id, 'generate_video_by_seedance_v1_jaaz', arguments
     )
+
+    if not confirmed:
+        return "Video generation cancelled by user."
+
+    try:
+        # Send start notification
+        await send_video_start_notification(
+            session_id,
+            f"Starting Seedance video generation..."
+        )
+
+        # Process input images if provided (only use the first one)
+        processed_input_images = None
+        if input_images and len(input_images) > 0:
+            # Only process the first image
+            first_image = input_images[0]
+            processed_image = await process_input_image(first_image)
+            if processed_image:
+                processed_input_images = [processed_image]
+                print(f"Using input image for video generation: {first_image}")
+            else:
+                raise ValueError(
+                    f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
+
+        # Create Jaaz provider and generate video
+        provider = JaazVideoProvider()
+        video_url = await provider.generate(
+            prompt=prompt,
+            model="doubao-seedance-1-0-pro-250528",
+            resolution=resolution,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            input_images=processed_input_images,
+            camera_fixed=camera_fixed,
+        )
+
+        # Process video result (save, update canvas, notify)
+        return await process_video_result(
+            video_url=video_url,
+            session_id=session_id,
+            canvas_id=canvas_id,
+            provider_name="jaaz_seedance",
+        )
+
+    except Exception as e:
+        print(f"Error in Seedance video generation: {e}")
+        raise e
 
 
 # Export the tool for easy import

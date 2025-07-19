@@ -101,6 +101,15 @@ export class SocketIOManager {
       case ISocket.SessionEventType.ToolCall:
         eventBus.emit('Socket::Session::ToolCall', data)
         break
+      case ISocket.SessionEventType.ToolCallPendingConfirmation:
+        eventBus.emit('Socket::Session::ToolCallPendingConfirmation', data)
+        break
+      case ISocket.SessionEventType.ToolCallConfirmed:
+        eventBus.emit('Socket::Session::ToolCallConfirmed', data)
+        break
+      case ISocket.SessionEventType.ToolCallCancelled:
+        eventBus.emit('Socket::Session::ToolCallCancelled', data)
+        break
       case ISocket.SessionEventType.ToolCallArguments:
         eventBus.emit('Socket::Session::ToolCallArguments', data)
         break

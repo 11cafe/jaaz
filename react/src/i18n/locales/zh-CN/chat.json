@@ -6,7 +6,7 @@
     "selectModel": "请选择一个文本模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "selectTool": "请选择一个图片模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "enterPrompt": "请输入提示内容",
-    "quantity": "数量"
+    "quantity": "生成数量"
   },
   "messages": {
     "imagePositioning": "定位到图片",
@@ -23,5 +23,24 @@
       "plural": "步骤"
     }
   },
-  "single_select_mode": "单选模式"
+  "single_select_mode": "单选模式",
+  "shareTemplate": {
+    "title": "分享为模板",
+    "templateName": "模板名称",
+    "templateNamePlaceholder": "输入模板名称...",
+    "coverPhoto": "封面图片",
+    "noImagesFound": "画布中没有找到图片",
+    "nameRequired": "模板名称是必填项",
+    "coverImageRequired": "封面图片是必填项",
+    "create": "创建模板",
+    "creating": "创建中...",
+    "success": "模板创建成功！",
+    "error": "创建模板失败"
+  },
+  "toolCall": {
+    "requiresConfirmation": "需确认",
+    "cancelled": "已取消",
+    "confirm": "确认执行",
+    "cancel": "取消"
+  }
 }

@@ -7,12 +7,14 @@ from typing import Optional, Dict, Any
 from common import DEFAULT_PORT
 from tools.utils.image_utils import process_input_image
 from ..image_providers.image_base_provider import ImageProviderBase
+
 # 导入所有提供商以确保自动注册 (不要删除这些导入)
 from ..image_providers.jaaz_provider import JaazImageProvider
 from ..image_providers.openai_provider import OpenAIImageProvider
 from ..image_providers.replicate_provider import ReplicateImageProvider
 from ..image_providers.volces_provider import VolcesProvider
 from ..image_providers.wavespeed_provider import WavespeedProvider
+
 # from ..image_providers.comfyui_provider import ComfyUIProvider
 from .image_canvas_utils import (
     save_image_to_canvas,
@@ -20,12 +22,13 @@ from .image_canvas_utils import (
 import time
 
 IMAGE_PROVIDERS: dict[str, ImageProviderBase] = {
-    'jaaz': JaazImageProvider(),
-    'openai': OpenAIImageProvider(),
-    'replicate': ReplicateImageProvider(),
-    'volces': VolcesProvider(),
-    'wavespeed': WavespeedProvider(),
+    "jaaz": JaazImageProvider(),
+    "openai": OpenAIImageProvider(),
+    "replicate": ReplicateImageProvider(),
+    "volces": VolcesProvider(),
+    "wavespeed": WavespeedProvider(),
 }
+
 
 async def generate_image_with_provider(
     canvas_id: str,
@@ -34,7 +37,7 @@ async def generate_image_with_provider(
     model: str,
     # image generator args
     prompt: str,
-    aspect_ratio: str,
+    aspect_ratio: str = "1:1",
     input_images: Optional[list[str]] = None,
 ) -> str:
     """
@@ -66,25 +69,24 @@ async def generate_image_with_provider(
             if processed_image:
                 processed_input_images.append(processed_image)
 
-        print(
-            f"Using {len(processed_input_images)} input images for generation")
-            
+        print(f"Using {len(processed_input_images)} input images for generation")
+
     # Prepare metadata with all generation parameters
     metadata: Dict[str, Any] = {
-        'prompt': prompt,
-        'model': model,
-        'provider': provider,
-        'aspect_ratio': aspect_ratio,
-        'input_images': input_images or [],
+        "prompt": prompt,
+        "model": model,
+        "provider": provider,
+        "aspect_ratio": aspect_ratio,
+        "input_images": input_images or [],
     }
-    
+
     # Generate image using the selected provider
     mime_type, width, height, filename = await provider_instance.generate(
         prompt=prompt,
         model=model,
         aspect_ratio=aspect_ratio,
         input_images=processed_input_images,
-        metadata=metadata
+        metadata=metadata,
     )
 
     # Save image to canvas

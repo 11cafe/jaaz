@@ -14,6 +14,9 @@ export enum SessionEventType {
   ToolCallResult = 'tool_call_result',
   AllMessages = 'all_messages',
   ToolCallProgress = 'tool_call_progress',
+  ToolCallPendingConfirmation = 'tool_call_pending_confirmation',
+  ToolCallConfirmed = 'tool_call_confirmed',
+  ToolCallCancelled = 'tool_call_cancelled',
 }
 
 export interface SessionBaseEvent {
@@ -75,6 +78,24 @@ export interface SessionToolCallProgressEvent extends SessionBaseEvent {
   update: string
 }
 
+export interface SessionToolCallPendingConfirmationEvent
+  extends SessionBaseEvent {
+  type: SessionEventType.ToolCallPendingConfirmation
+  id: string
+  name: ToolCallFunctionName
+  arguments: string
+}
+
+export interface SessionToolCallConfirmedEvent extends SessionBaseEvent {
+  type: SessionEventType.ToolCallConfirmed
+  id: string
+}
+
+export interface SessionToolCallCancelledEvent extends SessionBaseEvent {
+  type: SessionEventType.ToolCallCancelled
+  id: string
+}
+
 export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
@@ -87,3 +108,6 @@ export type SessionUpdateEvent =
   | SessionErrorEvent
   | SessionInfoEvent
   | SessionToolCallResultEvent
+  | SessionToolCallPendingConfirmationEvent
+  | SessionToolCallConfirmedEvent
+  | SessionToolCallCancelledEvent
