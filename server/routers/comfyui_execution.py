@@ -270,8 +270,11 @@ class WorkflowExecution:
             if self.current_node:
                 self.remaining_nodes.discard(self.current_node)
                 self.update_overall_progress()
-            self.current_node = data["node"]
-            self.log_node("Executing", data["node"])
+            # Use display_node if available, otherwise use node
+            node_id = data.get("display_node", data["node"])
+            
+            self.current_node = node_id
+            self.log_node("Executing", node_id)
             if self.ctx.get("session_id"):
                 await send_to_websocket(
                     self.ctx.get("session_id"),
@@ -279,7 +282,7 @@ class WorkflowExecution:
                         "type": "tool_call_progress",
                         "tool_call_id": self.ctx.get("tool_call_id"),
                         "session_id": self.ctx.get("session_id"),
-                        "update": f"Executing {self.get_node_title(data['node'])}",
+                        "update": f"Executing {self.get_node_title(node_id)}",
                     },
                 )
         return True
