@@ -109,8 +109,7 @@ async function getLatestComfyUIRelease() {
           if (res.statusCode !== 200) {
             reject(
               new Error(
-                `GitHub API error: ${res.statusCode} - ${
-                  release.message || 'Unknown error'
+                `GitHub API error: ${res.statusCode} - ${release.message || 'Unknown error'
                 }`
               )
             )
@@ -618,7 +617,7 @@ async function updateConfigWithComfyUI() {
   try {
     // Call backend API to update configuration
     const response = await fetch(
-      'http://127.0.0.1:57988/api/comfyui/update_config',
+      'http://127.0.0.1:8088/api/comfyui/update_config',
       {
         method: 'POST',
         headers: {

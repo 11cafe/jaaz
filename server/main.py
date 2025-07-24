@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 import argparse
+import uvicorn
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
@@ -98,10 +99,10 @@ if __name__ == "__main__":
         sorted(_bypass | current - {""}))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=57988,
+    parser.add_argument('--host', type=str, default="127.0.0.1",
+                        help='Host to run the server on')
+    parser.add_argument('--port', type=int, default=8088,
                         help='Port to run the server on')
     args = parser.parse_args()
-    import uvicorn
-    print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
-
-    uvicorn.run(socket_app, host="127.0.0.1", port=args.port)
+    
+    uvicorn.run(socket_app, host=args.host, port=args.port)

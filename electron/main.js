@@ -165,7 +165,7 @@ const appRoot = app.getAppPath()
 
 const startPythonApi = async () => {
   // Find an available port
-  pyPort = await findAvailablePort(57988)
+  pyPort = await findAvailablePort(8088)
   console.log('available pyPort:', pyPort)
 
   // 在某些开发情况，我们希望 python server 独立运行，那么就不通过 electron 启动
@@ -216,12 +216,12 @@ const startPythonApi = async () => {
   const isWindows = process.platform === 'win32'
   const pythonExecutable = app.isPackaged
     ? path.join(
-        process.resourcesPath,
-        'server',
-        'dist',
-        'main',
-        isWindows ? 'main.exe' : 'main'
-      )
+      process.resourcesPath,
+      'server',
+      'dist',
+      'main',
+      isWindows ? 'main.exe' : 'main'
+    )
     : 'python'
   console.log('Resolved Python executable:', pythonExecutable)
 

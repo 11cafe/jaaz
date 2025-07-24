@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  jaaz-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - UI_DIST_DIR=/app/react/dist
+    volumes:
+      # Optional: mount for persistent data
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

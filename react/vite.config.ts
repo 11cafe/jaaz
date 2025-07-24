@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { defineConfig, UserConfig } from 'vite'
 
-const PORT = 57988
+const PORT = 8088
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,11 +14,11 @@ export default defineConfig(({ mode }) => {
   const config: UserConfig = {
     plugins: [
       !isLibMode &&
-        TanStackRouterVite({
-          target: 'react',
-          autoCodeSplitting: true,
-          generatedRouteTree: 'src/route-tree.gen.ts',
-        }),
+      TanStackRouterVite({
+        target: 'react',
+        autoCodeSplitting: true,
+        generatedRouteTree: 'src/route-tree.gen.ts',
+      }),
       react(),
       tailwindcss(),
     ].filter(Boolean),

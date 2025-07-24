@@ -114,3 +114,9 @@ VSCode/Cursor Install Extensions：
 
 `python main.py`
 
+
+
+## 使用docker安装 
+
+`git clone https://github.com/11cafe/localart`
+`docker compose up -d`
