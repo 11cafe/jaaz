@@ -7,6 +7,7 @@ from utils.http_client import HttpClient
 from langgraph_swarm import create_swarm  # type: ignore
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.config_service import config_service
 from typing import Optional, List, Dict, Any, cast, Set, TypedDict
@@ -140,8 +141,16 @@ def _create_text_model(text_model: ModelInfo) -> Any:
     model = text_model.get('model')
     provider = text_model.get('provider')
     url = text_model.get('url')
+    
+    # 特殊处理：如果模型名称包含gemini，强制使用gemini provider
+    if 'gemini' in model.lower():
+        provider = 'gemini'
+        print(f'🔄 检测到Gemini模型 {model}，自动切换到gemini provider')
+    
     api_key = config_service.app_config.get(  # type: ignore
         provider, {}).get("api_key", "")
+
+    print(f'📝 创建模型实例: provider={provider}, model={model}, url={url}')
 
     # TODO: Verify if max token is working
     # max_tokens = text_model.get('max_tokens', 8148)
@@ -151,7 +160,7 @@ def _create_text_model(text_model: ModelInfo) -> Any:
             model=model,
             base_url=url,
         )
-    else:
+    elif provider == 'openai':
         # Create httpx client with SSL configuration for ChatOpenAI
         http_client = HttpClient.create_sync_client()
         http_async_client = HttpClient.create_async_client()
@@ -165,7 +174,27 @@ def _create_text_model(text_model: ModelInfo) -> Any:
             http_client=http_client,
             http_async_client=http_async_client
         )
-
+    elif provider == 'gemini':
+        return ChatGoogleGenerativeAI(
+            model=model,
+            google_api_key=api_key,  # 使用google_api_key而不是api_key
+            timeout=300,
+            # 移除base_url参数，ChatGoogleGenerativeAI不支持此参数
+        )
+    else:
+        # 默认情况：对于其他provider（如jaaz），使用ChatOpenAI
+        http_client = HttpClient.create_sync_client()
+        http_async_client = HttpClient.create_async_client()
+        return ChatOpenAI(
+            model=model,
+            api_key=api_key,  # type: ignore
+            timeout=300,
+            base_url=url,
+            temperature=0,
+            # max_tokens=max_tokens, # TODO: 暂时注释掉有问题的参数
+            http_client=http_client,
+            http_async_client=http_async_client
+        )
 
 async def _handle_error(error: Exception, session_id: str) -> None:
     """处理错误"""

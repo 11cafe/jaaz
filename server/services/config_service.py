@@ -34,6 +34,8 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'deepseek/deepseek-chat-v3-0324': {'type': 'text'},
             'anthropic/claude-sonnet-4': {'type': 'text'},
             'anthropic/claude-3.7-sonnet': {'type': 'text'},
+            'gemini-2.0-flash': {'type': 'text'},
+            'gemini-2.5-flash': {'type': 'text'},
         },
         'url': os.getenv('BASE_API_URL', 'https://jaaz.app').rstrip('/') + '/api/v1/',
         'api_key': '',
@@ -59,7 +61,15 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
         'api_key': '',
         'max_tokens': 8192,
     },
-
+    'gemini': {
+        'models': {
+            'gemini-2.0-flash': {'type': 'text'},
+            'gemini-2.5-flash': {'type': 'text'},
+        },
+        'url': 'https://generativelanguage.googleapis.com/v1beta/',
+        'api_key': '',
+        'max_tokens': 8192,
+    },
 }
 
 SERVER_DIR = os.path.dirname(os.path.dirname(__file__))
