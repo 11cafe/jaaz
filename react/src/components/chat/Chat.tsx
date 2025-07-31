@@ -134,7 +134,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ;(last.content.at(-1) as { text: string }).text += data.text
+              ; (last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -397,7 +397,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
 
   // SSE连接和事件监听
   const connectSSE = useCallback(
-    (sessionId: string | undefined, messages: Message[]) => {
+    (sessionId: string | undefined, messages: Message[], configs?: { textModel: Model; toolList: ToolInfo[] }) => {
       // 关闭现有连接
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
@@ -436,6 +436,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
           session_id: sessionId,
           is_new_session: is_new_session,
           canvas_id: canvasId,
+          textModel: configs?.textModel,
+          selectedTools: configs?.toolList,
         }),
       })
         .then(async (response) => {
@@ -716,7 +718,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   }, [searchSessionId, fetchSession])
 
   const onSelectSession = (session: { id: string; title: string }) => {
-    session?.id && fetchSession(session?.id)
+    if (session?.id) {
+      fetchSession(session?.id)
+    }
     window.history.pushState(
       {},
       '',
@@ -734,8 +738,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
       setMessages(data)
 
-      // 启动SSE流
-      connectSSE(session?.id, data)
+      // 启动SSE流，传入配置
+      connectSSE(session?.id, data, configs)
 
       scrollToBottom()
     },
@@ -852,7 +856,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
                           )}
                           onConfirm={() => {
                             // 发送确认事件到后端
-                            session?.id &&
+                            if (session?.id) {
                               fetch('/api/tool_confirmation', {
                                 method: 'POST',
                                 headers: {
@@ -864,10 +868,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
                                   confirmed: true,
                                 }),
                               })
+                            }
                           }}
                           onCancel={() => {
                             // 发送取消事件到后端
-                            session?.id &&
+                            if (session?.id) {
                               fetch('/api/tool_confirmation', {
                                 method: 'POST',
                                 headers: {
@@ -879,6 +884,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
                                   confirmed: false,
                                 }),
                               })
+                            }
                           }}
                         />
                       )
