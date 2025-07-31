@@ -64,9 +64,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { authStatus } = useAuth()
   const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
-  const { balance } = useBalance()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -252,19 +250,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     // console.log('👀isUsingJaaz', textModel, selectedTools, isUsingJaaz)
 
     // 只有当使用 Jaaz 服务且余额为 0 时才提醒充值
-    if (authStatus.is_logged_in && isUsingJaaz && parseFloat(balance) <= 0) {
-      toast.error(t('chat:insufficientBalance'), {
-        description: <RechargeContent />,
-        duration: 10000, // 10s，给用户更多时间操作
-      })
-      return
-    }
+    // TODO: 暂时关闭余额检查,未来需要重新打开!
+    // if (authStatus.is_logged_in && isUsingJaaz && parseFloat(balance) <= 0) {
+    //   toast.error(t('chat:insufficientBalance'), {
+    //     description: <RechargeContent />,
+    //     duration: 10000, // 10s，给用户更多时间操作
+    //   })
+    //   return
+    // }
 
     if (!textModel) {
       toast.error(t('chat:textarea.selectModel'))
-      if (!authStatus.is_logged_in) {
-        setShowLoginDialog(true)
-      }
       return
     }
 
@@ -337,9 +333,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     t,
     selectedAspectRatio,
     quantity,
-    authStatus.is_logged_in,
+    // authStatus.is_logged_in,
     setShowLoginDialog,
-    balance,
+    // balance,
     RechargeContent,
   ])
 
