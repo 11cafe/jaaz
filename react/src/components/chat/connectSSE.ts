@@ -40,7 +40,11 @@ export function connectChatStream(
     handleDone: (data: ISocket.SessionDoneEvent) => void
     handleError: (data: ISocket.SessionErrorEvent) => void
   },
-  configs?: { textModel: Model; toolList: ToolInfo[] } | null,
+  configs?: {
+    textModel?: Model
+    toolList?: ToolInfo[]
+    magic_image?: string
+  } | null,
   lastEventId?: string | null
 ) {
   const header: HeadersInit = {
@@ -63,6 +67,7 @@ export function connectChatStream(
       canvas_id: canvasId,
       textModel: configs?.textModel,
       selectedTools: configs?.toolList,
+      magic_image: configs?.magic_image,
     }),
   })
     .then(async (response) => {
