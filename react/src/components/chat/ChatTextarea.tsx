@@ -234,7 +234,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleCancelChat = useCallback(async () => {
     if (sessionId) {
       // 同时取消普通聊天和魔法生成任务
-      await Promise.all([cancelChat(sessionId), cancelMagicGenerate(sessionId)])
+      await Promise.all([cancelChat(sessionId)])
     }
     onCancelChat?.()
   }, [sessionId, onCancelChat])

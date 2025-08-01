@@ -34,7 +34,7 @@ export const sendMessages = async (payload: {
 }
 
 export const cancelChat = async (sessionId: string) => {
-  const response = await fetch(`/api/cancel/${sessionId}`, {
+  const response = await fetch(`/api/chat/cancel/${sessionId}`, {
     method: 'POST',
   })
   return await response.json()
