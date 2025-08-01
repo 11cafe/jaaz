@@ -72,7 +72,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [pending, setPending] = useState<PendingType>(false)
   const mergedToolCallIds = useRef<string[]>([])
-  const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
   const [pendingToolConfirmations, setPendingToolConfirmations] = useState<
     string[]
