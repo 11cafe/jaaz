@@ -2,7 +2,6 @@ import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import * as ISocket from '@/types/socket'
-import ChatMagicGenerator from './ChatMagicGenerator'
 import {
   AssistantMessage,
   Message,
@@ -44,11 +43,12 @@ import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
-import { eventBus } from '@/lib/event'
+import { eventBus, TCanvasMagicGenerateEvent } from '@/lib/event'
 import MixedContent, {
   MixedContentImages,
   MixedContentText,
 } from './Message/MixedContent'
+import ChatMagicGenerator from './ChatMagicGenerator'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -133,7 +133,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ;(last.content.at(-1) as { text: string }).text += data.text
+              ; (last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -398,7 +398,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (
       sessionId: string | undefined,
       messages: Message[],
-      configs?: { textModel: Model; toolList: ToolInfo[] } | null,
+      configs?: { textModel?: Model; toolList?: ToolInfo[]; magic_image?: string } | null,
       lastEventId?: string | null
     ) => {
       // 关闭现有连接
@@ -433,6 +433,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
       if (lastEventId !== undefined) {
         header['Last-Event-Id'] = lastEventId ?? '0'
       }
+
       // 发送POST请求到SSE端点
       fetch('/api/chat/stream', {
         method: 'POST',
@@ -444,6 +445,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
           canvas_id: canvasId,
           textModel: configs?.textModel,
           selectedTools: configs?.toolList,
+          magic_image: configs?.magic_image,
         }),
       })
         .then(async (response) => {
@@ -659,6 +661,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
       handleError,
       handleInfo,
       scrollToBottom,
+      canvasId,
+      setSession,
+      setPending,
+      setSseConnected,
     ]
   )
 
@@ -743,7 +749,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
+    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[]; magic_image?: string }) => {
       setMessages(data)
 
       // 启动SSE流，传入配置
@@ -943,6 +949,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
             setMessages={setMessages}
             setPending={setPending}
             scrollToBottom={scrollToBottom}
+            connectSSE={connectSSE}
           />
         </div>
       </div>

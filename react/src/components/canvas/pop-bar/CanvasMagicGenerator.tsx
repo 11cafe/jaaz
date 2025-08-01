@@ -37,7 +37,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
         const filesForExport: BinaryFiles = {};
         for (const fileId in files) {
             const file = files[fileId];
-            if (file.dataURL.startsWith('http')) {
+            if (file.dataURL?.startsWith('http')) {
                 // 使用 代理地址，避免跨域问题
                 const proxiedUrl = `/api/image/proxy?url=${encodeURIComponent(file.dataURL)}`;
                 filesForExport[fileId] = { ...file, dataURL: proxiedUrl as any};
@@ -85,7 +85,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
                 appState: { selectedElementIds: {} },
             });
 
-            toast.success('Canvas exported successfully');
+            // toast.success('Canvas exported successfully');
         } catch (error) {
             console.error('Failed to export canvas:', error);
             toast.error('Failed to export canvas');
