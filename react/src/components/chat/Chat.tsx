@@ -2,7 +2,6 @@ import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import * as ISocket from '@/types/socket'
-import ChatMagicGenerator from './ChatMagicGenerator'
 import {
   AssistantMessage,
   Message,
@@ -44,12 +43,13 @@ import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
-import { eventBus } from '@/lib/event'
+import { eventBus, TCanvasMagicGenerateEvent } from '@/lib/event'
 import MixedContent, {
   MixedContentImages,
   MixedContentText,
 } from './Message/MixedContent'
 import { connectChatStream } from './connectSSE'
+import ChatMagicGenerator from './ChatMagicGenerator'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -399,7 +399,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (
       sessionId: string | undefined,
       messages: Message[],
-      configs?: { textModel: Model; toolList: ToolInfo[] } | null,
+      configs?: {
+        textModel?: Model
+        toolList?: ToolInfo[]
+        magic_image?: string
+      } | null,
       lastEventId?: string | null
     ) => {
       const is_new_session = !sessionId
@@ -525,7 +529,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
+    (
+      data: Message[],
+      configs: { textModel: Model; toolList: ToolInfo[]; magic_image?: string }
+    ) => {
       setMessages(data)
 
       // 启动SSE流，传入配置
@@ -725,6 +732,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
             setMessages={setMessages}
             setPending={setPending}
             scrollToBottom={scrollToBottom}
+            connectSSE={connectSSE}
           />
         </div>
       </div>
