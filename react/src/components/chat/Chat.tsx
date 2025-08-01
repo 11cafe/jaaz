@@ -400,7 +400,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (
       sessionId: string | undefined,
       messages: Message[],
-      configs?: { textModel: Model; toolList: ToolInfo[] }
+      configs?: { textModel: Model; toolList: ToolInfo[] } | null,
+      lastEventId?: string | null
     ) => {
       // 关闭现有连接
       if (eventSourceRef.current) {
@@ -426,15 +427,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
 
       console.log('🔄 Starting SSE stream for session:', sessionId)
       setPending('text')
-
+      const header: HeadersInit = {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      }
+      if (lastEventId !== undefined) {
+        header['Last-Event-Id'] = lastEventId ?? '0'
+      }
       // 发送POST请求到SSE端点
       fetch('/api/chat/stream', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          'Cache-Control': 'no-cache',
-        },
+        headers: header,
         body: JSON.stringify({
           messages: messages,
           session_id: sessionId,
@@ -704,6 +708,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
           id: data.session.id,
           title: data.session.title,
         })
+        // recover the SSE connection
+        connectSSE(sessionId, data, null, '0')
       } else {
         console.log('initChat resp not ok', data)
         setMessages([])
