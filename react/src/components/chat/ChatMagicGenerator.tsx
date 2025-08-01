@@ -28,10 +28,11 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
 
     const handleMagicGenerate = useCallback(
         async (data: TCanvasMagicGenerateEvent) => {
-            if (!authStatus.is_logged_in) {
-                setShowLoginDialog(true)
-                return
-            }
+            // TODO: 云端暂时关闭登录验证
+            // if (!authStatus.is_logged_in) {
+            //     setShowLoginDialog(true)
+            //     return
+            // }
 
             // 设置pending状态为text，表示正在处理
             setPending('text')
@@ -60,13 +61,24 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
 
             // 发送到后台
             try {
-                await sendMagicGenerate({
+                const result = await sendMagicGenerate({
                     sessionId: sessionId,
                     canvasId: canvasId,
                     newMessages: newMessages,
                     systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
                 })
 
+                // 处理返回的消息数组，更新前端显示
+                if (result && Array.isArray(result)) {
+                    setMessages(result)
+                    scrollToBottom()
+                    console.log('魔法生成完成，消息已更新:', result)
+                } else {
+                    console.warn('魔法生成返回格式异常:', result)
+                }
+
+                // 重置pending状态
+                setPending(false)
                 scrollToBottom()
                 console.log('魔法生成消息已发送到后台')
             } catch (error) {
