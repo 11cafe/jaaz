@@ -383,7 +383,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     toast.error('Error: ' + data.error, {
       closeButton: true,
       duration: 3600 * 1000,
-      style: { color: 'red' },
     })
   }, [])
 

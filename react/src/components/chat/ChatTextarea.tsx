@@ -660,7 +660,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             size='icon'
             onClick={handleCancelChat}
           >
-            <Loader2 className='size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
+            <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
+              <Loader2 className='size-5.5 animate-spin' />
+            </div>
             <Square className='size-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
           </Button>
         ) : (
