@@ -54,7 +54,7 @@ const CanvasPopbarWrapper = () => {
         const id = isBase64 ? file.id : file.dataURL.split('/').at(-1)!
         return {
           fileId: id,
-          base64: isBase64 ? file.dataURL : undefined,
+          dataURL: file.dataURL,
           width: image.width,
           height: image.height,
         }

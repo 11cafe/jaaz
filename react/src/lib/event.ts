@@ -3,7 +3,7 @@ import mitt from 'mitt'
 
 export type TCanvasAddImagesToChatEvent = {
   fileId: string
-  base64?: string
+  dataURL: string
   width: number
   height: number
 }[]
