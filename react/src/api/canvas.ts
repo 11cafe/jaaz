@@ -7,6 +7,7 @@ export type ListCanvasesResponse = {
   description?: string
   thumbnail?: string
   created_at: string
+  updated_at: string
 }
 
 export async function listCanvases(): Promise<ListCanvasesResponse[]> {

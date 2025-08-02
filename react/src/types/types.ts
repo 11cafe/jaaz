@@ -38,7 +38,7 @@ export type UserMessage = {
 }
 export type Message = UserMessage | AssistantMessage | ToolResultMessage
 
-export type PendingType = 'text' | 'image' | 'tool' | false
+export type PendingType = 'text' | 'image' | 'video' | 'tool' | false
 
 export interface ChatSession {
   id: string

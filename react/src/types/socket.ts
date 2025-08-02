@@ -43,7 +43,16 @@ export interface SessionImageGeneratedEvent extends SessionBaseEvent {
 }
 export interface SessionVideoGeneratedEvent extends SessionBaseEvent {
   type: SessionEventType.VideoGenerated
-  element: any
+  element: {
+    type: 'video'
+    id: string
+    x: number
+    y: number
+    width: number
+    height: number
+    fileId: string
+    [key: string]: unknown
+  }
   file: BinaryFileData & { duration?: number }
   canvas_id: string
   video_url: string

@@ -48,6 +48,7 @@ import MixedContent, {
   MixedContentImages,
   MixedContentText,
 } from './Message/MixedContent'
+import { connectChatStream } from './connectSSE'
 import ChatMagicGenerator from './ChatMagicGenerator'
 
 type ChatInterfaceProps = {
@@ -353,6 +354,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     [canvasId]
   )
 
+  const handleVideoGenerated = useCallback(
+    (data: ISocket.SessionVideoGeneratedEvent) => {
+      console.log('🎥 dispatching video_generated', data)
+      setPending('video')
+      // Emit the event to the mitt event bus so other components can listen
+      eventBus.emit('Socket::Session::VideoGenerated', data)
+    },
+    [canvasId]
+  )
+
   const handleAllMessages = useCallback(
     (data: ISocket.SessionAllMessagesEvent) => {
       setMessages(() => {
@@ -401,11 +412,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
       configs?: { textModel?: Model; toolList?: ToolInfo[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } } | null,
       lastEventId?: string | null
     ) => {
-      // 关闭现有连接
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-        eventSourceRef.current = null
-      }
       const is_new_session = !sessionId
       if (!sessionId) {
         sessionId = nanoid()
@@ -425,247 +431,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
 
       console.log('🔄 Starting SSE stream for session:', sessionId)
       setPending('text')
-      const header: HeadersInit = {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      }
-      if (lastEventId !== undefined) {
-        header['Last-Event-Id'] = lastEventId ?? '0'
-      }
 
-      // 发送POST请求到SSE端点
-      fetch('/api/chat/stream', {
-        method: 'POST',
-        headers: header,
-        body: JSON.stringify({
-            messages: messages,
-            session_id: sessionId,
-            is_new_session: is_new_session,
-            canvas_id: canvasId,
-            textModel: configs?.textModel,
-            selectedTools: configs?.toolList,
-            magic_configs: configs?.magic_configs,
-          }),
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            console.log('👇response', response)
-            const text = await response.text()
-            toast.error(`Error: ${response.statusText} - ${text}`, {
-              closeButton: true,
-              duration: 3600 * 1000,
-            })
-            setPending(false)
-            return
-          }
-
-          const reader = response.body?.getReader()
-          const decoder = new TextDecoder()
-
-          if (!reader) {
-            throw new Error('No reader available')
-          }
-
-          const readStream = async () => {
-            try {
-              while (true) {
-                const { done, value } = await reader.read()
-
-                if (done) {
-                  console.log('✅ SSE stream completed')
-                  setPending(false)
-                  setSseConnected(false)
-                  break
-                }
-
-                const chunk = decoder.decode(value, { stream: true })
-                const lines = chunk.split('\n')
-
-                for (const line of lines) {
-                  if (line.startsWith('event:')) {
-                    // 解析事件类型，但我们主要关注data行
-                    continue
-                  } else if (line.startsWith('data:')) {
-                    try {
-                      const jsonStr = line.substring(5).trim()
-                      if (jsonStr) {
-                        const eventData = JSON.parse(jsonStr)
-
-                        // 处理连接事件
-                        if (eventData.status === 'connected') {
-                          console.log('✅ SSE connected')
-                          setSseConnected(true)
-                          continue
-                        }
-
-                        // 处理完成事件
-                        if (eventData.status === 'completed') {
-                          console.log('✅ SSE stream completed')
-                          setPending(false)
-                          scrollToBottom()
-                          continue
-                        }
-
-                        // 处理chunk事件
-                        if (eventData.type && eventData.data) {
-                          const chunkData = {
-                            ...eventData.data,
-                            session_id: eventData.sessionId,
-                          }
-
-                          // 根据事件类型分发到对应的处理函数
-                          switch (eventData.type) {
-                            case ISocket.SessionEventType.Delta:
-                              handleDelta({
-                                ...chunkData,
-                                text: chunkData.text,
-                              })
-                              break
-                            case ISocket.SessionEventType.ToolCall:
-                              handleToolCall({
-                                ...chunkData,
-                                id: chunkData.id,
-                                name: chunkData.name,
-                              })
-                              break
-                            case ISocket.SessionEventType
-                              .ToolCallPendingConfirmation:
-                              handleToolCallPendingConfirmation({
-                                ...chunkData,
-                                id: chunkData.id,
-                                name: chunkData.name,
-                                arguments: chunkData.arguments,
-                              })
-                              break
-                            case ISocket.SessionEventType.ToolCallConfirmed:
-                              handleToolCallConfirmed({
-                                ...chunkData,
-                                id: chunkData.id,
-                              })
-                              break
-                            case ISocket.SessionEventType.ToolCallCancelled:
-                              handleToolCallCancelled({
-                                ...chunkData,
-                                id: chunkData.id,
-                              })
-                              break
-                            case ISocket.SessionEventType.ToolCallArguments:
-                              handleToolCallArguments({
-                                ...chunkData,
-                                id: chunkData.id,
-                                text: chunkData.text,
-                              })
-                              break
-                            case ISocket.SessionEventType.ToolCallResult:
-                              handleToolCallResult({
-                                ...chunkData,
-                                id: chunkData.id,
-                                message: chunkData.message,
-                              })
-                              break
-                            case ISocket.SessionEventType.ImageGenerated:
-                              handleImageGenerated({
-                                ...chunkData,
-                                canvas_id: chunkData.canvas_id,
-                                image_url: chunkData.image_url,
-                                element: chunkData.element,
-                                file: chunkData.file,
-                              })
-                              break
-                            case ISocket.SessionEventType.AllMessages:
-                              handleAllMessages({
-                                ...chunkData,
-                                messages: chunkData.messages,
-                              })
-                              break
-                            case ISocket.SessionEventType.Done:
-                              handleDone(chunkData)
-                              break
-                            case ISocket.SessionEventType.Error:
-                              handleError({
-                                ...chunkData,
-                                error: chunkData.error,
-                              })
-                              break
-                            case ISocket.SessionEventType.Info:
-                              handleInfo({
-                                ...chunkData,
-                                info: chunkData.info,
-                              })
-                              break
-                            default:
-                              console.log(
-                                '⚠️ Unknown SSE event type:',
-                                eventData.type
-                              )
-                          }
-                        }
-
-                        // 处理错误事件
-                        if (eventData.error) {
-                          handleError({
-                            type: ISocket.SessionEventType.Error,
-                            error: eventData.error,
-                            session_id: eventData.sessionId,
-                          })
-                        }
-                      }
-                    } catch (parseError) {
-                      console.error(
-                        'Error parsing SSE data:',
-                        parseError,
-                        'Raw line:',
-                        line
-                      )
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('❌ SSE stream error:', error)
-              setPending(false)
-              setSseConnected(false)
-              handleError({
-                type: ISocket.SessionEventType.Error,
-                error: 'SSE connection failed: ' + (error as Error).message,
-                session_id: sessionId,
-              })
-            }
-          }
-
-          readStream()
-        })
-        .catch((error) => {
-          console.error('❌ SSE fetch error:', error)
-          setPending(false)
-          setSseConnected(false)
-          handleError({
-            type: ISocket.SessionEventType.Error,
-            error: 'Failed to connect to stream: ' + (error as Error).message,
-            session_id: sessionId,
-          })
-        })
+      connectChatStream(
+        sessionId,
+        messages,
+        is_new_session,
+        canvasId,
+        {
+          handleDelta,
+          handleToolCall,
+          handleToolCallPendingConfirmation,
+          handleToolCallConfirmed,
+          handleToolCallCancelled,
+          handleToolCallArguments,
+          handleToolCallResult,
+          handleImageGenerated,
+          handleVideoGenerated,
+          handleAllMessages,
+          handleDone,
+          handleError,
+        },
+        configs,
+        lastEventId
+      )
     },
-    [
-      handleDelta,
-      handleToolCall,
-      handleToolCallPendingConfirmation,
-      handleToolCallConfirmed,
-      handleToolCallCancelled,
-      handleToolCallArguments,
-      handleToolCallResult,
-      handleImageGenerated,
-      handleAllMessages,
-      handleDone,
-      handleError,
-      handleInfo,
-      scrollToBottom,
-      canvasId,
-      setSession,
-      setPending,
-      setSseConnected,
-    ]
+    []
   )
 
   useEffect(() => {
@@ -682,12 +472,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
 
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
-
-      // 清理SSE连接
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-        eventSourceRef.current = null
-      }
     }
   }, [])
 
@@ -702,7 +486,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
         return
       }
 
-      const data = await resp.json()
+      const data = (await resp.json()) as {
+        session: { id: string; title: string }
+        messages: Message[]
+      }
 
       // Handle new response format with session and messages
       if (data.session && data.messages) {
@@ -713,7 +500,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
           title: data.session.title,
         })
         // recover the SSE connection
-        connectSSE(sessionId, data, null, '0')
+        connectSSE(sessionId, data.messages, null, '0')
       } else {
         console.log('initChat resp not ok', data)
         setMessages([])

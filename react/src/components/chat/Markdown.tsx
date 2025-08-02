@@ -211,7 +211,7 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       const id = filesArray.find((file) => props.src?.includes(file.url))?.id
 
       // 检查alt文本是否包含video_id标识，这表示这是一个视频文件
-      const isVideo = props.alt && props.alt.includes('video_id:')
+      const isVideo = props.alt && props.alt === 'video'
 
       if (isVideo) {
         return (

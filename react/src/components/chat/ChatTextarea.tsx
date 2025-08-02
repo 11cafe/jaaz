@@ -234,7 +234,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleCancelChat = useCallback(async () => {
     if (sessionId) {
       // 同时取消普通聊天和魔法生成任务
-      await Promise.all([cancelChat(sessionId), cancelMagicGenerate(sessionId)])
+      await Promise.all([cancelChat(sessionId)])
     }
     onCancelChat?.()
   }, [sessionId, onCancelChat])
@@ -399,16 +399,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         for (let i = 0; i < data.length; i++) {
           const image = data[i]
           console.log(`🦄Processing canvas image ${i + 1}/${data.length}`)
+          const isBase64 = image.dataURL.startsWith('data:')
 
-          if (image.base64) {
-            const file = dataURLToFile(image.base64, image.fileId)
+          if (isBase64) {
+            const file = dataURLToFile(image.dataURL, image.fileId)
             await uploadImageToS3(file)
           } else {
             // If no base64, assume it's already a URL (like S3 URL)
             setImages(
               produce((prev) => {
                 prev.push({
-                  url: image.fileId, // Assuming fileId is actually a URL in this case
+                  url: image.dataURL || '',
                   width: image.width,
                   height: image.height,
                 })
