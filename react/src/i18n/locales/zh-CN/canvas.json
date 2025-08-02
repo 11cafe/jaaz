@@ -44,7 +44,8 @@
   },
   "popbar": {
     "addToChat": "添加到聊天",
-    "magicGenerate": "✨ 魔法生成"
+    "magicGenerateImage": "✨ 魔法图片",
+    "magicGenerateVideo": "✨ 魔法视频"
   },
   "myAssets": "我的素材",
   "selectAFolder": "选择文件夹",

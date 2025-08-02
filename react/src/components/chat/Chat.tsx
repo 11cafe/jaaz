@@ -398,7 +398,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (
       sessionId: string | undefined,
       messages: Message[],
-      configs?: { textModel?: Model; toolList?: ToolInfo[]; magic_image?: string } | null,
+      configs?: { textModel?: Model; toolList?: ToolInfo[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } } | null,
       lastEventId?: string | null
     ) => {
       // 关闭现有连接
@@ -439,14 +439,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
         method: 'POST',
         headers: header,
         body: JSON.stringify({
-          messages: messages,
-          session_id: sessionId,
-          is_new_session: is_new_session,
-          canvas_id: canvasId,
-          textModel: configs?.textModel,
-          selectedTools: configs?.toolList,
-          magic_image: configs?.magic_image,
-        }),
+            messages: messages,
+            session_id: sessionId,
+            is_new_session: is_new_session,
+            canvas_id: canvasId,
+            textModel: configs?.textModel,
+            selectedTools: configs?.toolList,
+            magic_configs: configs?.magic_configs,
+          }),
       })
         .then(async (response) => {
           if (!response.ok) {
@@ -749,7 +749,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[]; magic_image?: string }) => {
+    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } }) => {
       setMessages(data)
 
       // 启动SSE流，传入配置

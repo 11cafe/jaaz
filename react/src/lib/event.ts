@@ -14,6 +14,7 @@ export type TCanvasMagicGenerateEvent = {
   width: number
   height: number
   timestamp: string
+  type: 'image' | 'video' // 新增：区分生成类型
 }
 
 export type TMaterialAddImagesToChatEvent = {

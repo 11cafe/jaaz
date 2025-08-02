@@ -13,7 +13,7 @@ type ChatMagicGeneratorProps = {
     connectSSE: (
         sessionId: string | undefined,
         messages: Message[],
-        configs: { magic_image?: string } | null,
+        configs?: { textModel?: any; toolList?: any[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } } | null,
     ) => void
 }
 
@@ -29,8 +29,14 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
     // Magic 生成处理函数
     const handleMagicGenerate = useCallback(
         async (data: TCanvasMagicGenerateEvent) => {
-            // 设置pending状态为text，表示正在处理
-            setPending('text')
+            // 根据类型设置不同的pending状态
+            const pendingType = data.type === 'video' ? 'image' : 'text'
+            setPending(pendingType)
+
+            // 根据类型创建不同的消息内容
+            const magicText = data.type === 'video' 
+                ? '🎬 Magic Video! \n\njaaz will generate keyframes first, then generate video. \n\nWait about 2~3 minutes please...'
+                : '✨ Magic Image! \n\nWait about 1~2 minutes please...'
 
             // 创建包含图片的消息
             const magicMessage: Message = {
@@ -38,7 +44,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 content: [
                     {
                         type: 'text',
-                        text: '✨ Magic Magic! Wait about 1~2 minutes please...'
+                        text: magicText
                     },
                     {
                         type: 'image_url',
@@ -54,12 +60,18 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
             setMessages(newMessages)
             scrollToBottom()
 
+            // 根据类型传入不同的配置参数
+            const magic_configs = {
+                screenshot_image: data.base64,
+                is_generate_video: data.type === 'video'
+            }
+
             // 直接调用 connectSSE 函数，传入 magic 生成参数
             connectSSE(
                 sessionId,
                 newMessages,
                 {
-                    magic_image: data.base64
+                    magic_configs
                 }
             )
         },
