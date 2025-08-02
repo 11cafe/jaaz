@@ -36,12 +36,7 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className='border border-primary/20 rounded-xl cursor-pointer hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:bg-primary/5 active:scale-99 relative group'
-    >
+    <div className='border border-primary/20 rounded-xl cursor-pointer hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:bg-primary/5 active:scale-99 relative group'>
       <CanvasDeleteDialog
         show={showDeleteDialog}
         setShow={setShowDeleteDialog}
@@ -78,7 +73,7 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
