@@ -134,7 +134,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ;(last.content.at(-1) as { text: string }).text += data.text
+              ; (last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -354,6 +354,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     [canvasId]
   )
 
+  const handleVideoGenerated = useCallback(
+    (data: ISocket.SessionVideoGeneratedEvent) => {
+      console.log('🎥 dispatching video_generated', data)
+      setPending('video')
+      // Emit the event to the mitt event bus so other components can listen
+      eventBus.emit('Socket::Session::VideoGenerated', data)
+    },
+    [canvasId]
+  )
+
   const handleAllMessages = useCallback(
     (data: ISocket.SessionAllMessagesEvent) => {
       setMessages(() => {
@@ -440,6 +450,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
           handleToolCallArguments,
           handleToolCallResult,
           handleImageGenerated,
+          handleVideoGenerated,
           handleAllMessages,
           handleDone,
           handleError,

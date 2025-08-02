@@ -7,6 +7,7 @@ import {
   PenTool,
   ScanSearch,
   Telescope,
+  Video,
 } from 'lucide-react'
 import ShinyText from '../ui/shiny-text'
 import IconCarousel from './IconCarousel'
@@ -19,6 +20,15 @@ const ChatSpinner: React.FC<{ pending: PendingType }> = ({ pending }) => {
           <Paintbrush className="animate-caret-blink size-4 text-primary/60 brush-icon-animation" />
           <ShinyText
             text="Generating image..."
+            className="text-sm text-primary/60!"
+            speed={2.5}
+          />
+        </>
+      ) : pending === 'video' ? (
+        <>
+          <Video className="animate-pulse size-4 text-primary/60" />
+          <ShinyText
+            text="Generating video..."
             className="text-sm text-primary/60!"
             speed={2.5}
           />

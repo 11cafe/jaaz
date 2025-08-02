@@ -16,6 +16,7 @@ export function connectChatStream(
     handleToolCallArguments,
     handleToolCallResult,
     handleImageGenerated,
+    handleVideoGenerated,
     handleAllMessages,
     handleDone,
     handleError,
@@ -36,6 +37,7 @@ export function connectChatStream(
     ) => void
     handleToolCallResult: (data: ISocket.SessionToolCallResultEvent) => void
     handleImageGenerated: (data: ISocket.SessionImageGeneratedEvent) => void
+    handleVideoGenerated: (data: ISocket.SessionVideoGeneratedEvent) => void
     handleAllMessages: (data: ISocket.SessionAllMessagesEvent) => void
     handleDone: (data: ISocket.SessionDoneEvent) => void
     handleError: (data: ISocket.SessionErrorEvent) => void
@@ -183,6 +185,15 @@ export function connectChatStream(
                             ...chunkData,
                             canvas_id: chunkData.canvas_id,
                             image_url: chunkData.image_url,
+                            element: chunkData.element,
+                            file: chunkData.file,
+                          })
+                          break
+                        case ISocket.SessionEventType.VideoGenerated:
+                          handleVideoGenerated({
+                            ...chunkData,
+                            canvas_id: chunkData.canvas_id,
+                            video_url: chunkData.video_url,
                             element: chunkData.element,
                             file: chunkData.file,
                           })
