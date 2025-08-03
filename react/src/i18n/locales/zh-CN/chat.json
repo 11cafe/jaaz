@@ -8,7 +8,13 @@
     "selectModel": "请选择一个文本模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "selectTool": "请选择一个图片模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "enterPrompt": "请输入提示内容",
-    "quantity": "生成数量"
+    "quantity": "生成数量",
+          "tooltips": {
+        "uploadImage": "上传图片",
+        "aspectRatio": "宽高比",
+        "quantity": "生成数量",
+        "modelSelector": "选择模型"
+      }
   },
   "messages": {
     "imagePositioning": "定位到图片",

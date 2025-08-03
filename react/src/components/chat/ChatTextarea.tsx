@@ -40,6 +40,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -472,29 +477,43 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             onChange={handleImagesUpload}
             hidden
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <PlusIcon className="size-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                <PlusIcon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {t('chat:textarea.tooltips.uploadImage')}
+            </TooltipContent>
+          </Tooltip>
 
           <ModelSelectorV3 />
 
           {/* Aspect Ratio Selector */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex items-center gap-1"
-                size={'sm'}
-              >
-                <RectangleVertical className="size-4" />
-                <span className="text-sm">{selectedAspectRatio}</span>
-                <ChevronDown className="size-3 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-1"
+                    size={'sm'}
+                  >
+                    <RectangleVertical className="size-4" />
+                    <span className="text-sm">{selectedAspectRatio}</span>
+                    <ChevronDown className="size-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t('chat:textarea.tooltips.aspectRatio')}
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="start" className="w-32">
               {['auto', '1:1', '4:3', '3:4', '16:9', '9:16'].map((ratio) => (
                 <DropdownMenuItem
@@ -513,16 +532,23 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
           {/* Quantity Selector */}
           <div className="relative" ref={quantitySliderRef}>
-            <Button
-              variant="outline"
-              className="flex items-center gap-1"
-              onClick={() => setShowQuantitySlider(!showQuantitySlider)}
-              size={'sm'}
-            >
-              <Hash className="size-4" />
-              <span className="text-sm">{quantity}</span>
-              <ChevronDown className="size-3 opacity-50" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={() => setShowQuantitySlider(!showQuantitySlider)}
+                  size={'sm'}
+                >
+                  <Hash className="size-4" />
+                  <span className="text-sm">{quantity}</span>
+                  <ChevronDown className="size-3 opacity-50" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t('chat:textarea.tooltips.quantity')}
+              </TooltipContent>
+            </Tooltip>
 
             {/* Quantity Slider */}
             <AnimatePresence>
