@@ -409,13 +409,14 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       initialData={() => {
         const data = initialData
         console.log('👇initialData', data)
-        if (data?.appState) {
-          data.appState = {
-            ...data.appState,
+        return {
+          ...data,
+          appState: {
+            ...data?.appState,
+            currentItemFontSize: 36, // 设置默认字体大小为24px
             collaborators: undefined!,
           }
         }
-        return data || null
       }}
       renderEmbeddable={renderEmbeddable}
       // Allow all URLs for embeddable content
