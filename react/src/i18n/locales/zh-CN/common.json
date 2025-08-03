@@ -78,7 +78,7 @@
     "logoutSuccessMessage": "已成功登出",
     "notLoggedIn": "未登录",
     "balance": "余额",
-    "recharge": "充值"
+    "recharge": "我的账单"
   },
   "socket": {
     "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",
