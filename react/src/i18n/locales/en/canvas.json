@@ -40,6 +40,7 @@
     "shape": "Shape",
     "arrow": "Arrow",
     "line": "Line",
+    "freedraw": "Magic Brush",
     "zoomFit": "Zoom to fit"
   },
   "popbar": {
