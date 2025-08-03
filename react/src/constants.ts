@@ -40,6 +40,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'ComfyUI',
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
+  gemini: {
+    name: 'Gemini',
+    icon: 'https://images.seeklogo.com/logo-png/61/1/gemini-icon-logo-png_seeklogo-611605.png',
+  },
 }
 
 // Tool call name mapping
