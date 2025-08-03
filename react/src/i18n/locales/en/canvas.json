@@ -44,7 +44,8 @@
   },
   "popbar": {
     "addToChat": "Add to chat",
-    "magicGenerate": "✨ Magic Generate"
+    "magicGenerateImage": "✨ Magic Image",
+    "magicGenerateVideo": "✨ Magic Video"
   },
   "myAssets": "My Assets",
   "selectAFolder": "Select a folder",

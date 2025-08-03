@@ -45,7 +45,10 @@ export function connectChatStream(
   configs?: {
     textModel?: Model
     toolList?: ToolInfo[]
-    magic_image?: string
+    magic_configs?: { 
+      screenshot_image?: string; 
+      is_generate_video?: boolean 
+    }
   } | null,
   lastEventId?: string | null
 ) {
@@ -69,7 +72,7 @@ export function connectChatStream(
       canvas_id: canvasId,
       textModel: configs?.textModel,
       selectedTools: configs?.toolList,
-      magic_image: configs?.magic_image,
+      magic_configs: configs?.magic_configs,
     }),
   })
     .then(async (response) => {

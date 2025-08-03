@@ -409,11 +409,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (
       sessionId: string | undefined,
       messages: Message[],
-      configs?: {
-        textModel?: Model
-        toolList?: ToolInfo[]
-        magic_image?: string
-      } | null,
+      configs?: { textModel?: Model; toolList?: ToolInfo[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } } | null,
       lastEventId?: string | null
     ) => {
       const is_new_session = !sessionId
@@ -540,10 +536,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   }
 
   const onSendMessages = useCallback(
-    (
-      data: Message[],
-      configs: { textModel: Model; toolList: ToolInfo[]; magic_image?: string }
-    ) => {
+    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[]; magic_configs?: { screenshot_image?: string; is_generate_video?: boolean } }) => {
       setMessages(data)
 
       // 启动SSE流，传入配置

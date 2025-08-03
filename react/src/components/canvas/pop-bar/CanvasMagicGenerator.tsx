@@ -20,7 +20,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
     const { t } = useTranslation()
     const { excalidrawAPI } = useCanvas()
 
-    const handleMagicGenerate = async () => {
+    const handleMagicGenerate = async (type: 'image' | 'video') => {
         if (!excalidrawAPI) return;
 
         // 获取选中的元素
@@ -78,6 +78,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
                 width: 2048, // 使用maxWidthOrHeight的值
                 height: 2048, // 实际高度会根据宽高比计算
                 timestamp: new Date().toISOString(),
+                type: type, // 添加type参数
             });
 
             // 清除选中状态
@@ -92,12 +93,21 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
         }
     }
 
-    useKeyPress(['meta.b', 'ctrl.b'], handleMagicGenerate)
+    const handleMagicGenerateImage = () => handleMagicGenerate('image')
+    const handleMagicGenerateVideo = () => handleMagicGenerate('video')
+
+    useKeyPress(['meta.b', 'ctrl.b'], handleMagicGenerateImage)
+    useKeyPress(['meta.g', 'ctrl.g'], handleMagicGenerateVideo)
 
     return (
-        <Button variant="ghost" size="sm" onClick={handleMagicGenerate}>
-            {t('canvas:popbar.magicGenerate')} <Hotkey keys={['⌘', 'B']} />
+        <>  
+        <Button variant="ghost" size="sm" onClick={handleMagicGenerateImage}>
+            {t('canvas:popbar.magicGenerateImage')} <Hotkey keys={['⌘', 'B']} />
         </Button>
+        <Button variant="ghost" size="sm" onClick={handleMagicGenerateVideo}>
+        {t('canvas:popbar.magicGenerateVideo')} <Hotkey keys={['⌘', 'G']} />
+        </Button>
+        </>
     )
 }
 
