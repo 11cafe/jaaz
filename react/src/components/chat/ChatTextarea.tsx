@@ -455,7 +455,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         className="w-full h-full border-none outline-none resize-none"
         placeholder={t('chat:textarea.placeholder')}
         value={prompt}
-        autoSize
+        autoSize={{ minRows: 3, maxRows: 8 }}
         onChange={(e) => setPrompt(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
