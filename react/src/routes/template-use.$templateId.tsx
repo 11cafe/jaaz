@@ -209,9 +209,8 @@ function TemplateUsePage() {
               
               {/* Template info overlay */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <h3 className="text-xl font-bold text-white">{template.title}</h3>
-                  <Badge variant="secondary">{template.category}</Badge>
                 </div>
                 <p className="text-white/80 text-sm">
                   {template.description}

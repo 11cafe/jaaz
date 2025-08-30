@@ -1,10 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import TopMenu from '@/components/TopMenu'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Search, Star, Download, Eye, Play, Loader2 } from 'lucide-react'
+import { Search, Eye, Play, Loader2 } from 'lucide-react'
 import { getTemplates, type Template, type TemplateSearchParams } from '@/api/templates'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
@@ -43,7 +42,7 @@ function TemplatesPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">模板库</h1>
+          <h1 className="text-3xl font-bold mb-2">模板</h1>
           <p className="text-muted-foreground">
             精选优质模板，助您快速创作出色作品
           </p>
@@ -91,8 +90,8 @@ function TemplatesPage() {
         {!isLoading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {templates.map((template) => (
-            <Card key={template.id} className="group hover:shadow-lg transition-shadow">
-              <div className="relative overflow-hidden rounded-t-lg">
+            <Card key={template.id} className="group hover:shadow-lg transition-shadow overflow-hidden p-0">
+              <div className="relative overflow-hidden">
                 <div className="aspect-[3/2] bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900">
                   {template.image ? (
                     <img 
@@ -109,13 +108,6 @@ function TemplatesPage() {
                     <Eye className="h-8 w-8" />
                   </div>
                 </div>
-                {template.tags && template.tags.length > 0 && (
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {template.tags[0]}
-                    </Badge>
-                  </div>
-                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <Button 
                     size="sm" 
@@ -128,25 +120,13 @@ function TemplatesPage() {
                 </div>
               </div>
               
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-lg">{template.title}</CardTitle>
                 <CardDescription className="text-sm">
                   {template.description}
                 </CardDescription>
               </CardHeader>
               
-              <CardFooter className="pt-2">
-                <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span>{template.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download className="h-4 w-4" />
-                    <span>{template.downloads}</span>
-                  </div>
-                </div>
-              </CardFooter>
             </Card>
             ))}
           </div>
