@@ -7,7 +7,8 @@ from typing import Dict, Any, List
 
 # Import service modules
 from services.db_service import db_service
-from services.OpenAIAgents_service import create_jaaz_response
+# from services.OpenAIAgents_service import create_jaaz_response
+from services.OpenAIAgents_service import create_local_magic_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 
@@ -34,6 +35,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     messages: List[Dict[str, Any]] = data.get('messages', [])
     session_id: str = data.get('session_id', '')
     canvas_id: str = data.get('canvas_id', '')
+    system_prompt: str = data.get('system_prompt', '')
 
     # print('✨ magic_service 接收到数据:', {
     #     'session_id': session_id,
@@ -54,7 +56,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         )
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id))
+    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id, system_prompt))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -76,6 +78,7 @@ async def _process_magic_generation(
     messages: List[Dict[str, Any]],
     session_id: str,
     canvas_id: str,
+    system_prompt: str = ""
 ) -> None:
     """
     Process magic generation in a separate async task.
@@ -86,7 +89,9 @@ async def _process_magic_generation(
         canvas_id: Canvas ID
     """
 
-    ai_response = await create_jaaz_response(messages, session_id, canvas_id)
+    # 原来是基于云端生成
+    # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
+    ai_response = await create_local_magic_response(messages, session_id, canvas_id)
 
     # Save AI response to database
     await db_service.create_message(session_id, 'assistant', json.dumps(ai_response))
