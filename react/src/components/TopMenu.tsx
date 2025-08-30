@@ -26,7 +26,7 @@ export default function TopMenu({
           <img src={LOGO_URL} alt="logo" className="size-5" draggable={false} />
           <div className="flex relative overflow-hidden items-start h-7 text-xl font-bold">
             <span className="flex items-center">
-              Jaaz
+              MagicArt
             </span>
           </div>
         </div>

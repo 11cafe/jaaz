@@ -90,6 +90,11 @@ export default defineConfig(({ mode }) => {
         // Uncomment the following if you want to remove the /api prefix when forwarding to Flask
         // rewrite: (path) => path.replace(/^\/api/, '')
       },
+      // Proxy static files to backend
+      '/static': {
+        target: `http://127.0.0.1:${PORT}`,
+        changeOrigin: true,
+      },
       // Also proxy WebSocket connections
       '/ws': {
         target: `ws://127.0.0.1:${PORT}`,

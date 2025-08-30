@@ -7,8 +7,8 @@ export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
 } = {
   jaaz: {
-    name: 'Jaaz',
-    icon: 'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png',
+    name: 'MagicArt',
+    icon: '/magicart.png',
   },
   anthropic: {
     name: 'Claude',
@@ -54,7 +54,7 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
   finish: 'Finish',
 }
 
-export const LOGO_URL = 'https://jaaz.app/favicon.ico'
+export const LOGO_URL = '/magicart.png'
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
 Step 1. write a design strategy plan. Write in the same language as the user's inital first prompt.

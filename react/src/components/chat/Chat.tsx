@@ -644,7 +644,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 transition={{ duration: 0.5 }}
                 className='text-muted-foreground text-3xl'
               >
-                <ShinyText text='你好，欢迎使用幻影!' />
+                <ShinyText text='你好，MagicArt!' />
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
