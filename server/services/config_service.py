@@ -26,16 +26,16 @@ AppConfig = Dict[str, ProviderConfig]
 
 
 DEFAULT_PROVIDERS_CONFIG: AppConfig = {
-    # 'jaaz': {
-    #     'models': {
-    #         # text models
-    #         'gpt-4o': {'type': 'text'},
-    #         'gpt-4o-mini': {'type': 'text'}
-    #     },
-    #     'url': os.getenv('BASE_API_URL', 'https://jaaz.app').rstrip('/') + '/api/v1/',
-    #     'api_key': '',
-    #     'max_tokens': 8192,
-    # },
+    'tuzi': {
+        'models': {
+            # text models
+            'gpt-4o': {'type': 'text'},
+            'gpt-4o-mini': {'type': 'text'}
+        },
+        'url': 'https://6b657f6d.proxy-2nb.pages.dev/v1',
+        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
+        'max_tokens': 8192,
+    },
     'comfyui': {
         'models': {},
         'url': 'http://127.0.0.1:8188',
