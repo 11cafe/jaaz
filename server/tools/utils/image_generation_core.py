@@ -80,6 +80,8 @@ async def generate_image_with_provider(
         "input_images": input_images or [],
     }
 
+    print(f"metadata: {metadata}")
+
     # Generate image using the selected provider
     mime_type, width, height, filename = await provider_instance.generate(
         prompt=prompt,

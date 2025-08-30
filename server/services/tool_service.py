@@ -51,145 +51,146 @@ from tools.generate_image_by_recraft_v3_replicate import (
 from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_jaaz
 from tools.generate_video_by_veo3_fast_jaaz import generate_video_by_veo3_fast_jaaz
 from tools.generate_image_by_midjourney_jaaz import generate_image_by_midjourney_jaaz
+from tools.generate_image_by_goolgle_nano_banana import generate_image_by_google_nano_banana
 from services.config_service import config_service
 from services.db_service import db_service
 
 TOOL_MAPPING: Dict[str, ToolInfo] = {
-    "generate_image_by_gpt_image_1_jaaz": {
-        "display_name": "GPT Image 1",
+    "generate_image_by_google_nano_banana": {
+        "display_name": "google/nano-banana",
         "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_gpt_image_1_jaaz,
+        "provider": "google",
+        "tool_function": generate_image_by_google_nano_banana,
     },
-    "generate_image_by_imagen_4_jaaz": {
-        "display_name": "Imagen 4",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_imagen_4_jaaz,
-    },
-    "generate_image_by_recraft_v3_jaaz": {
-        "display_name": "Recraft v3",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_recraft_v3_jaaz,
-    },
-    "generate_image_by_ideogram3_bal_jaaz": {
-        "display_name": "Ideogram 3 Balanced",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_ideogram3_bal_jaaz,
-    },
+    # "generate_image_by_imagen_4_jaaz": {
+    #     "display_name": "Imagen 4",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_imagen_4_jaaz,
+    # },
+    # "generate_image_by_recraft_v3_jaaz": {
+    #     "display_name": "Recraft v3",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_recraft_v3_jaaz,
+    # },
+    # "generate_image_by_ideogram3_bal_jaaz": {
+    #     "display_name": "Ideogram 3 Balanced",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_ideogram3_bal_jaaz,
+    # },
     # "generate_image_by_flux_1_1_pro_jaaz": {
     #     "display_name": "Flux 1.1 Pro",
     #     "type": "image",
     #     "provider": "jaaz",
     #     "tool_function": generate_image_by_flux_1_1_pro,
     # },
-    "generate_image_by_flux_kontext_pro_jaaz": {
-        "display_name": "Flux Kontext Pro",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_flux_kontext_pro_jaaz,
-    },
-    "generate_image_by_flux_kontext_max_jaaz": {
-        "display_name": "Flux Kontext Max",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_flux_kontext_max,
-    },
-    "generate_image_by_midjourney_jaaz": {
-        "display_name": "Midjourney",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_midjourney_jaaz,
-    },
-    "generate_image_by_doubao_seedream_3_jaaz": {
-        "display_name": "Doubao Seedream 3",
-        "type": "image",
-        "provider": "jaaz",
-        "tool_function": generate_image_by_doubao_seedream_3_jaaz,
-    },
-    "generate_image_by_doubao_seedream_3_volces": {
-        "display_name": "Doubao Seedream 3 by volces",
-        "type": "image",
-        "provider": "volces",
-        "tool_function": generate_image_by_doubao_seedream_3_volces,
-    },
-    "edit_image_by_doubao_seededit_3_volces": {
-        "display_name": "Doubao Seededit 3 by volces",
-        "type": "image",
-        "provider": "volces",
-        "tool_function": edit_image_by_doubao_seededit_3_volces,
-    },
-    "generate_video_by_seedance_v1_jaaz": {
-        "display_name": "Doubao Seedance v1",
-        "type": "video",
-        "provider": "jaaz",
-        "tool_function": generate_video_by_seedance_v1_jaaz,
-    },
-    "generate_video_by_hailuo_02_jaaz": {
-        "display_name": "Hailuo 02",
-        "type": "video",
-        "provider": "jaaz",
-        "tool_function": generate_video_by_hailuo_02_jaaz,
-    },
-    "generate_video_by_kling_v2_jaaz": {
-        "display_name": "Kling v2.1 Standard",
-        "type": "video",
-        "provider": "jaaz",
-        "tool_function": generate_video_by_kling_v2_jaaz,
-    },
-    "generate_video_by_seedance_v1_pro_volces": {
-        "display_name": "Doubao Seedance v1 by volces",
-        "type": "video",
-        "provider": "volces",
-        "tool_function": generate_video_by_seedance_v1_pro_volces,
-    },
-    "generate_video_by_seedance_v1_lite_volces_t2v": {
-        "display_name": "Doubao Seedance v1 lite(text-to-video)",
-        "type": "video",
-        "provider": "volces",
-        "tool_function": generate_video_by_seedance_v1_lite_t2v,
-    },
-    "generate_video_by_seedance_v1_lite_i2v_volces": {
-        "display_name": "Doubao Seedance v1 lite(images-to-video)",
-        "type": "video",
-        "provider": "volces",
-        "tool_function": generate_video_by_seedance_v1_lite_i2v,
-    },
-    "generate_video_by_veo3_fast_jaaz": {
-        "display_name": "Veo3 Fast",
-        "type": "video",
-        "provider": "jaaz",
-        "tool_function": generate_video_by_veo3_fast_jaaz,
-    },
-    # ---------------
-    # Replicate Tools
-    # ---------------
-    "generate_image_by_imagen_4_replicate": {
-        "display_name": "Imagen 4",
-        "type": "image",
-        "provider": "replicate",
-        "tool_function": generate_image_by_imagen_4_replicate,
-    },
-    "generate_image_by_recraft_v3_replicate": {
-        "display_name": "Recraft v3",
-        "type": "image",
-        "provider": "replicate",
-        "tool_function": generate_image_by_recraft_v3_replicate,
-    },
-    "generate_image_by_flux_kontext_pro_replicate": {
-        "display_name": "Flux Kontext Pro",
-        "type": "image",
-        "provider": "replicate",
-        "tool_function": generate_image_by_flux_kontext_pro_replicate,
-    },
-    "generate_image_by_flux_kontext_max_replicate": {
-        "display_name": "Flux Kontext Max",
-        "type": "image",
-        "provider": "replicate",
-        "tool_function": generate_image_by_flux_kontext_max_replicate,
-    },
+    # "generate_image_by_flux_kontext_pro_jaaz": {
+    #     "display_name": "Flux Kontext Pro",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_flux_kontext_pro_jaaz,
+    # },
+    # "generate_image_by_flux_kontext_max_jaaz": {
+    #     "display_name": "Flux Kontext Max",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_flux_kontext_max,
+    # },
+    # "generate_image_by_midjourney_jaaz": {
+    #     "display_name": "Midjourney",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_midjourney_jaaz,
+    # },
+    # "generate_image_by_doubao_seedream_3_jaaz": {
+    #     "display_name": "Doubao Seedream 3",
+    #     "type": "image",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_image_by_doubao_seedream_3_jaaz,
+    # },
+    # "generate_image_by_doubao_seedream_3_volces": {
+    #     "display_name": "Doubao Seedream 3 by volces",
+    #     "type": "image",
+    #     "provider": "volces",
+    #     "tool_function": generate_image_by_doubao_seedream_3_volces,
+    # },
+    # "edit_image_by_doubao_seededit_3_volces": {
+    #     "display_name": "Doubao Seededit 3 by volces",
+    #     "type": "image",
+    #     "provider": "volces",
+    #     "tool_function": edit_image_by_doubao_seededit_3_volces,
+    # },
+    # "generate_video_by_seedance_v1_jaaz": {
+    #     "display_name": "Doubao Seedance v1",
+    #     "type": "video",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_video_by_seedance_v1_jaaz,
+    # },
+    # "generate_video_by_hailuo_02_jaaz": {
+    #     "display_name": "Hailuo 02",
+    #     "type": "video",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_video_by_hailuo_02_jaaz,
+    # },
+    # "generate_video_by_kling_v2_jaaz": {
+    #     "display_name": "Kling v2.1 Standard",
+    #     "type": "video",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_video_by_kling_v2_jaaz,
+    # },
+    # "generate_video_by_seedance_v1_pro_volces": {
+    #     "display_name": "Doubao Seedance v1 by volces",
+    #     "type": "video",
+    #     "provider": "volces",
+    #     "tool_function": generate_video_by_seedance_v1_pro_volces,
+    # },
+    # "generate_video_by_seedance_v1_lite_volces_t2v": {
+    #     "display_name": "Doubao Seedance v1 lite(text-to-video)",
+    #     "type": "video",
+    #     "provider": "volces",
+    #     "tool_function": generate_video_by_seedance_v1_lite_t2v,
+    # },
+    # "generate_video_by_seedance_v1_lite_i2v_volces": {
+    #     "display_name": "Doubao Seedance v1 lite(images-to-video)",
+    #     "type": "video",
+    #     "provider": "volces",
+    #     "tool_function": generate_video_by_seedance_v1_lite_i2v,
+    # },
+    # "generate_video_by_veo3_fast_jaaz": {
+    #     "display_name": "Veo3 Fast",
+    #     "type": "video",
+    #     "provider": "jaaz",
+    #     "tool_function": generate_video_by_veo3_fast_jaaz,
+    # },
+    # # ---------------
+    # # Replicate Tools
+    # # ---------------
+    # "generate_image_by_imagen_4_replicate": {
+    #     "display_name": "Imagen 4",
+    #     "type": "image",
+    #     "provider": "replicate",
+    #     "tool_function": generate_image_by_imagen_4_replicate,
+    # },
+    # "generate_image_by_recraft_v3_replicate": {
+    #     "display_name": "Recraft v3",
+    #     "type": "image",
+    #     "provider": "replicate",
+    #     "tool_function": generate_image_by_recraft_v3_replicate,
+    # },
+    # "generate_image_by_flux_kontext_pro_replicate": {
+    #     "display_name": "Flux Kontext Pro",
+    #     "type": "image",
+    #     "provider": "replicate",
+    #     "tool_function": generate_image_by_flux_kontext_pro_replicate,
+    # },
+    # "generate_image_by_flux_kontext_max_replicate": {
+    #     "display_name": "Flux Kontext Max",
+    #     "type": "image",
+    #     "provider": "replicate",
+    #     "tool_function": generate_image_by_flux_kontext_max_replicate,
+    # },
 }
 
 
