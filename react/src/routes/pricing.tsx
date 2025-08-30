@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState, useCallback } from 'react'
 import TopMenu from '@/components/TopMenu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,55 +11,83 @@ export const Route = createFileRoute('/pricing')({
 })
 
 function PricingPage() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleUpgrade = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      
+      const response = await fetch('/api/create_checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('创建支付订单失败')
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.checkout_url) {
+        // 在新窗口中打开支付页面
+        window.open(data.checkout_url, '_blank', 'noopener,noreferrer')
+      } else {
+        throw new Error(data.error || '创建支付订单失败')
+      }
+    } catch (error) {
+      console.error('支付处理失败:', error)
+      alert('创建支付订单失败，请稍后重试')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   const plans = [
     {
-      name: '免费版',
-      price: '¥0',
+      name: '入门版',
+      price: '$0',
       period: '永久免费',
-      description: '适合个人用户和小团队',
+      description: '适合个人用户体验',
       features: [
-        '基础 AI 对话功能',
-        '每月 100 条消息',
-        '基础模板库',
-        '标准客服支持',
+        '~125 张图片生成',
+        '~100 秒视频生成',
+        '使用所有模型',
+        '可商用',
       ],
       popular: false,
-      buttonText: '开始使用',
+      buttonText: '立即开始',
       buttonVariant: 'outline' as const,
     },
     {
-      name: '专业版',
-      price: '¥29',
+      name: '基础版',
+      price: '$9.9',
       period: '每月',
-      description: '适合专业用户和中小企业',
+      description: '适合个人创作者和小团队',
       features: [
-        '无限 AI 对话',
-        '高级模板库',
-        '自定义工作流',
-        '优先客服支持',
-        '团队协作功能',
-        '数据导出功能',
+        '~375 张图片生成',
+        '~300 秒视频生成',
+        '使用所有模型',
+        '可商用',
       ],
       popular: true,
-      buttonText: '立即升级',
+      buttonText: '立即开始',
       buttonVariant: 'default' as const,
     },
     {
-      name: '企业版',
-      price: '¥99',
+      name: '专业版',
+      price: '$29.9',
       period: '每月',
-      description: '适合大型企业和团队',
+      description: '适合专业创作者和企业',
       features: [
-        '专业版所有功能',
-        '私有部署选项',
-        '定制化开发',
-        '专属客户经理',
-        '24/7 技术支持',
-        '高级安全保障',
-        'API 接入支持',
+        '~875 张图片生成',
+        '~700 秒视频生成',
+        '使用所有模型',
+        '可商用',
       ],
       popular: false,
-      buttonText: '联系销售',
+      buttonText: '立即开始',
       buttonVariant: 'outline' as const,
     },
   ]
@@ -111,8 +140,10 @@ function PricingPage() {
                   variant={plan.buttonVariant} 
                   className="w-full"
                   size="lg"
+                  onClick={plan.buttonText === '立即开始' && plan.price !== '$0' ? handleUpgrade : undefined}
+                  disabled={plan.buttonText === '立即开始' && plan.price !== '$0' && isLoading}
                 >
-                  {plan.buttonText}
+                  {plan.buttonText === '立即开始' && plan.price !== '$0' && isLoading ? '处理中...' : plan.buttonText}
                 </Button>
               </CardFooter>
             </Card>

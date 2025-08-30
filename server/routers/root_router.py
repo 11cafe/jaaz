@@ -139,3 +139,31 @@ async def list_chat_sessions():
 @router.get("/chat_session/{session_id}")
 async def get_chat_session(session_id: str):
     return await db_service.get_chat_history(session_id)
+
+
+@router.post("/create_checkout")
+async def create_checkout():
+    """创建支付订单"""
+    try:
+        timeout = httpx.Timeout(10.0)
+        async with HttpClient.create(timeout=timeout) as client:
+            response = await client.post(
+                'https://test-api.creem.io/v1/checkouts',
+                headers={
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'creem_test_7emlTUWBmWR007A0ODUAnU'
+                },
+                json={
+                    'product_id': 'prod_1Pnf8nR8OUqp55ziFzDNLM'
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {'success': True, 'checkout_url': data['checkout_url']}
+            else:
+                return {'success': False, 'error': f'API调用失败: {response.status_code}'}
+                
+    except Exception as e:
+        print(f"创建支付订单失败: {e}")
+        return {'success': False, 'error': '创建支付订单失败'}
