@@ -1,11 +1,6 @@
 import CommonDialogContent from '@/components/common/DialogContent'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Combobox } from '@/components/ui/combobox'
@@ -116,6 +111,25 @@ const PROVIDER_OPTIONS = [
     },
   },
   {
+    value: 'Google',
+    label: 'Google',
+    data: {
+      apiUrl: 'https://api.tu-zi.com/v1',
+      models: {
+        'nano-banana': { type: 'image' },
+        // not supported yet!
+        // 'gemini-2.0-flash-preview-image-generation': { type: 'image' },
+        // 'imagen-4.0-generate-preview-06-06': { type: 'image' },
+        // 'imagen-4.0-fast-generate-preview-06-06': { type: 'image' },
+        // 'imagen-4.0-ultra-generate-preview-06-06': { type: 'image' },
+        // 'imagen-3.0-generate-002': { type: 'image' },
+        // 'imagen-3.0-fast-generate-001': { type: 'image' },
+        // 'veo-3.0-generate-preview': { type: 'video' },
+        // 'veo-2.0-generate-001': { type: 'video' },
+      },
+    },
+  },
+  {
     value: '硅基流动',
     label: '硅基流动 (SiliconFlow)',
     data: { apiUrl: 'https://api.siliconflow.cn/v1/' },
@@ -132,18 +146,12 @@ const PROVIDER_OPTIONS = [
   },
 ]
 
-export default function AddProviderDialog({
-  open,
-  onOpenChange,
-  onSave,
-}: AddProviderDialogProps) {
+export default function AddProviderDialog({ open, onOpenChange, onSave }: AddProviderDialogProps) {
   const { t } = useTranslation()
   const [providerName, setProviderName] = useState('')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [models, setModels] = useState<
-    Record<string, { type?: 'text' | 'image' | 'video' }>
-  >({})
+  const [models, setModels] = useState<Record<string, { type?: 'text' | 'image' | 'video' }>>({})
 
   const isMediaOnlyProvider =
     PROVIDER_OPTIONS.find((p) => p.value === providerName)?.mediaOnly ?? false
@@ -204,18 +212,16 @@ export default function AddProviderDialog({
         <DialogHeader>
           <DialogTitle>
             {t('settings:provider.addProvider')}
-            {isMediaOnlyProvider && <span className="ml-3">🎨 🎥</span>}
+            {isMediaOnlyProvider && <span className='ml-3'>🎨 🎥</span>}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className='space-y-4 py-4'>
           {/* Provider Name */}
-          <div className="space-y-2">
-            <Label htmlFor="provider-name">
-              {t('settings:provider.providerName')}
-            </Label>
+          <div className='space-y-2'>
+            <Label htmlFor='provider-name'>{t('settings:provider.providerName')}</Label>
             <Combobox
-              id="provider-name"
+              id='provider-name'
               value={providerName}
               onChange={setProviderName}
               onDataChange={handleProviderDataChange}
@@ -225,10 +231,10 @@ export default function AddProviderDialog({
           </div>
 
           {/* API URL */}
-          <div className="space-y-2">
-            <Label htmlFor="api-url">{t('settings:provider.apiUrl')}</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='api-url'>{t('settings:provider.apiUrl')}</Label>
             <Input
-              id="api-url"
+              id='api-url'
               placeholder={t('settings:provider.apiUrlPlaceholder')}
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
@@ -236,11 +242,11 @@ export default function AddProviderDialog({
           </div>
 
           {/* API Key */}
-          <div className="space-y-2">
-            <Label htmlFor="api-key">{t('settings:provider.apiKey')}</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='api-key'>{t('settings:provider.apiKey')}</Label>
             <Input
-              id="api-key"
-              type="password"
+              id='api-key'
+              type='password'
               placeholder={t('settings:provider.apiKeyPlaceholder')}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
@@ -258,13 +264,10 @@ export default function AddProviderDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
+          <Button variant='outline' onClick={handleCancel}>
             {t('settings:provider.cancel')}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!providerName.trim() || !apiUrl.trim()}
-          >
+          <Button onClick={handleSave} disabled={!providerName.trim() || !apiUrl.trim()}>
             {t('settings:provider.save')}
           </Button>
         </DialogFooter>

@@ -126,6 +126,7 @@ async def langgraph_multi_agent(
             'tool_list': tool_list,
         }
 
+        print('👇测试走到了这里')
         # 6. 流处理
         processor = StreamProcessor(
             session_id, db_service, send_to_websocket)  # type: ignore

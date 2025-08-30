@@ -53,19 +53,20 @@ async def get_models() -> list[ModelInfo]:
     config = config_service.get_config()
     res: List[ModelInfo] = []
 
+    # 先关闭本地ollama的调用
     # Handle Ollama models separately
-    ollama_url = config.get('ollama', {}).get(
-        'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
-    # Add Ollama models if URL is available
-    if ollama_url and ollama_url.strip():
-        ollama_models = get_ollama_model_list()
-        for ollama_model in ollama_models:
-            res.append({
-                'provider': 'ollama',
-                'model': ollama_model,
-                'url': ollama_url,
-                'type': 'text'
-            })
+    # ollama_url = config.get('ollama', {}).get(
+    #     'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
+    # # Add Ollama models if URL is available
+    # if ollama_url and ollama_url.strip():
+    #     ollama_models = get_ollama_model_list()
+    #     for ollama_model in ollama_models:
+    #         res.append({
+    #             'provider': 'ollama',
+    #             'model': ollama_model,
+    #             'url': ollama_url,
+    #             'type': 'text'
+    #         })
 
     for provider in config.keys():
         if provider in ['ollama']:

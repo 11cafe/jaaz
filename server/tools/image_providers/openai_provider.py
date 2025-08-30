@@ -46,7 +46,7 @@ class OpenAIImageProvider(ImageProviderBase):
                 input_image_path = input_images[0]
                 # For OpenAI, input_image should be the file path
                 full_path = os.path.join(FILES_DIR, input_image_path)
-
+                print(f"full_path: {full_path}")
                 with open(full_path, 'rb') as image_file:
                     result = self.client.images.edit(
                         model=model,
@@ -66,6 +66,7 @@ class OpenAIImageProvider(ImageProviderBase):
                 }
                 size = size_map.get(aspect_ratio, "1024x1024")
 
+                print(f"prompt: {prompt}")
                 result = self.client.images.generate(
                     model=model,
                     prompt=prompt,
