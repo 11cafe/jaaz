@@ -6,6 +6,7 @@ from models.tool_model import ToolInfoJson
 from services.langgraph_service.configs.image_vide_creator_config import ImageVideoCreatorAgentConfig
 from .configs import PlannerAgentConfig, create_handoff_tool, BaseAgentConfig
 from services.tool_service import tool_service
+from services.langgraph_service.configs.image_template_config import ImageTemplaterAgentConfig
 
 
 class AgentManager:
@@ -18,7 +19,8 @@ class AgentManager:
     def create_agents(
         model: Any,
         tool_list: List[ToolInfoJson],
-        system_prompt: str = ""
+        system_prompt: str = "",
+        template_prompt: str = ""
     ) -> List[CompiledGraph]:
         """创建所有智能体
 
@@ -37,27 +39,39 @@ class AgentManager:
         print(f"📸 图像工具: {image_tools}")
         print(f"🎬 视频工具: {video_tools}")
 
-        planner_config = PlannerAgentConfig()
-        planner_agent = AgentManager._create_langgraph_agent(
-            model, planner_config)
+        if not template_prompt:
+            planner_config = PlannerAgentConfig()
+            planner_agent = AgentManager._create_langgraph_agent(
+                model, planner_config)
 
-        # image_designer_config = ImageDesignerAgentConfig(
-        #     image_tools, system_prompt)
-        # print('👇image_designer_config tools', image_designer_config.tools)
-        # print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
-        # image_designer_agent = AgentManager._create_langgraph_agent(
-        #     model, image_designer_config)
+            # image_designer_config = ImageDesignerAgentConfig(
+            #     image_tools, system_prompt)
+            # print('👇image_designer_config tools', image_designer_config.tools)
+            # print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
+            # image_designer_agent = AgentManager._create_langgraph_agent(
+            #     model, image_designer_config)
 
-        # video_designer_config = VideoDesignerAgentConfig(
-        #     video_tools)
-        # video_designer_agent = AgentManager._create_langgraph_agent(
-        #     model, video_designer_config)
+            # video_designer_config = VideoDesignerAgentConfig(
+            #     video_tools)
+            # video_designer_agent = AgentManager._create_langgraph_agent(
+            #     model, video_designer_config)
 
-        image_video_creator_config = ImageVideoCreatorAgentConfig(tool_list)
-        image_video_creator_agent = AgentManager._create_langgraph_agent(
-            model, image_video_creator_config)
+            image_video_creator_config = ImageVideoCreatorAgentConfig(tool_list)
+            image_video_creator_agent = AgentManager._create_langgraph_agent(
+                model, image_video_creator_config)
 
-        return [planner_agent, image_video_creator_agent]
+            return [planner_agent, image_video_creator_agent]
+        else:
+            print(f"👇template_prompt: {template_prompt}")
+            image_template_config = ImageTemplaterAgentConfig(
+                image_tools, system_prompt)
+            image_template_agent = AgentManager._create_langgraph_agent(
+                model, image_template_config)
+            # print('👇image_designer_config tools', image_designer_config.tools)
+            # print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
+            # image_designer_agent = AgentManager._create_langgraph_agent(
+            #     model, image_designer_config)
+            return [image_template_agent]
 
     @staticmethod
     def _create_langgraph_agent(
@@ -87,10 +101,12 @@ class AgentManager:
         business_tools: List[BaseTool] = []
         for tool_json in config.tools:
             tool = tool_service.get_tool(tool_json['id'])
+            print('👇create_react_agent tool', tool)
             if tool:
                 business_tools.append(tool)
 
         # 创建并返回 LangGraph 智能体
+        print('👇create_react_agent config.name', business_tools)
         return create_react_agent(
             name=config.name,
             model=model,

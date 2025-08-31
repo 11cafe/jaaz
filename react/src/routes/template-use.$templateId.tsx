@@ -8,6 +8,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { getTemplate } from '@/api/templates'
 import { uploadImage } from '@/api/upload'
+import { createCanvas } from '@/api/canvas'
+import { sendMagicGenerate } from '@/api/magic'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { cn } from '@/lib/utils'
@@ -19,6 +21,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import ModelSelectorV3 from '@/components/chat/ModelSelectorV3'
+import { useConfigs } from '@/contexts/configs'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
+import { nanoid } from 'nanoid'
+import { UserMessage } from '@/types/types'
 
 export const Route = createFileRoute('/template-use/$templateId')({
   component: TemplateUsePage,
@@ -27,6 +33,7 @@ export const Route = createFileRoute('/template-use/$templateId')({
 function TemplateUsePage() {
   const { templateId } = Route.useParams()
   const navigate = useNavigate()
+  const { textModel, selectedTools, setInitCanvas } = useConfigs()
   const [characterName, setCharacterName] = useState('')
   const [images, setImages] = useState<{
     file_id: string
@@ -38,6 +45,7 @@ function TemplateUsePage() {
   const [quantity, setQuantity] = useState<number>(1)
   const [showQuantitySlider, setShowQuantitySlider] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generatingStep, setGeneratingStep] = useState('')
   
   const textareaRef = useRef<TextAreaRef>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -71,6 +79,9 @@ function TemplateUsePage() {
     },
   })
 
+  // 这个状态用于UI显示，实际的canvas创建现在在handleGenerate中直接调用
+  const isCanvasCreating = false
+
   // 处理图片上传
   const handleImagesUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,35 +95,135 @@ function TemplateUsePage() {
     [uploadImageMutation]
   )
 
+  // 导航到画布的辅助函数
+  const navigateToCanvas = useCallback((canvasId: string, sessionId: string) => {
+    try {
+      setInitCanvas(true)
+      
+      // 立即跳转到canvas页面，让用户实时看到生成过程
+      navigate({
+        to: '/canvas/$id',
+        params: { id: canvasId },
+        search: { sessionId },
+      })
+      
+    } catch (error) {
+      console.error('❌ 跳转失败:', error)
+      toast.error('跳转失败，请手动前往画布页面')
+    }
+  }, [navigate, setInitCanvas])
+
   // 生成处理
   const handleGenerate = useCallback(async () => {
-    if (isGenerating) return
+    if (isGenerating || isCanvasCreating) return
     
     if (!characterName.trim()) {
       toast.error('请输入角色名称')
       return
     }
 
+    if (images.length === 0) {
+      toast.error('请上传图片')
+      return
+    }
+
     setIsGenerating(true)
+    setGeneratingStep('正在准备数据...')
     
     try {
-      // 这里实现生成逻辑
-      console.log('生成模板，角色名称:', characterName)
-      console.log('模板ID:', templateId)
-      console.log('比例:', selectedAspectRatio)
-      console.log('数量:', quantity)
-      console.log('图片:', images)
+      const textContent = characterName.trim()
+      const canvasId = nanoid()
+      const sessionId = nanoid()
+      const systemPrompt = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT
+
+      console.log('🚀 开始模板生成流程', {
+        templateId,
+        characterName: textContent,
+        canvasId,
+        sessionId,
+        imagesCount: images.length
+      })
+
+      // 获取图片的base64数据
+      setGeneratingStep('正在处理图片...')
+      const imagePromises = images.map(async (image) => {
+        const response = await fetch(`/api/file/${image.file_id}`)
+        const blob = await response.blob()
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      })
+
+      const base64Images = await Promise.all(imagePromises)
+
+      // 构建包含图片的消息内容
+      const messageContent = [
+        {
+          type: 'text',
+          text: textContent,
+        },
+        ...images.map((_, index) => ({
+          type: 'image_url',
+          image_url: {
+            url: base64Images[index],
+          },
+        })),
+      ]
+
+      const magicMessages = [
+        {
+          role: 'user',
+          content: messageContent,
+        }
+      ]
+
+      // 1. 先创建画布
+      setGeneratingStep('正在创建画布...')
+      const canvasResult = await createCanvas({
+        name: `${template?.title} - ${characterName}`,
+        canvas_id: canvasId,
+        messages: [{
+          role: 'user',
+          content: textContent,
+        }],
+        session_id: sessionId,
+        text_model: textModel || {
+          provider: 'openai',
+          model: 'gpt-4o-mini',
+          url: ''
+        },
+        tool_list: selectedTools && selectedTools.length > 0 ? selectedTools : [],
+        system_prompt: systemPrompt,
+        template_id: parseInt(templateId),
+      })
+
+      // 2. 立即跳转到canvas页面，让用户实时看到生成过程
+      navigateToCanvas(canvasResult.id, sessionId)
+
+      // 3. 在后台启动魔法生成（通过websocket向canvas页面推送进度）
+      sendMagicGenerate({
+        sessionId: sessionId,
+        canvasId: canvasId,
+        newMessages: magicMessages,
+        systemPrompt: systemPrompt,
+        templateId: parseInt(templateId),
+      }).catch((error) => {
+        console.error('❌ 魔法生成启动失败:', error)
+        // 这里不需要toast，因为用户已经在canvas页面了
+        // canvas页面会通过websocket接收到错误信息
+      })
       
-      // 模拟生成过程
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      toast.success('生成完成!')
     } catch (error) {
-      toast.error('生成失败')
+      console.error('❌ 生成失败:', error)
+      toast.error(`生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      setGeneratingStep('')
     } finally {
       setIsGenerating(false)
+      setGeneratingStep('')
     }
-  }, [isGenerating, characterName, templateId, selectedAspectRatio, quantity, images])
+  }, [isGenerating, isCanvasCreating, characterName, templateId, images, template, textModel, selectedTools, navigateToCanvas])
 
   // 关闭数量滑块的点击外部事件
   useEffect(() => {
@@ -435,22 +546,29 @@ function TemplateUsePage() {
                   </div>
 
                   {/* Generate Button */}
-                  {isGenerating ? (
-                    <Button
-                      className="shrink-0 relative"
-                      variant="default"
-                      size="icon"
-                      onClick={() => setIsGenerating(false)}
-                    >
-                      <Loader2 className="size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                    </Button>
+                  {isGenerating || isCanvasCreating ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {generatingStep && (
+                        <span className="text-sm text-muted-foreground animate-pulse">
+                          {generatingStep}
+                        </span>
+                      )}
+                      <Button
+                        className="relative"
+                        variant="default"
+                        size="icon"
+                        disabled
+                      >
+                        <Loader2 className="size-4 animate-spin" />
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       className="shrink-0"
                       variant="default"
                       size="icon"
                       onClick={handleGenerate}
-                      disabled={!characterName.trim()}
+                      disabled={!characterName.trim() || images.length === 0}
                     >
                       <Play className="size-4" />
                     </Button>

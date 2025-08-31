@@ -40,6 +40,15 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     canvas_id: str = data.get('canvas_id', '')
     text_model: ModelInfo = data.get('text_model', {})
     tool_list: List[ToolInfoJson] = data.get('tool_list', [])
+    template_id: str = data.get('template_id', '')
+
+    # If template_id is provided, get template prompt
+    template_prompt: Optional[str] = None
+    if template_id:
+        from routers.templates_router import TEMPLATES
+        template = next((t for t in TEMPLATES if t["id"] == int(template_id)), None)
+        if template:
+            template_prompt = template.get("prompt")
 
     print('👇 chat_service got tool_list', tool_list)
 
@@ -57,7 +66,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
 
     # Create and start langgraph_agent task for chat processing
     task = asyncio.create_task(langgraph_multi_agent(
-        messages, canvas_id, session_id, text_model, tool_list, system_prompt))
+        messages, canvas_id, session_id, text_model, tool_list, system_prompt, template_id, template_prompt))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)

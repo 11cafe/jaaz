@@ -260,6 +260,7 @@ class JaazImageProvider(ImageProviderBase):
         Returns:
             tuple[str, int, int, str]: (mime_type, width, height, filename)
         """
+        print("JaazImageProvider generate")
         # Check if it's an OpenAI model
         if model.startswith('openai/'):
             return await self._generate_openai_image(

@@ -60,6 +60,7 @@ async def magic(request: Request):
         {"status": "done"}
     """
     data = await request.json()
+    print(f"magic data: {data}")
     await handle_magic(data)
     return {"status": "done"}
 

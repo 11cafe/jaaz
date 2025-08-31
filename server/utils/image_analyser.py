@@ -3,7 +3,7 @@ import base64
 import aiohttp
 import sys
 import os
-from typing import Optional, Dict
+from typing import Any, Optional, Dict
 from openai import OpenAI   
 
 # 添加父目录到路径以便导入 services 模块
@@ -212,7 +212,6 @@ class ImageAnalyser:
                         choices = response_data.get('choices', [])
                         if choices and len(choices) > 0:
                             content = choices[0].get('message', {}).get('content', '')
-                            print(f"✅ Image analysis result: {content}")
                             return content
                         else:
                             print("❌ No choices in response")
@@ -227,7 +226,7 @@ class ImageAnalyser:
         
     async def generate_magic_image(
         self,
-        file_path: str,
+        file_path: list[str],
         prompt: str,
         model: str = "gemini-2.5-flash-image"
     ) -> Optional[Dict[str, str]]:
@@ -248,9 +247,12 @@ class ImageAnalyser:
                 api_key=self.api_token
             )
             # 生成图片
+            images: list[Any] = []
+            for f in file_path:
+                images.append(open(f, 'rb'))
             result = client.images.edit(
                 model=model,
-                image=[open(file_path, 'rb')],
+                image=images,
                 prompt=prompt
             )
 

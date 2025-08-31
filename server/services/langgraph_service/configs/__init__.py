@@ -8,6 +8,7 @@ from .base_config import BaseAgentConfig, create_handoff_tool, ToolConfig
 from .planner_config import PlannerAgentConfig
 from .image_designer_config import ImageDesignerAgentConfig
 from .video_designer_config import VideoDesignerAgentConfig
+from .image_template_config import ImageTemplaterAgentConfig
 
 __all__ = [
     'BaseAgentConfig',
@@ -16,4 +17,5 @@ __all__ = [
     'PlannerAgentConfig',
     'ImageDesignerAgentConfig',
     'VideoDesignerAgentConfig',
+    'ImageTemplaterAgentConfig',
 ]

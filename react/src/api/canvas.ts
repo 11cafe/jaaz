@@ -25,14 +25,20 @@ export async function createCanvas(data: {
     url: string
   }
   tool_list: ToolInfo[]
-
   system_prompt: string
+  template_id?: number
 }): Promise<{ id: string }> {
   const response = await fetch('/api/canvas/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Canvas creation failed: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+  
   return await response.json()
 }
 

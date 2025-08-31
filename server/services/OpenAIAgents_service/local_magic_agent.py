@@ -9,12 +9,14 @@ from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
 from common import DEFAULT_PORT
 from ..magic_draw_service import MagicDrawService
+from routers.templates_router import TEMPLATES
 
 
 async def create_local_magic_response(messages: List[Dict[str, Any]], 
                                       session_id: str = "", 
                                       canvas_id: str = "",
-                                      system_prompt: str = "") -> Dict[str, Any]:
+                                      system_prompt: str = "",
+                                      template_id: str = "") -> Dict[str, Any]:
     """
     本地的魔法生成功能
     实现和 magic_agent 相同的功能
@@ -34,12 +36,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         if not image_content:
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': '✨ not found input image'
-                    }
-                ]
+                'content': '✨ not found input image'
             }
 
         # 创建 Jaaz 服务实例
@@ -49,25 +46,45 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             print(f"❌ Jaaz service configuration error: {e}")
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': '✨ Cloud API Key not configured'
-                    }
-                ]
+                'content': '✨ Cloud API Key not configured'
             }
 
-        # 调用 Jaaz 服务生成魔法图像
-        result = await magic_draw_service.generate_magic_image(system_prompt, image_content)
+        # 获取用户提示词
+        user_prompt = ""
+        if isinstance(user_message.get('content'), list):
+            for content_item in user_message['content']:
+                if content_item.get('type') == 'text':
+                    user_prompt = content_item.get('text', '')
+                    break
+        elif isinstance(user_message.get('content'), str):
+            user_prompt = user_message.get('content', '')
+
+        # 调用tuzi服务生成魔法图像
+        if not template_id:
+            result = await magic_draw_service.generate_magic_image(system_prompt, image_content)
+        else:
+            # 如果有template_id，从TEMPLATES获取对应的prompt
+            template_prompt = ""
+            try:
+                template_id_int = int(template_id)
+                template = next((t for t in TEMPLATES if t["id"] == template_id_int), None)
+                if template:
+                    template_prompt = template.get("prompt", "")
+                    print(f"✅ 找到模板prompt: {template_prompt}")
+                else:
+                    print(f"❌ 未找到模板ID: {template_id}")
+                    template_prompt = user_prompt  # 如果没找到模板，使用用户输入
+            except ValueError:
+                print(f"❌ 无效的模板ID: {template_id}")
+                template_prompt = user_prompt  # 如果模板ID无效，使用用户输入
+            
+            # 使用模板的prompt或用户的prompt，确保是字符串类型
+            final_prompt = str(template_prompt if template_prompt else user_prompt)
+            result = await magic_draw_service.generate_image(final_prompt, image_content, template_id)
         if not result:
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': '✨ Magic generation failed'
-                    }
-                ]
+                'content': '✨ Magic generation failed'
             }
 
         # 检查是否有错误
@@ -76,24 +93,14 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             print(f"❌ Magic generation error: {error_msg}")
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': f'✨ Magic Generation Error: {error_msg}'
-                    }
-                ]
+                'content': f'✨ Magic Generation Error: {error_msg}'
             }
 
         # 检查是否有结果 URL
         if not result.get('result_url'):
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': '✨ Magic generation failed: No result URL'
-                    }
-                ]
+                'content': '✨ Magic generation failed: No result URL'
             }
 
         # 初始化变量
@@ -127,8 +134,9 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
 
         return {
             'role': 'assistant',
-            'content': f'✨ Magic Success!!!\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'✨ Image Generate Success\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
         }
+        
 
     except (asyncio.TimeoutError, Exception) as e:
         # 检查是否是超时相关的错误
@@ -136,23 +144,13 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         if 'timeout' in error_msg or 'timed out' in error_msg:
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': '✨ time out'
-                    }
-                ]
+                'content': '✨ time out'
             }
         else:
             print(f"❌ 创建魔法回复时出错: {e}")
             return {
                 'role': 'assistant',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': f'✨ Magic Generation Error: {str(e)}'
-                    }
-                ]
+                'content': f'✨ Magic Generation Error: {str(e)}'
             }
 
 if __name__ == "__main__":

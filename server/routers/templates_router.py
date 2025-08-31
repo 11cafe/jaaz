@@ -16,7 +16,8 @@ TEMPLATES = [
         "rating": 4.8,
         "category": "nano-banana",
         "created_at": "2024-01-15T10:30:00Z",
-        "updated_at": "2024-01-15T10:30:00Z"
+        "updated_at": "2024-01-15T10:30:00Z",
+        "prompt":"turn this photo into a character figure. Behind it, place a box with the character’s image printed on it, and a computer showing the Blender modeling process on its screen. In front of the box, add a round plastic base with the character figure standing on it. set the scene indoors if possible"
     }
 ]
 

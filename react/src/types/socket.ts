@@ -17,6 +17,7 @@ export enum SessionEventType {
   ToolCallPendingConfirmation = 'tool_call_pending_confirmation',
   ToolCallConfirmed = 'tool_call_confirmed',
   ToolCallCancelled = 'tool_call_cancelled',
+  UserImages = 'user_images',
 }
 
 export interface SessionBaseEvent {
@@ -96,6 +97,20 @@ export interface SessionToolCallCancelledEvent extends SessionBaseEvent {
   id: string
 }
 
+export interface SessionUserImagesEvent extends SessionBaseEvent {
+  type: SessionEventType.UserImages
+  message: {
+    role: 'user'
+    content: Array<{
+      type: 'text' | 'image_url'
+      text?: string
+      image_url?: {
+        url: string
+      }
+    }>
+  }
+}
+
 export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
@@ -111,3 +126,4 @@ export type SessionUpdateEvent =
   | SessionToolCallPendingConfirmationEvent
   | SessionToolCallConfirmedEvent
   | SessionToolCallCancelledEvent
+  | SessionUserImagesEvent
