@@ -78,19 +78,31 @@ static_site = os.path.join(react_build_dir, "assets")
 if os.path.exists(static_site):
     app.mount("/assets", NoCacheStaticFiles(directory=static_site), name="assets")
 
-# Mount template images directory
+# Mount template images directory first (more specific path)
 template_images_dir = os.path.join(root_dir, "static", "template_images")
 if os.path.exists(template_images_dir):
     app.mount("/static/template_images", StaticFiles(directory=template_images_dir), name="template_images")
 
+# Mount static files from React build directory with /static prefix (less specific path)
+if os.path.exists(react_build_dir):
+    app.mount("/static", StaticFiles(directory=react_build_dir), name="static")
 
-@app.get("/")
-async def serve_react_app():
+# Add endpoint for static files at root level (PNG, SVG, etc.)
+@app.get("/{filename:path}")
+async def serve_static_files(filename: str):
+    # Check if file exists in react build directory and is a static file
+    if filename.endswith(('.png', '.svg', '.ico', '.jpg', '.jpeg', '.gif', '.webp')):
+        file_path = os.path.join(react_build_dir, filename)
+        if os.path.exists(file_path):
+            return FileResponse(file_path)
+    # If not found, serve the React app (SPA fallback)
     response = FileResponse(os.path.join(react_build_dir, "index.html"))
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+
 
 print('Creating socketio app')
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
