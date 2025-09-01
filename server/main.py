@@ -49,9 +49,16 @@ app = FastAPI(lifespan=lifespan)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有来源
+    allow_origins=[
+        "https://www.magicart.cc",
+        "https://magicart.cc", 
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174"
+    ],  # 明确指定允许的来源
     allow_credentials=True,
-    allow_methods=["*"],  # 允许所有HTTP方法
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 明确指定允许的HTTP方法
     allow_headers=["*"],  # 允许所有头部
 )
 
