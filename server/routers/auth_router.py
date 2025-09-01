@@ -296,6 +296,100 @@ async def complete_auth(device_code: str = Query(...)):
 
 
 
+@router.get("/auth/login")
+async def direct_login(request: Request):
+    """直接登录：在当前窗口跳转到Google OAuth"""
+    # 动态获取重定向URI
+    redirect_uri = get_redirect_uri(request)
+    
+    # 生成OAuth state参数
+    state = generate_state()
+    
+    # 构建Google OAuth URL
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": f"{redirect_uri}/auth/callback/direct",
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    
+    google_oauth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlparse.urlencode(params)}"
+    
+    return RedirectResponse(url=google_oauth_url)
+
+
+@router.get("/auth/callback/direct")
+async def direct_oauth_callback(request: Request, code: str = Query(...), state: str = Query(...), error: str = Query(None)):
+    """直接OAuth回调处理：在URL中传递认证结果"""
+    # 动态获取重定向URI
+    redirect_uri = get_redirect_uri(request)
+    
+    if error:
+        return RedirectResponse(url=f"{redirect_uri}?auth_error={error}")
+    
+    try:
+        # 交换访问令牌
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": f"{redirect_uri}/auth/callback/direct"
+                }
+            )
+            
+            if token_response.status_code != 200:
+                return RedirectResponse(url=f"{redirect_uri}?auth_error=token_failed")
+            
+            token_data = token_response.json()
+            access_token = token_data["access_token"]
+            
+            # 获取用户信息
+            user_response = await client.get(
+                f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={access_token}"
+            )
+            
+            if user_response.status_code != 200:
+                return RedirectResponse(url=f"{redirect_uri}?auth_error=userinfo_failed")
+            
+            user_data = user_response.json()
+            
+            # 构建用户信息
+            user_info = {
+                "id": user_data["id"],
+                "username": user_data.get("name", user_data["email"]),
+                "email": user_data["email"],
+                "image_url": user_data.get("picture"),
+                "provider": "google",
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            # 创建应用访问令牌
+            app_token = create_access_token(user_info)
+            
+            # 将认证信息编码到URL参数中
+            import base64
+            import json
+            auth_data = {
+                "token": app_token,
+                "user_info": user_info
+            }
+            encoded_data = base64.urlsafe_b64encode(json.dumps(auth_data).encode()).decode()
+            
+            # 重定向到前端并传递认证数据
+            return RedirectResponse(url=f"{redirect_uri}?auth_success=true&auth_data={encoded_data}")
+            
+    except Exception as e:
+        return RedirectResponse(url=f"{redirect_uri}?auth_error=processing_failed")
+
+
 @router.get("/api/device/refresh-token")
 async def refresh_token(request: Request):
     """刷新访问令牌"""

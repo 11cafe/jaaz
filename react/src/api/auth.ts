@@ -264,3 +264,41 @@ export async function refreshToken(currentToken: string) {
     throw new Error(`NETWORK_ERROR: ${response.status}`)
   }
 }
+
+// 直接登录：在当前窗口跳转到Google OAuth
+export function directLogin(): void {
+  const authUrl = `${BASE_API_URL}/auth/login`
+  window.location.href = authUrl
+}
+
+// 检查URL参数中的直接认证数据
+export function checkDirectAuthParams(): { 
+  authSuccess: boolean; 
+  authData?: { token: string; user_info: UserInfo }; 
+  authError?: string 
+} {
+  const urlParams = new URLSearchParams(window.location.search)
+  const authSuccess = urlParams.get('auth_success') === 'true'
+  const encodedAuthData = urlParams.get('auth_data')
+  const authError = urlParams.get('auth_error')
+  
+  let authData = undefined
+  
+  if (authSuccess && encodedAuthData) {
+    try {
+      // 解码认证数据
+      const decodedData = atob(encodedAuthData)
+      authData = JSON.parse(decodedData)
+    } catch (error) {
+      console.error('Failed to decode auth data:', error)
+    }
+  }
+  
+  // 清理URL参数
+  if (authSuccess || authError) {
+    const newUrl = window.location.pathname
+    window.history.replaceState({}, document.title, newUrl)
+  }
+  
+  return { authSuccess, authData, authError }
+}

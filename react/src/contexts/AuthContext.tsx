@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { AuthStatus, getAuthStatus, checkUrlAuthParams, completeAuth, saveAuthData } from '../api/auth'
+import { AuthStatus, getAuthStatus, checkUrlAuthParams, checkDirectAuthParams, completeAuth, saveAuthData } from '../api/auth'
 import { updateJaazApiKey } from '../api/config'
 
 interface AuthContextType {
@@ -41,18 +41,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 检查URL参数中的认证状态
     const handleUrlAuth = async () => {
-      const { authSuccess, deviceCode, authError } = checkUrlAuthParams()
+      // 1. 优先检查直接认证方式
+      const directAuth = checkDirectAuthParams()
       
-      if (authError) {
-        toast.error(`登录失败: ${authError}`)
+      if (directAuth.authError) {
+        toast.error(`登录失败: ${directAuth.authError}`)
         setIsLoading(false)
         return
       }
       
-      if (authSuccess && deviceCode) {
+      if (directAuth.authSuccess && directAuth.authData) {
+        try {
+          // 直接保存认证数据
+          saveAuthData(directAuth.authData.token, directAuth.authData.user_info)
+          
+          // 更新jaaz provider api_key
+          await updateJaazApiKey(directAuth.authData.token)
+          
+          toast.success('登录成功!')
+          
+          // 刷新认证状态
+          await refreshAuth()
+          return
+        } catch (error) {
+          console.error('保存认证数据失败:', error)
+          toast.error('登录过程中出现错误')
+        }
+      }
+      
+      // 2. 检查旧的设备码认证方式（向后兼容）
+      const deviceAuth = checkUrlAuthParams()
+      
+      if (deviceAuth.authError) {
+        toast.error(`登录失败: ${deviceAuth.authError}`)
+        setIsLoading(false)
+        return
+      }
+      
+      if (deviceAuth.authSuccess && deviceAuth.deviceCode) {
         try {
           // 完成认证流程
-          const result = await completeAuth(deviceCode)
+          const result = await completeAuth(deviceAuth.deviceCode)
           
           if (result.status === 'authorized' && result.token && result.user_info) {
             // 保存认证数据
@@ -73,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // 正常的认证状态检查
+      // 3. 正常的认证状态检查
       await refreshAuth()
     }
     
