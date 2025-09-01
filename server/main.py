@@ -1,6 +1,10 @@
 import os
 import sys
 import io
+from dotenv import load_dotenv
+
+# 加载 .env 文件
+load_dotenv()
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")

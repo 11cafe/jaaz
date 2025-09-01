@@ -11,6 +11,10 @@ from fastapi import APIRouter, HTTPException, Request, Response, Query
 from fastapi.responses import RedirectResponse
 import httpx
 import jwt
+from dotenv import load_dotenv
+
+# 确保加载环境变量
+load_dotenv()
 
 
 router = APIRouter()
@@ -20,6 +24,12 @@ router = APIRouter()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://www.magicart.cc")
+
+# 验证环境变量
+if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+    print("❌ Google OAuth credentials not found. Please check .env file.")
+else:
+    print("✅ Google OAuth credentials loaded successfully")
 
 
 def get_redirect_uri(request: Request) -> str:
