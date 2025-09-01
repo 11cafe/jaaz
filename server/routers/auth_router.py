@@ -16,12 +16,12 @@ import jwt
 router = APIRouter()
 
 # Google OAuth配置
-GOOGLE_CLIENT_ID = "872600220524-gsblnt076akcga76a1g5adlrcapve10r.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
-GOOGLE_REDIRECT_URI = "https://www.magicart.cc"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://www.magicart.cc")
 
 # JWT密钥（生产环境应该使用环境变量）
-JWT_SECRET = secrets.token_urlsafe(32)
+JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_urlsafe(32))
 JWT_ALGORITHM = "HS256"
 
 # 存储设备授权码和状态的内存缓存（生产环境应使用Redis）
