@@ -21,6 +21,19 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://www.magicart.cc")
 
+
+def get_redirect_uri(request: Request) -> str:
+    """根据请求动态确定重定向URI"""
+    host = request.headers.get("host", "")
+    scheme = request.url.scheme
+    
+    # 如果是本地开发环境
+    if "localhost" in host or "127.0.0.1" in host:
+        return f"{scheme}://{host}"
+    
+    # 生产环境或其他情况，使用配置的重定向URI
+    return GOOGLE_REDIRECT_URI
+
 # JWT密钥（生产环境应该使用环境变量）
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_urlsafe(32))
 JWT_ALGORITHM = "HS256"
@@ -113,22 +126,26 @@ async def poll_device_auth(code: str = Query(...)):
 
 
 @router.get("/auth/device")
-async def device_auth_redirect(code: str = Query(...)):
+async def device_auth_redirect(request: Request, code: str = Query(...)):
     """设备授权重定向到Google OAuth"""
     if code not in device_codes:
         raise HTTPException(status_code=404, detail="Invalid device code")
+    
+    # 动态获取重定向URI
+    redirect_uri = get_redirect_uri(request)
     
     # 生成OAuth state并关联到设备码
     state = generate_state()
     auth_states[state] = {
         "device_code": code,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "redirect_uri": redirect_uri  # 保存重定向URI用于回调时使用
     }
     
     # 构建Google OAuth URL
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "redirect_uri": f"{redirect_uri}/auth/callback",
         "response_type": "code",
         "scope": "openid email profile",
         "state": state,
@@ -144,18 +161,24 @@ async def device_auth_redirect(code: str = Query(...)):
 @router.get("/auth/callback")
 async def oauth_callback(code: str = Query(...), state: str = Query(...), error: str = Query(None)):
     """Google OAuth回调处理，处理从首页来的回调"""
+    # 获取保存的重定向URI，如果没有则使用默认值
+    redirect_base = GOOGLE_REDIRECT_URI
+    if state in auth_states:
+        redirect_base = auth_states[state].get("redirect_uri", GOOGLE_REDIRECT_URI)
+    
     if error:
-        # 重定向到首页并带上错误信息
-        return RedirectResponse(url=f"https://www.magicart.cc?auth_error={error}")
+        # 重定向到相应环境的首页并带上错误信息
+        return RedirectResponse(url=f"{redirect_base}?auth_error={error}")
     
     if state not in auth_states:
-        return RedirectResponse(url="https://www.magicart.cc?auth_error=invalid_state")
+        return RedirectResponse(url=f"{redirect_base}?auth_error=invalid_state")
     
     device_code = auth_states[state]["device_code"]
+    auth_redirect_uri = auth_states[state]["redirect_uri"]
     del auth_states[state]
     
     if device_code not in device_codes:
-        return RedirectResponse(url="https://www.magicart.cc?auth_error=expired_code")
+        return RedirectResponse(url=f"{redirect_base}?auth_error=expired_code")
     
     try:
         # 交换访问令牌
@@ -167,12 +190,12 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
                     "client_secret": GOOGLE_CLIENT_SECRET,
                     "code": code,
                     "grant_type": "authorization_code",
-                    "redirect_uri": GOOGLE_REDIRECT_URI
+                    "redirect_uri": f"{auth_redirect_uri}/auth/callback"
                 }
             )
             
             if token_response.status_code != 200:
-                return RedirectResponse(url="https://www.magicart.cc?auth_error=token_failed")
+                return RedirectResponse(url=f"{redirect_base}?auth_error=token_failed")
             
             token_data = token_response.json()
             access_token = token_data["access_token"]
@@ -183,7 +206,7 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
             )
             
             if user_response.status_code != 200:
-                return RedirectResponse(url="https://www.magicart.cc?auth_error=userinfo_failed")
+                return RedirectResponse(url=f"{redirect_base}?auth_error=userinfo_failed")
             
             user_data = user_response.json()
             
@@ -208,11 +231,11 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
                 "user_info": user_info
             })
             
-            # 重定向到首页并带上成功参数
-            return RedirectResponse(url=f"https://www.magicart.cc?auth_success=true&device_code={device_code}")
+            # 重定向到相应环境的首页并带上成功参数
+            return RedirectResponse(url=f"{redirect_base}?auth_success=true&device_code={device_code}")
             
     except Exception as e:
-        return RedirectResponse(url=f"https://www.magicart.cc?auth_error=processing_failed")
+        return RedirectResponse(url=f"{redirect_base}?auth_error=processing_failed")
 
 
 @router.get("/api/device/complete")
