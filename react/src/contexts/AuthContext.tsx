@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { AuthStatus, getAuthStatus } from '../api/auth'
+import { AuthStatus, getAuthStatus, checkUrlAuthParams, completeAuth, saveAuthData } from '../api/auth'
+import { updateJaazApiKey } from '../api/config'
 
 interface AuthContextType {
   authStatus: AuthStatus
@@ -38,7 +39,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    refreshAuth()
+    // 检查URL参数中的认证状态
+    const handleUrlAuth = async () => {
+      const { authSuccess, deviceCode, authError } = checkUrlAuthParams()
+      
+      if (authError) {
+        toast.error(`登录失败: ${authError}`)
+        setIsLoading(false)
+        return
+      }
+      
+      if (authSuccess && deviceCode) {
+        try {
+          // 完成认证流程
+          const result = await completeAuth(deviceCode)
+          
+          if (result.status === 'authorized' && result.token && result.user_info) {
+            // 保存认证数据
+            saveAuthData(result.token, result.user_info)
+            
+            // 更新jaaz provider api_key
+            await updateJaazApiKey(result.token)
+            
+            toast.success('登录成功!')
+            
+            // 刷新认证状态
+            await refreshAuth()
+            return
+          }
+        } catch (error) {
+          console.error('完成认证失败:', error)
+          toast.error('登录过程中出现错误')
+        }
+      }
+      
+      // 正常的认证状态检查
+      await refreshAuth()
+    }
+    
+    handleUrlAuth()
   }, [])
 
   return (

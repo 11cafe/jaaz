@@ -218,6 +218,33 @@ export async function authenticatedFetch(
 }
 
 // 刷新token
+// 完成认证（从URL参数获取设备码后调用）
+export async function completeAuth(deviceCode: string): Promise<DeviceAuthPollResponse> {
+  const response = await fetch(`${BASE_API_URL}/api/device/complete?code=${deviceCode}`)
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  return await response.json()
+}
+
+// 检查URL参数中的认证状态
+export function checkUrlAuthParams(): { authSuccess: boolean; deviceCode?: string; authError?: string } {
+  const urlParams = new URLSearchParams(window.location.search)
+  const authSuccess = urlParams.get('auth_success') === 'true'
+  const deviceCode = urlParams.get('device_code')
+  const authError = urlParams.get('auth_error')
+  
+  // 清理URL参数
+  if (authSuccess || authError) {
+    const newUrl = window.location.pathname
+    window.history.replaceState({}, document.title, newUrl)
+  }
+  
+  return { authSuccess, deviceCode, authError }
+}
+
 export async function refreshToken(currentToken: string) {
   const response = await fetch(`${BASE_API_URL}/api/device/refresh-token`, {
     method: 'GET',

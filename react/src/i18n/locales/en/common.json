@@ -55,7 +55,7 @@
   "auth": {
     "login": "Login",
     "logout": "Logout",
-    "loginToJaaz": "Login to Jaaz",
+    "loginToJaaz": "Login to MagicArt",
     "myAccount": "My Account",
     "loginDescription": "Login to use cloud AI models",
     "startLogin": "Start Login",
