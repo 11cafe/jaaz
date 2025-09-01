@@ -149,10 +149,9 @@ class CrossTabSync {
    * 处理token刷新
    */
   private handleTokenRefreshed(): void {
-    // 重新启动token管理器
-    tokenManager.stopAutoRefresh()
-    tokenManager.startAutoRefresh()
+    // 更新token哈希，不需要重启tokenManager
     this.updateTokenHash()
+    console.log('🔄 Token refreshed notification handled')
   }
 
   /**

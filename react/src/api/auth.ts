@@ -145,15 +145,18 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     return loggedOutStatus
   }
 
-  // 🔥 智能Token检查：首先检查token是否真的过期了
+  // 🔥 简化Token检查：主要依赖cookie存在性，减少网络请求
+  const remainingTime = getTokenRemainingTime(token)
+  console.log(`Token remaining time: ${Math.floor(remainingTime / 60)} minutes`)
+
+  // 只有当token真正过期时才尝试刷新
   if (isTokenExpired(token)) {
-    console.log('Token is expired')
+    console.log('⏰ Token is expired, attempting refresh')
     
-    // Token真的过期了，尝试刷新
     try {
       const newToken = await refreshToken(token)
       setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 30天过期
-      console.log('Expired token refreshed successfully')
+      console.log('✅ Expired token refreshed successfully')
       
       return {
         status: 'logged_in' as const,
@@ -161,7 +164,7 @@ export async function getAuthStatus(): Promise<AuthStatus> {
         user_info: JSON.parse(userInfoStr),
       }
     } catch (error) {
-      console.log('Failed to refresh expired token:', error)
+      console.log('❌ Failed to refresh expired token:', error)
       
       // 清理过期的认证数据
       await clearAuthData()
@@ -174,26 +177,7 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     }
   }
 
-  // 🚀 Token还有效，检查是否需要静默刷新
-  const remainingTime = getTokenRemainingTime(token)
-  console.log(`Token remaining time: ${Math.floor(remainingTime / 60)} minutes`)
-
-  // 如果token即将在30分钟内过期，尝试静默刷新
-  if (isTokenExpiringSoon(token, 30)) {
-    console.log('Token expiring soon, attempting silent refresh')
-    
-    try {
-      const newToken = await refreshToken(token)
-      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 30天过期
-      console.log('Token silently refreshed successfully')
-      
-      // 📢 通知其他标签页token已刷新
-      crossTabSync.notifyTokenRefreshed()
-    } catch (error) {
-      console.log('Silent refresh failed, but token is still valid:', error)
-      // 静默刷新失败，但token仍然有效，不影响用户体验
-    }
-  }
+  // 🎯 Token有效，直接返回登录状态，不进行预刷新
 
   // 返回登录状态
   return {
@@ -288,24 +272,18 @@ export async function authenticatedFetch(
     return fetch(url, options)
   }
 
-  // 🔥 检查token是否即将过期，如果是则先刷新
-  if (isTokenExpiringSoon(token, 5)) { // 5分钟内过期则刷新
-    console.log('Token expiring soon, refreshing before API call')
+  // 🎯 简化逻辑：只检查token是否已过期，不做预刷新
+  if (isTokenExpired(token)) {
+    console.log('⏰ Token expired, attempting refresh before API call')
     try {
       const newToken = await refreshToken(token)
-      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 保存到cookie
+      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30)
       token = newToken
-      console.log('Token refreshed before API call')
+      console.log('✅ Token refreshed before API call')
     } catch (error) {
-      console.log('Failed to refresh token before API call:', error)
-      // 如果刷新失败但token还没过期，继续使用原token
-      if (!isTokenExpired(token)) {
-        console.log('Using original token despite refresh failure')
-      } else {
-        // token已过期且刷新失败，清理认证数据
-        await clearAuthData()
-        throw new Error('Authentication failed: Token expired and refresh failed')
-      }
+      console.log('❌ Failed to refresh token before API call:', error)
+      await clearAuthData()
+      throw new Error('Authentication failed: Token expired and refresh failed')
     }
   }
 

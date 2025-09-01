@@ -11,11 +11,12 @@ class TokenManager {
   private refreshPromise: Promise<string> | null = null
 
   /**
-   * 启动自动刷新机制
+   * 启动自动刷新机制 (已禁用 - 改为按需刷新)
    */
   startAutoRefresh(): void {
+    console.log('🔇 Auto-refresh disabled - using on-demand refresh only')
     this.stopAutoRefresh() // 清理现有的定时器
-    this.scheduleNextRefresh()
+    // 不再启动定时刷新，改为按需刷新
   }
 
   /**
@@ -146,16 +147,8 @@ class TokenManager {
 // 创建全局实例
 export const tokenManager = new TokenManager()
 
-// 在模块加载时检查是否需要启动自动刷新
+// TokenManager 初始化 (自动刷新已禁用)
 if (typeof window !== 'undefined') {
-  // 延迟启动，确保其他模块初始化完成
-  setTimeout(() => {
-    const token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
-    if (token) {
-      console.log('🔧 TokenManager: Found existing token, starting auto-refresh')
-      tokenManager.startAutoRefresh()
-    } else {
-      console.log('🔧 TokenManager: No token found, auto-refresh not started')
-    }
-  }, 500) // 减少延迟时间，确保更快的初始化
+  console.log('🔧 TokenManager: Initialized with on-demand refresh mode')
+  // 不再自动启动刷新机制，改为按需刷新
 }

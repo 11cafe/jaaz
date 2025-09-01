@@ -25,10 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       const status = await getAuthStatus()
 
-      // 🚀 启动或停止自动刷新机制
-      if (status.is_logged_in) {
-        tokenManager.startAutoRefresh()
-      } else {
+      // 🔇 自动刷新已禁用，改为按需刷新模式
+      if (!status.is_logged_in) {
         tokenManager.stopAutoRefresh()
       }
 
@@ -74,9 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 更新jaaz provider api_key
           await updateJaazApiKey(directAuth.authData.token)
           
-          // 🚀 启动自动刷新机制
-          tokenManager.startAutoRefresh()
-          
           // 📢 通知其他标签页
           crossTabSync.notifyAuthStatusChanged({ type: 'login_success' })
           
@@ -112,9 +107,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             // 更新jaaz provider api_key
             await updateJaazApiKey(result.token)
-            
-            // 🚀 启动自动刷新机制
-            tokenManager.startAutoRefresh()
             
             // 📢 通知其他标签页
             crossTabSync.notifyAuthStatusChanged({ type: 'device_login_success' })
