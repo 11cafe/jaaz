@@ -63,6 +63,23 @@ def generate_state() -> str:
     return secrets.token_urlsafe(32)
 
 
+def cleanup_expired_codes():
+    """清理过期的设备码"""
+    current_time = datetime.utcnow()
+    expired_codes = []
+    
+    for code, info in device_codes.items():
+        # 删除过期的设备码
+        if current_time > info["expires_at"]:
+            expired_codes.append(code)
+        # 删除完成超过1小时的设备码
+        elif info.get("completed_at") and current_time > info["completed_at"] + timedelta(hours=1):
+            expired_codes.append(code)
+    
+    for code in expired_codes:
+        del device_codes[code]
+
+
 def create_access_token(user_info: dict) -> str:
     """创建访问令牌"""
     payload = {
@@ -88,6 +105,9 @@ def verify_access_token(token: str) -> Optional[dict]:
 @router.post("/api/device/auth")
 async def start_device_auth():
     """启动设备授权流程"""
+    # 清理过期的设备码
+    cleanup_expired_codes()
+    
     device_code = generate_device_code()
     expires_at = datetime.utcnow() + timedelta(minutes=10)
     
@@ -256,13 +276,15 @@ async def complete_auth(device_code: str = Query(...)):
     
     device_info = device_codes[device_code]
     
-    if device_info["status"] == "authorized":
+    if device_info["status"] == "authorized" or device_info["status"] == "completed":
         # 返回令牌和用户信息
         token = device_info["token"]
         user_info = device_info["user_info"]
         
-        # 清理设备码
-        del device_codes[device_code]
+        # 如果是第一次调用，标记为已使用
+        if device_info["status"] == "authorized":
+            device_codes[device_code]["status"] = "completed"
+            device_codes[device_code]["completed_at"] = datetime.utcnow()
         
         return {
             "status": "authorized",
@@ -271,6 +293,7 @@ async def complete_auth(device_code: str = Query(...)):
         }
     
     return {"status": device_info["status"], "message": "认证未完成"}
+
 
 
 @router.get("/api/device/refresh-token")
