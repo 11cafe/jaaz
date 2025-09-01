@@ -1,6 +1,9 @@
 import { BASE_API_URL } from '../constants'
 import i18n from '../i18n'
 import { clearJaazApiKey } from './config'
+import { isTokenExpired, isTokenExpiringSoon, getUserFromToken, getTokenRemainingTime } from '../utils/jwt'
+import { AUTH_COOKIES, setAuthCookie, getAuthCookie, deleteAuthCookie, clearAuthCookies } from '../utils/cookies'
+import { crossTabSync } from '../utils/crossTabSync'
 
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
@@ -90,85 +93,138 @@ export async function pollDeviceAuth(
 }
 
 export async function getAuthStatus(): Promise<AuthStatus> {
-  // Get auth status from local storage
-  const token = localStorage.getItem('jaaz_access_token')
-  const userInfo = localStorage.getItem('jaaz_user_info')
+  console.log('🔍 Starting auth status check...')
+  
+  // 🍪 优先从cookie读取，如果没有则尝试从localStorage迁移
+  let token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
+  let userInfoStr = getAuthCookie(AUTH_COOKIES.USER_INFO)
 
-  console.log('Getting auth status:', {
-    hasToken: !!token,
-    hasUserInfo: !!userInfo,
-    userInfo: userInfo ? JSON.parse(userInfo) : null,
+  console.log('📊 Cookie check results:', {
+    tokenFound: !!token,
+    userInfoFound: !!userInfoStr,
+    tokenLength: token ? token.length : 0,
+    userInfoLength: userInfoStr ? userInfoStr.length : 0,
   })
 
-  if (token && userInfo) {
-    try {
-      // Always try to refresh token when we have one
-      const newToken = await refreshToken(token)
-
-      // Save the new token
-      localStorage.setItem('jaaz_access_token', newToken)
-      console.log('Token refreshed successfully')
-
-      const authStatus = {
-        status: 'logged_in' as const,
-        is_logged_in: true,
-        user_info: JSON.parse(userInfo),
-      }
-      return authStatus
-    } catch (error) {
-      console.log('Token refresh failed:', error)
-
-      // Only clear auth data if token is truly expired (401), not for network errors
-      if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
-        console.log('Token expired, clearing auth data')
+  // 📦 向后兼容：如果cookie中没有，尝试从localStorage迁移
+  if (!token || !userInfoStr) {
+    console.log('🔍 Checking localStorage for legacy auth data...')
+    const legacyToken = localStorage.getItem('jaaz_access_token')
+    const legacyUserInfo = localStorage.getItem('jaaz_user_info')
+    
+    if (legacyToken && legacyUserInfo) {
+      console.log('🔄 Migrating auth data from localStorage to cookies')
+      try {
+        // 迁移到cookie
+        saveAuthData(legacyToken, JSON.parse(legacyUserInfo))
+        // 清理localStorage
         localStorage.removeItem('jaaz_access_token')
         localStorage.removeItem('jaaz_user_info')
-
-        // Clear jaaz provider api_key
-        try {
-          await clearJaazApiKey()
-        } catch (clearError) {
-          console.error('Failed to clear jaaz api key:', clearError)
-        }
-
-        const loggedOutStatus = {
-          status: 'logged_out' as const,
-          is_logged_in: false,
-          tokenExpired: true,
-        }
-
-        return loggedOutStatus
-      } else {
-        // Network error or other issues, keep user logged in with old token
-        console.log(
-          'Network error during token refresh, keeping user logged in with existing token'
-        )
-        const authStatus = {
-          status: 'logged_in' as const,
-          is_logged_in: true,
-          user_info: JSON.parse(userInfo),
-        }
-        return authStatus
+        
+        token = legacyToken
+        userInfoStr = legacyUserInfo
+        console.log('✅ Successfully migrated auth data to cookies')
+      } catch (error) {
+        console.error('❌ Failed to migrate auth data:', error)
       }
     }
   }
 
-  const loggedOutStatus = {
-    status: 'logged_out' as const,
-    is_logged_in: false,
+  console.log('📋 Final auth data check:', {
+    hasToken: !!token,
+    hasUserInfo: !!userInfoStr,
+    userInfo: userInfoStr ? JSON.parse(userInfoStr) : null,
+  })
+
+  if (!token || !userInfoStr) {
+    const loggedOutStatus = {
+      status: 'logged_out' as const,
+      is_logged_in: false,
+    }
+    console.log('❌ No valid auth data found, returning logged out status')
+    return loggedOutStatus
   }
-  console.log('Returning logged out status:', loggedOutStatus)
-  return loggedOutStatus
+
+  // 🔥 智能Token检查：首先检查token是否真的过期了
+  if (isTokenExpired(token)) {
+    console.log('Token is expired')
+    
+    // Token真的过期了，尝试刷新
+    try {
+      const newToken = await refreshToken(token)
+      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 30天过期
+      console.log('Expired token refreshed successfully')
+      
+      return {
+        status: 'logged_in' as const,
+        is_logged_in: true,
+        user_info: JSON.parse(userInfoStr),
+      }
+    } catch (error) {
+      console.log('Failed to refresh expired token:', error)
+      
+      // 清理过期的认证数据
+      await clearAuthData()
+      
+      return {
+        status: 'logged_out' as const,
+        is_logged_in: false,
+        tokenExpired: true,
+      }
+    }
+  }
+
+  // 🚀 Token还有效，检查是否需要静默刷新
+  const remainingTime = getTokenRemainingTime(token)
+  console.log(`Token remaining time: ${Math.floor(remainingTime / 60)} minutes`)
+
+  // 如果token即将在30分钟内过期，尝试静默刷新
+  if (isTokenExpiringSoon(token, 30)) {
+    console.log('Token expiring soon, attempting silent refresh')
+    
+    try {
+      const newToken = await refreshToken(token)
+      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 30天过期
+      console.log('Token silently refreshed successfully')
+      
+      // 📢 通知其他标签页token已刷新
+      crossTabSync.notifyTokenRefreshed()
+    } catch (error) {
+      console.log('Silent refresh failed, but token is still valid:', error)
+      // 静默刷新失败，但token仍然有效，不影响用户体验
+    }
+  }
+
+  // 返回登录状态
+  return {
+    status: 'logged_in' as const,
+    is_logged_in: true,
+    user_info: JSON.parse(userInfoStr),
+  }
+}
+
+// 清理认证数据的辅助函数
+export async function clearAuthData(): Promise<void> {
+  // 🍪 清理cookie
+  clearAuthCookies()
+  
+  // 🧹 同时清理可能残留的localStorage数据
+  localStorage.removeItem('jaaz_access_token')
+  localStorage.removeItem('jaaz_user_info')
+  
+  try {
+    await clearJaazApiKey()
+  } catch (error) {
+    console.error('Failed to clear jaaz api key:', error)
+  }
 }
 
 export async function logout(): Promise<{ status: string; message: string }> {
-  // Clear local storage
-  localStorage.removeItem('jaaz_access_token')
-  localStorage.removeItem('jaaz_user_info')
-
-  // Clear jaaz provider api_key
-  await clearJaazApiKey()
-
+  await clearAuthData()
+  
+  // 📢 通知其他标签页用户已登出
+  crossTabSync.notifyLogout()
+  
   return {
     status: 'success',
     message: i18n.t('common:auth.logoutSuccessMessage'),
@@ -176,7 +232,7 @@ export async function logout(): Promise<{ status: string; message: string }> {
 }
 
 export async function getUserProfile(): Promise<UserInfo> {
-  const userInfo = localStorage.getItem('jaaz_user_info')
+  const userInfo = getAuthCookie(AUTH_COOKIES.USER_INFO)
   if (!userInfo) {
     throw new Error(i18n.t('common:auth.notLoggedIn'))
   }
@@ -184,23 +240,74 @@ export async function getUserProfile(): Promise<UserInfo> {
   return JSON.parse(userInfo)
 }
 
-// Helper function to save auth data to local storage
+// Helper function to save auth data to cookies
 export function saveAuthData(token: string, userInfo: UserInfo) {
-  localStorage.setItem('jaaz_access_token', token)
-  localStorage.setItem('jaaz_user_info', JSON.stringify(userInfo))
+  console.log('💾 Saving auth data to cookies...', {
+    tokenLength: token ? token.length : 0,
+    userEmail: userInfo?.email,
+    userId: userInfo?.id
+  })
+  
+  try {
+    // 🍪 保存到cookie，30天过期
+    setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, token, 30)
+    setAuthCookie(AUTH_COOKIES.USER_INFO, JSON.stringify(userInfo), 30)
+    
+    // 📅 保存token过期时间，用于更精确的过期检查
+    const tokenExpireTime = getTokenRemainingTime(token) + Math.floor(Date.now() / 1000)
+    setAuthCookie(AUTH_COOKIES.TOKEN_EXPIRES, tokenExpireTime.toString(), 30)
+    
+    // 验证保存是否成功
+    const savedToken = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
+    const savedUserInfo = getAuthCookie(AUTH_COOKIES.USER_INFO)
+    
+    if (savedToken && savedUserInfo) {
+      console.log('✅ Auth data successfully saved to cookies')
+    } else {
+      console.error('❌ Failed to verify saved auth data in cookies')
+    }
+  } catch (error) {
+    console.error('❌ Error saving auth data to cookies:', error)
+  }
 }
 
 // Helper function to get access token
 export function getAccessToken(): string | null {
-  return localStorage.getItem('jaaz_access_token')
+  return getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
 }
 
-// Helper function to make authenticated API calls
+// Helper function to make authenticated API calls with automatic token refresh
 export async function authenticatedFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getAccessToken()
+  let token = getAccessToken()
+
+  // 如果没有token，直接返回
+  if (!token) {
+    return fetch(url, options)
+  }
+
+  // 🔥 检查token是否即将过期，如果是则先刷新
+  if (isTokenExpiringSoon(token, 5)) { // 5分钟内过期则刷新
+    console.log('Token expiring soon, refreshing before API call')
+    try {
+      const newToken = await refreshToken(token)
+      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 保存到cookie
+      token = newToken
+      console.log('Token refreshed before API call')
+    } catch (error) {
+      console.log('Failed to refresh token before API call:', error)
+      // 如果刷新失败但token还没过期，继续使用原token
+      if (!isTokenExpired(token)) {
+        console.log('Using original token despite refresh failure')
+      } else {
+        // token已过期且刷新失败，清理认证数据
+        await clearAuthData()
+        throw new Error('Authentication failed: Token expired and refresh failed')
+      }
+    }
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -211,10 +318,37 @@ export async function authenticatedFetch(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers,
   })
+
+  // 🚀 如果响应是401，尝试刷新token并重试一次
+  if (response.status === 401 && token) {
+    console.log('Received 401, attempting token refresh and retry')
+    try {
+      const newToken = await refreshToken(token)
+      setAuthCookie(AUTH_COOKIES.ACCESS_TOKEN, newToken, 30) // 保存到cookie
+      
+      // 用新token重试请求
+      headers['Authorization'] = `Bearer ${newToken}`
+      const retryResponse = await fetch(url, {
+        ...options,
+        headers,
+      })
+      
+      console.log('Request retried successfully with new token')
+      return retryResponse
+    } catch (error) {
+      console.log('Token refresh failed after 401:', error)
+      // 刷新失败，清理认证数据
+      await clearAuthData()
+      // 返回原始的401响应
+      return response
+    }
+  }
+
+  return response
 }
 
 // 刷新token

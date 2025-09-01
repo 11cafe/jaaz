@@ -80,13 +80,16 @@ def cleanup_expired_codes():
         del device_codes[code]
 
 
-def create_access_token(user_info: dict) -> str:
+def create_access_token(user_info: dict, expires_days: int = 30) -> str:
     """创建访问令牌"""
+    now = datetime.utcnow()
     payload = {
         "user_id": user_info["id"],
         "email": user_info["email"],
         "username": user_info.get("name", user_info["email"]),
-        "exp": datetime.utcnow() + timedelta(days=30)
+        "iat": now,  # 签发时间
+        "exp": now + timedelta(days=expires_days),  # 过期时间
+        "type": "access_token"  # token类型
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -392,25 +395,49 @@ async def direct_oauth_callback(request: Request, code: str = Query(...), state:
 
 @router.get("/api/device/refresh-token")
 async def refresh_token(request: Request):
-    """刷新访问令牌"""
+    """刷新访问令牌 - 智能刷新，支持即将过期的token"""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     
     token = auth_header[7:]  # Remove "Bearer " prefix
     
-    # 验证当前令牌
-    payload = verify_access_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
-    # 创建新令牌
-    user_info = {
-        "id": payload["user_id"],
-        "email": payload["email"],
-        "username": payload.get("username", payload["email"])
-    }
-    
-    new_token = create_access_token(user_info)
-    
-    return {"new_token": new_token}
+    try:
+        # 尝试验证当前令牌（包括过期的token）
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options={"verify_exp": False})
+        
+        # 检查token类型
+        if payload.get("type") != "access_token":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        # 检查是否是真正过期的token（超过过期时间1小时以上的token拒绝刷新）
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            exp_time = datetime.fromtimestamp(exp_timestamp)
+            current_time = datetime.utcnow()
+            
+            # 如果token过期超过1小时，拒绝刷新
+            if current_time > exp_time + timedelta(hours=1):
+                raise HTTPException(status_code=401, detail="Token expired too long ago, please login again")
+        
+        # 创建新令牌
+        user_info = {
+            "id": payload["user_id"],
+            "email": payload["email"],
+            "username": payload.get("username", payload["email"])
+        }
+        
+        new_token = create_access_token(user_info)
+        
+        return {
+            "new_token": new_token,
+            "expires_in": 30 * 24 * 60 * 60,  # 30天，以秒为单位
+            "token_type": "Bearer"
+        }
+        
+    except jwt.InvalidTokenError as e:
+        # Token格式无效或其他JWT错误
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except Exception as e:
+        # 其他错误
+        raise HTTPException(status_code=500, detail="Token refresh failed")
