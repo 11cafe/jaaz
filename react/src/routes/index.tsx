@@ -26,13 +26,16 @@ function Home() {
     mutationFn: createCanvas,
     onSuccess: (data, variables) => {
       setInitCanvas(true)
-      navigate({
-        to: '/canvas/$id',
-        params: { id: data.id },
-        search: {
-          sessionId: variables.session_id,
-        },
-      })
+      // 立即跳转到canvas页面，不等待聊天处理完成
+      setTimeout(() => {
+        navigate({
+          to: '/canvas/$id',
+          params: { id: data.id },
+          search: {
+            sessionId: variables.session_id,
+          },
+        })
+      }, 100) // 短暂延迟确保状态更新完成
     },
     onError: (error) => {
       toast.error(t('common:messages.error'), {

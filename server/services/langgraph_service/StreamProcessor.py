@@ -35,10 +35,10 @@ class StreamProcessor:
         ):
             await self._handle_chunk(chunk)
 
-        # 发送完成事件
-        await self.websocket_service(self.session_id, {
-            'type': 'done'
-        })
+        # 不在这里发送done事件，由上层chat_service统一处理
+        # await self.websocket_service(self.session_id, {
+        #     'type': 'done'
+        # })
 
     async def _handle_chunk(self, chunk: Any) -> None:
         # print('👇chunk', chunk)
