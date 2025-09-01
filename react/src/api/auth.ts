@@ -220,7 +220,7 @@ export async function authenticatedFetch(
 // 刷新token
 // 完成认证（从URL参数获取设备码后调用）
 export async function completeAuth(deviceCode: string): Promise<DeviceAuthPollResponse> {
-  const response = await fetch(`${BASE_API_URL}/api/device/complete?code=${deviceCode}`)
+  const response = await fetch(`${BASE_API_URL}/api/device/complete?device_code=${deviceCode}`)
   
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)
