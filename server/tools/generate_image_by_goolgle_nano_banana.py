@@ -20,7 +20,7 @@ class GenerateImageByGoogleNanoBananaInputSchema(BaseModel):
 
 
 @tool("generate_image_by_google_nano_banana",
-      description="Generate an image by gpt image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference. Supports multiple providers with automatic fallback.",
+      description="Generate an image by google nano banana image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference. Supports multiple providers with automatic fallback.",
       args_schema=GenerateImageByGoogleNanoBananaInputSchema)
 async def generate_image_by_google_nano_banana(
     prompt: str,
@@ -36,7 +36,7 @@ async def generate_image_by_google_nano_banana(
     return await generate_image_with_provider(
         canvas_id=canvas_id,
         session_id=session_id,
-        provider='openai',
+        provider='google_nano',
         model='gemini-2.5-flash-image',
         prompt=prompt,
         aspect_ratio=aspect_ratio,

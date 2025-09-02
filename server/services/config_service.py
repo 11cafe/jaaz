@@ -70,6 +70,8 @@ USER_DATA_DIR = os.getenv(
     os.path.join(SERVER_DIR, "user_data"),
 )
 FILES_DIR = os.path.join(USER_DATA_DIR, "files")
+USERS_DIR = os.path.join(USER_DATA_DIR, "users")
+ANONYMOUS_USER_ID = "anonymous"
 
 
 IMAGE_FORMATS = (
@@ -171,6 +173,69 @@ class ConfigService:
 
     def exists_config(self) -> bool:
         return os.path.exists(self.config_file)
+
+
+def email_to_directory_name(email: str) -> str:
+    """
+    将邮箱地址转换为安全的目录名
+    
+    转换规则：
+    - @ → _at_
+    - . → _dot_
+    - 全部转换为小写
+    - 限制最大长度为100字符
+    
+    例子：
+    user@example.com -> user_at_example_dot_com
+    Test.User+123@Gmail.Com -> test_dot_user+123_at_gmail_dot_com
+    """
+    if not email:
+        return ANONYMOUS_USER_ID
+    
+    # 转换为小写
+    safe_name = email.lower()
+    
+    # 替换特殊字符
+    safe_name = safe_name.replace('@', '_at_')
+    safe_name = safe_name.replace('.', '_dot_')
+    
+    # 限制长度（留有一些空间给文件系统）
+    if len(safe_name) > 100:
+        safe_name = safe_name[:100]
+    
+    # 确保不以点或空格开头/结尾（防止文件系统问题）
+    safe_name = safe_name.strip(' .')
+    
+    # 如果转换后为空，使用匿名用户ID
+    if not safe_name:
+        return ANONYMOUS_USER_ID
+    
+    return safe_name
+
+
+def get_user_files_dir(user_email: str = None, user_id: str = None) -> str:
+    """
+    获取用户文件目录路径
+    优先使用邮箱，如果没有邮箱则使用用户ID（向后兼容）
+    """
+    if user_email:
+        # 使用邮箱创建目录名
+        directory_name = email_to_directory_name(user_email)
+    elif user_id:
+        # 向后兼容：使用用户ID
+        directory_name = user_id
+    else:
+        # 匿名用户
+        directory_name = ANONYMOUS_USER_ID
+    
+    user_files_dir = os.path.join(USERS_DIR, directory_name, "files")
+    os.makedirs(user_files_dir, exist_ok=True)
+    return user_files_dir
+
+
+def get_legacy_files_dir() -> str:
+    """获取旧版本文件目录（向后兼容）"""
+    return FILES_DIR
 
 
 config_service = ConfigService()

@@ -28,18 +28,17 @@ class StreamProcessor:
         self.last_saved_message_index = len(messages) - 1
 
         compiled_swarm = swarm.compile()
-
         async for chunk in compiled_swarm.astream(
             {"messages": messages},
             config=context,
-            stream_mode=["messages", "custom", 'values']
+            stream_mode=["messages", "custom", "values"]
         ):
             await self._handle_chunk(chunk)
 
-        # 发送完成事件
-        await self.websocket_service(self.session_id, {
-            'type': 'done'
-        })
+        # 不在这里发送done事件，由上层chat_service统一处理
+        # await self.websocket_service(self.session_id, {
+        #     'type': 'done'
+        # })
 
     async def _handle_chunk(self, chunk: Any) -> None:
         # print('👇chunk', chunk)
@@ -78,10 +77,9 @@ class StreamProcessor:
 
     async def _handle_message_chunk(self, ai_message_chunk: AIMessageChunk) -> None:
         """处理消息类型的 chunk"""
-        # print('👇ai_message_chunk', ai_message_chunk)
         try:
             content = ai_message_chunk.content
-
+            print('👇ai_message_chunk.content', content)
             if isinstance(ai_message_chunk, ToolMessage):
                 # 工具调用结果之后会在 values 类型中发送到前端，这里会更快出现一些
                 oai_message = convert_to_openai_messages([ai_message_chunk])[0]

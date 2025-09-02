@@ -1,7 +1,8 @@
 # services/OpenAIAgents_service/jaaz_service.py
-import tempfile
 import base64
 import os
+import uuid
+import json
 import asyncio
 import aiohttp
 from typing import Dict, Any, Optional, List
@@ -52,6 +53,7 @@ class MagicDrawService:
         Returns:
             str: 任务 ID，失败时返回空字符串
         """
+        print(f"👇create_magic_task image_content")
         try:
             if not image_content or not image_content.startswith('data:image/'):
                 print("❌ Invalid image content format")
@@ -114,6 +116,7 @@ class MagicDrawService:
         Raises:
             Exception: 当任务创建失败时抛出异常
         """
+        print(f"👇create_video_task prompt: {prompt}, model: {model}, resolution: {resolution}, duration: {duration}, aspect_ratio: {aspect_ratio}, input_images: {input_images}")
         async with HttpClient.create_aiohttp() as session:
             payload = {
                 "prompt": prompt,
@@ -216,14 +219,13 @@ class MagicDrawService:
         try:
             # 1. 图片意图识别, 创建图片分析器实例
             analyser = ImageAnalyser()
+            print(f"👇generate_magic_image system_prompt: {system_prompt}")
             if image_content.startswith('data:image/'): 
                 try:
                     # 分析图片意图
                     analysis_result = await analyser.analyze_image_base64(system_prompt, image_content)
                     if analysis_result:
-                        import json
                         try:
-                            print(f"✅ 图片意图分析结果: {analysis_result}")
                             result_json = json.loads(analysis_result)
                             magic_prompt = result_json.get('prompt', 'enhance the image with magical effects')
                         except json.JSONDecodeError:
@@ -240,9 +242,7 @@ class MagicDrawService:
                 print("⚠️ 无法解析图片格式，使用默认提示词")
             
             # 将图片内容写入user_data目录
-            import os
-            import uuid
-            import base64
+            
             
             # 确保user_data目录存在
             user_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'user_data')
@@ -269,7 +269,62 @@ class MagicDrawService:
             print(f"✅ 图片已保存到: {file_path}")
 
             # 2. nano-banana模型，创建魔法任务
-            result = await analyser.generate_magic_image(file_path, magic_prompt)
+            result = await analyser.generate_magic_image([file_path], magic_prompt)
+            if result:
+                print(
+                f"✅ Magic image generated successfully: {result.get('result_url')}")
+            else:
+                print("❌ Failed to generate magic image")
+                return {"error": "Failed to generate magic image"}
+            return result
+        except Exception as e:
+            error_msg = f"Error in magic image generation: {str(e)}"
+            print(f"❌ {error_msg}")
+            return {"error": error_msg}
+
+    async def generate_image(self, user_prompt: str, image_content: str, template_id: str) -> Optional[Dict[str, Any]]:
+        """
+        生成魔法图像的完整流程
+
+        Args:
+            image_content: 图片内容（base64 或 URL）
+
+        Returns:
+            Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
+        """
+        try:
+            print("generate_image")
+            
+            # 确保user_data目录存在
+            user_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'user_data')
+            os.makedirs(user_data_dir, exist_ok=True)
+            
+            # 使用用户提示词作为魔法提示词
+            magic_prompt = user_prompt if user_prompt else "enhance the image with magical effects"
+            
+            # nano-banana模型，创建魔法任务
+            analyser = ImageAnalyser()
+            # 生成唯一文件名
+            file_id = str(uuid.uuid4())
+            
+            if image_content.startswith('data:image/'):
+                # 从data URL中提取格式和数据
+                header, encoded = image_content.split(',', 1)
+                image_format = header.split(';')[0].split('/')[1]  # 获取图片格式(jpeg, png等)
+                image_data = base64.b64decode(encoded)
+                file_path = os.path.join(user_data_dir, f"{file_id}.{image_format}")
+            else:
+                # 假设是其他格式，默认保存为jpg
+                image_data = image_content.encode()
+                file_path = os.path.join(user_data_dir, f"{file_id}.jpg")
+            
+            # 写入文件
+            with open(file_path, 'wb') as f:
+                f.write(image_data)
+            
+            print(f"✅ 图片已保存到: {file_path}")
+
+            result = await analyser.generate_magic_image([file_path], magic_prompt)
             if result:
                 print(
                 f"✅ Magic image generated successfully: {result.get('result_url')}")

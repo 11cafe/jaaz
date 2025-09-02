@@ -24,6 +24,20 @@ export type TMaterialAddImagesToChatEvent = {
   height?: number
 }[]
 
+export type TUserImagesEvent = {
+  session_id: string
+  message: {
+    role: 'user'
+    content: Array<{
+      type: 'text' | 'image_url'
+      text?: string
+      image_url?: {
+        url: string
+      }
+    }>
+  }
+}
+
 export type TEvents = {
   // ********** Socket events - Start **********
   'Socket::Session::Error': ISocket.SessionErrorEvent
@@ -40,6 +54,7 @@ export type TEvents = {
   'Socket::Session::ToolCallPendingConfirmation': ISocket.SessionToolCallPendingConfirmationEvent
   'Socket::Session::ToolCallConfirmed': ISocket.SessionToolCallConfirmedEvent
   'Socket::Session::ToolCallCancelled': ISocket.SessionToolCallCancelledEvent
+  'Socket::Session::UserImages': TUserImagesEvent
   // ********** Socket events - End **********
 
   // ********** Canvas events - Start **********

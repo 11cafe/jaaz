@@ -364,6 +364,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [canvasId, sessionId]
   )
 
+  const handleUserImages = useCallback(
+    (data: TEvents['Socket::Session::UserImages']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      console.log('📸 接收到用户图片', data.message)
+      
+      // 将用户图片消息添加到消息列表
+      setMessages(produce((prev) => {
+        prev.push({
+          role: 'user',
+          content: data.message.content,
+        })
+      }))
+      
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
   const handleAllMessages = useCallback(
     (data: TEvents['Socket::Session::AllMessages']) => {
       if (data.session_id && data.session_id !== sessionId) {
@@ -432,6 +453,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
     eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::UserImages', handleUserImages)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
@@ -450,6 +472,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       eventBus.off('Socket::Session::ToolCallArguments', handleToolCallArguments)
       eventBus.off('Socket::Session::ToolCallResult', handleToolCallResult)
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::Session::UserImages', handleUserImages)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
@@ -644,7 +667,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 transition={{ duration: 0.5 }}
                 className='text-muted-foreground text-3xl'
               >
-                <ShinyText text='你好，欢迎使用幻影!' />
+                <ShinyText text='你好，MagicArt!' />
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}

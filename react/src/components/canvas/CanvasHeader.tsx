@@ -1,5 +1,4 @@
 import { Input } from '@/components/ui/input'
-import CanvasExport from './CanvasExport'
 import TopMenu from '../TopMenu'
 
 type CanvasHeaderProps = {
@@ -25,7 +24,6 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
           onBlur={onNameSave}
         />
       }
-      right={<CanvasExport />}
     />
   )
 }

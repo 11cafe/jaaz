@@ -124,7 +124,7 @@ function App() {
           </ConfigsProvider>
         </AuthProvider>
       </PersistQueryClientProvider>
-      <Toaster position="bottom-center" richColors />
+      <Toaster position="top-center" richColors />
     </ThemeProvider>
   )
 }

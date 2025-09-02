@@ -29,7 +29,7 @@ class OpenAIImageProvider(ImageProviderBase):
         config = config_service.app_config.get('openai', {})
         self.api_key = str(config.get("api_key", ""))
         self.base_url = str(config.get("url", ""))  # 可选
-
+        print("OpenAIImageProvider generate")
         if not self.api_key:
             raise ValueError("OpenAI API key is not configured")
 

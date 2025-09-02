@@ -2,12 +2,13 @@ from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
 from common import DEFAULT_PORT
 from tools.utils.image_canvas_utils import generate_file_id
-from services.config_service import FILES_DIR
+from services.config_service import FILES_DIR, get_user_files_dir, get_legacy_files_dir
+from utils.auth_utils import get_user_id_from_request, get_user_email_from_request, extract_user_from_request
 
 from PIL import Image
 from io import BytesIO
 import os
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Request
 import httpx
 import aiofiles
 from mimetypes import guess_type
@@ -18,8 +19,17 @@ os.makedirs(FILES_DIR, exist_ok=True)
 
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
-async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
+async def upload_image(request: Request, file: UploadFile = File(...), max_size_mb: float = 3.0):
     print('🦄upload_image file', file.filename)
+    
+    # 获取用户信息（优先使用邮箱，向后兼容用户ID）
+    user_email = get_user_email_from_request(request)
+    user_id = get_user_id_from_request(request)
+    print(f'🦄upload_image user_email: {user_email}, user_id: {user_id}')
+    
+    # 获取用户文件目录（优先使用邮箱）
+    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+    
     # 生成文件 ID 和文件名
     file_id = generate_file_id()
     filename = file.filename or ''
@@ -55,7 +65,7 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             
             # Save compressed image using Image.save
             extension = 'jpg'  # Force JPEG for compressed images
-            file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
+            file_path = os.path.join(user_files_dir, f'{file_id}.{extension}')
             
             # Create new image from compressed content and save
             with Image.open(BytesIO(compressed_content)) as compressed_img:
@@ -77,7 +87,7 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
                 extension = 'jpg'  # Default to jpg for unknown types
             
             # Save original image using Image.save
-            file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
+            file_path = os.path.join(user_files_dir, f'{file_id}.{extension}')
             
             # Determine save format based on extension
             save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
@@ -94,6 +104,8 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
         'url': f'http://localhost:{DEFAULT_PORT}/api/file/{file_id}.{extension}',
         'width': width,
         'height': height,
+        'user_email': user_email,  # 返回用户邮箱用于调试
+        'user_id': user_id,  # 返回用户ID用于调试
     }
 
 
@@ -146,12 +158,45 @@ def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
 
 # 文件下载接口
 @router.get("/file/{file_id}")
-async def get_file(file_id: str):
-    file_path = os.path.join(FILES_DIR, f'{file_id}')
-    print('🦄get_file file_path', file_path)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(file_path)
+async def get_file(request: Request, file_id: str):
+    # 获取用户信息
+    user_email = get_user_email_from_request(request)
+    user_id = get_user_id_from_request(request)
+    
+    # 首先尝试从用户目录查找文件（优先使用邮箱目录）
+    if user_email or user_id:
+        user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+        file_path = os.path.join(user_files_dir, file_id)
+        print(f'🦄get_file user file_path: {file_path}')
+        
+        if os.path.exists(file_path):
+            return FileResponse(file_path)
+        
+        # 如果邮箱目录中没有，尝试用户ID目录（向后兼容）
+        if user_email and user_id:
+            legacy_user_dir = get_user_files_dir(user_email=None, user_id=user_id)
+            legacy_file_path = os.path.join(legacy_user_dir, file_id)
+            print(f'🦄get_file legacy user file_path: {legacy_file_path}')
+            
+            if os.path.exists(legacy_file_path):
+                return FileResponse(legacy_file_path)
+    
+    # 如果用户目录中没有找到，尝试从匿名用户目录查找
+    anonymous_files_dir = get_user_files_dir(user_email=None, user_id=None)  # 使用匿名用户
+    anonymous_file_path = os.path.join(anonymous_files_dir, file_id)
+    print(f'🦄get_file anonymous file_path: {anonymous_file_path}')
+    
+    if os.path.exists(anonymous_file_path):
+        return FileResponse(anonymous_file_path)
+    
+    # 向后兼容：最后尝试从旧的FILES_DIR查找
+    legacy_file_path = os.path.join(get_legacy_files_dir(), file_id)
+    print(f'🦄get_file legacy file_path: {legacy_file_path}')
+    
+    if os.path.exists(legacy_file_path):
+        return FileResponse(legacy_file_path)
+    
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.post("/comfyui/object_info")

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request
 from services.chat_service import handle_chat
 from services.magic_service import handle_magic
 from services.stream_service import get_stream_task
+from utils.auth_utils import ensure_user_directory_exists
 from typing import Dict
 
 router = APIRouter(prefix="/api")
@@ -21,6 +22,9 @@ async def chat(request: Request):
     Response:
         {"status": "done"}
     """
+    # 🗂️ 确保用户目录存在
+    user_files_dir = ensure_user_directory_exists(request)
+    
     data = await request.json()
     await handle_chat(data)
     return {"status": "done"}
@@ -59,7 +63,11 @@ async def magic(request: Request):
     Response:
         {"status": "done"}
     """
+    # 🗂️ 确保用户目录存在
+    user_files_dir = ensure_user_directory_exists(request)
+    
     data = await request.json()
+    print(f"magic data: {data}")
     await handle_magic(data)
     return {"status": "done"}
 
