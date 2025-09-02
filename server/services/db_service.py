@@ -43,24 +43,27 @@ class DatabaseService:
                 # Need to migrate
                 self._migration_manager.migrate(conn, current_version[0], CURRENT_VERSION)
 
-    async def create_canvas(self, id: str, name: str):
-        """Create a new canvas"""
+    async def create_canvas(self, id: str, name: str, user_email: Optional[str] = None):
+        """Create a new canvas with user email"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
-                INSERT INTO canvases (id, name)
-                VALUES (?, ?)
-            """, (id, name))
+                INSERT INTO canvases (id, name, email)
+                VALUES (?, ?, ?)
+            """, (id, name, email))
             await db.commit()
 
-    async def list_canvases(self) -> List[Dict[str, Any]]:
-        """Get all canvases"""
+    async def list_canvases(self, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get canvases filtered by user email"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, name, description, thumbnail, created_at, updated_at
+                SELECT id, name, description, thumbnail, created_at, updated_at, email
                 FROM canvases
+                WHERE email = ?
                 ORDER BY updated_at DESC
-            """)
+            """, (email,))
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
@@ -126,30 +129,31 @@ class DatabaseService:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-    async def save_canvas_data(self, id: str, data: str, thumbnail: str = None):
-        """Save canvas data"""
+    async def save_canvas_data(self, id: str, data: str, thumbnail: Optional[str] = None, user_email: Optional[str] = None):
+        """Save canvas data with user email verification"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
                 UPDATE canvases 
                 SET data = ?, thumbnail = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-                WHERE id = ?
-            """, (data, thumbnail, id))
+                WHERE id = ? AND email = ?
+            """, (data, thumbnail, id, email))
             await db.commit()
 
-    async def get_canvas_data(self, id: str) -> Optional[Dict[str, Any]]:
-        """Get canvas data"""
+    async def get_canvas_data(self, id: str, user_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Get canvas data with user email verification"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT data, name
+                SELECT data, name, email
                 FROM canvases
-                WHERE id = ?
-            """, (id,))
+                WHERE id = ? AND email = ?
+            """, (id, email))
             row = await cursor.fetchone()
 
-            sessions = await self.list_sessions(id)
-            
             if row:
+                sessions = await self.list_sessions(id)
                 return {
                     'data': json.loads(row['data']) if row['data'] else {},
                     'name': row['name'],
@@ -157,16 +161,18 @@ class DatabaseService:
                 }
             return None
 
-    async def delete_canvas(self, id: str):
-        """Delete canvas and related data"""
+    async def delete_canvas(self, id: str, user_email: Optional[str] = None):
+        """Delete canvas with user email verification"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("DELETE FROM canvases WHERE id = ?", (id,))
+            await db.execute("DELETE FROM canvases WHERE id = ? AND email = ?", (id, email))
             await db.commit()
 
-    async def rename_canvas(self, id: str, name: str):
-        """Rename canvas"""
+    async def rename_canvas(self, id: str, name: str, user_email: Optional[str] = None):
+        """Rename canvas with user email verification"""
+        email = user_email if user_email is not None else 'anonymous'
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("UPDATE canvases SET name = ? WHERE id = ?", (name, id))
+            await db.execute("UPDATE canvases SET name = ? WHERE id = ? AND email = ?", (name, id, email))
             await db.commit()
 
     async def create_comfy_workflow(self, name: str, api_json: str, description: str, inputs: str, outputs: str = None):
