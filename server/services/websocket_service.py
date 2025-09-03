@@ -2,6 +2,9 @@
 from services.websocket_state import sio, get_all_socket_ids
 import traceback
 from typing import Any, Dict
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 async def broadcast_session_update(session_id: str, canvas_id: str | None, event: Dict[str, Any]):
@@ -15,7 +18,7 @@ async def broadcast_session_update(session_id: str, canvas_id: str | None, event
                     **event
                 }, room=socket_id)
         except Exception as e:
-            print(f"Error broadcasting session update for {session_id}: {e}")
+            logger.error(f"Error broadcasting session update for {session_id}: {e}")
             traceback.print_exc()
 
 # compatible with legacy codes
@@ -31,7 +34,7 @@ async def broadcast_init_done():
         await sio.emit('init_done', {
             'type': 'init_done'
         })
-        print("Broadcasted init_done to all clients")
+        logger.info("Broadcasted init_done to all clients")
     except Exception as e:
-        print(f"Error broadcasting init_done: {e}")
+        logger.error(f"Error broadcasting init_done: {e}")
         traceback.print_exc()

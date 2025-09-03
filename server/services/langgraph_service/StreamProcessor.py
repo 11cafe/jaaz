@@ -4,7 +4,9 @@ from typing import Optional, List, Dict, Any, Callable, Awaitable
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 from langgraph.graph import StateGraph
 import json
+from log import get_logger
 
+logger = get_logger(__name__)
 
 class StreamProcessor:
     """流式处理器 - 负责处理智能体的流式输出"""
@@ -79,11 +81,11 @@ class StreamProcessor:
         """处理消息类型的 chunk"""
         try:
             content = ai_message_chunk.content
-            print('👇ai_message_chunk.content', content)
+            logger.info(f'👇ai_message_chunk.content {content}')
             if isinstance(ai_message_chunk, ToolMessage):
                 # 工具调用结果之后会在 values 类型中发送到前端，这里会更快出现一些
                 oai_message = convert_to_openai_messages([ai_message_chunk])[0]
-                print('👇toolcall res oai_message', oai_message)
+                logger.info(f'👇toolcall res oai_message {oai_message}')
                 await self.websocket_service(self.session_id, {
                     'type': 'tool_call_result',
                     'id': ai_message_chunk.tool_call_id,
@@ -103,13 +105,13 @@ class StreamProcessor:
             if hasattr(ai_message_chunk, 'tool_call_chunks'):
                 await self._handle_tool_call_chunks(ai_message_chunk.tool_call_chunks)
         except Exception as e:
-            print('🟠error', e)
+            logger.error(f'🟠error {e}')
             traceback.print_stack()
 
     async def _handle_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """处理工具调用"""
         self.tool_calls = [tc for tc in tool_calls if tc.get('name')]
-        print('😘tool_call event', tool_calls)
+        logger.info(f'😘tool_call event {tool_calls}')
 
         # 需要确认的工具列表
         TOOLS_REQUIRING_CONFIRMATION = {
@@ -128,8 +130,7 @@ class StreamProcessor:
             # 检查是否需要确认
             if tool_name in TOOLS_REQUIRING_CONFIRMATION:
                 # 对于需要确认的工具，不在这里发送事件，让工具函数自己处理
-                print(
-                    f'🔄 Tool {tool_name} requires confirmation, skipping StreamProcessor event')
+                logger.info(f'🔄 Tool {tool_name} requires confirmation, skipping StreamProcessor event')
                 continue
             else:
                 await self.websocket_service(self.session_id, {
@@ -153,4 +154,4 @@ class StreamProcessor:
                         'text': tool_call_chunk.get('args')
                     })
                 else:
-                    print('🟠no last_streaming_tool_call_id', tool_call_chunk)
+                    logger.error(f'🟠no last_streaming_tool_call_id {tool_call_chunk}')

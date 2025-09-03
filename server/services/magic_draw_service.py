@@ -9,7 +9,9 @@ from typing import Dict, Any, Optional, List
 from utils.http_client import HttpClient
 from services.config_service import config_service
 from utils.image_analyser import ImageAnalyser
+from log import get_logger
 
+logger = get_logger(__name__)
 
 class MagicDrawService:
     """基于兔子API的本地MagicDraw服务
@@ -30,7 +32,7 @@ class MagicDrawService:
         if not self.api_url.endswith('/api/v1'):
             self.api_url = f"{self.api_url}/api/v1"
 
-        print(f"✅ Jaaz service initialized with API URL: {self.api_url}")
+        logger.info(f"✅ Jaaz service initialized with API URL: {self.api_url}")
 
     def _is_configured(self) -> bool:
         """检查 Jaaz API 是否已配置"""
@@ -53,10 +55,10 @@ class MagicDrawService:
         Returns:
             str: 任务 ID，失败时返回空字符串
         """
-        print(f"👇create_magic_task image_content")
+        logger.info(f"👇create_magic_task image_content {image_content}")
         try:
             if not image_content or not image_content.startswith('data:image/'):
-                print("❌ Invalid image content format")
+                logger.error("❌ Invalid image content format")
                 return ""
             
             
@@ -73,15 +75,14 @@ class MagicDrawService:
                         data = await response.json()
                         task_id = data.get('task_id', '')
                         if task_id:
-                            print(f"✅ Magic task created: {task_id}")
+                            logger.info(f"✅ Magic task created: {task_id}")
                             return task_id
                         else:
-                            print("❌ No task_id in response")
+                            logger.error("❌ No task_id in response")
                             return ""
                     else:
                         error_text = await response.text()
-                        print(
-                            f"❌ Failed to create magic task: {response.status} - {error_text}")
+                        logger.error(f"❌ Failed to create magic task: {response.status} - {error_text}")
                         return ""
 
         except Exception as e:
@@ -116,7 +117,7 @@ class MagicDrawService:
         Raises:
             Exception: 当任务创建失败时抛出异常
         """
-        print(f"👇create_video_task prompt: {prompt}, model: {model}, resolution: {resolution}, duration: {duration}, aspect_ratio: {aspect_ratio}, input_images: {input_images}")
+        logger.info(f"👇create_video_task prompt: {prompt}, model: {model}, resolution: {resolution}, duration: {duration}, aspect_ratio: {aspect_ratio}, input_images: {input_images}")
         async with HttpClient.create_aiohttp() as session:
             payload = {
                 "prompt": prompt,
@@ -140,7 +141,7 @@ class MagicDrawService:
                     data = await response.json()
                     task_id = data.get('task_id', '')
                     if task_id:
-                        print(f"✅ Video task created: {task_id}")
+                        logger.info(f"✅ Video task created: {task_id}")
                         return task_id
                     else:
                         raise Exception("No task_id in response")
@@ -185,8 +186,7 @@ class MagicDrawService:
                             status = task.get('status')
 
                             if status == 'succeeded':
-                                print(
-                                    f"✅ Task {task_id} completed successfully")
+                                logger.info(f"✅ Task {task_id} completed successfully")
                                 return task
                             elif status == 'failed':
                                 error_msg = task.get('error', 'Unknown error')
@@ -219,7 +219,7 @@ class MagicDrawService:
         try:
             # 1. 图片意图识别, 创建图片分析器实例
             analyser = ImageAnalyser()
-            print(f"👇generate_magic_image system_prompt: {system_prompt}")
+            logger.info(f"👇generate_magic_image system_prompt: {system_prompt}")
             if image_content.startswith('data:image/'): 
                 try:
                     # 分析图片意图
@@ -233,13 +233,13 @@ class MagicDrawService:
                     else:
                         magic_prompt = "enhance the image with magical effects"
                     
-                    print(f"✅ 图片意图分析完成: {magic_prompt}")
+                    logger.info(f"✅ 图片意图分析完成: {magic_prompt}")
                 except Exception as e:
-                    print(f"❌ 图片意图分析失败: {e}")
+                    logger.error(f"❌ 图片意图分析失败: {e}")
                     return {"error": "Failed to analyze image intent"}
             else:
                 magic_prompt = "enhance the image with magical effects"
-                print("⚠️ 无法解析图片格式，使用默认提示词")
+                logger.error("⚠️ 无法解析图片格式，使用默认提示词")
             
             # 将图片内容写入user_data目录
             
@@ -266,20 +266,19 @@ class MagicDrawService:
             with open(file_path, 'wb') as f:
                 f.write(image_data)
             
-            print(f"✅ 图片已保存到: {file_path}")
+            logger.info(f"✅ 图片已保存到: {file_path}")
 
             # 2. nano-banana模型，创建魔法任务
             result = await analyser.generate_magic_image([file_path], magic_prompt)
             if result:
-                print(
-                f"✅ Magic image generated successfully: {result.get('result_url')}")
+                logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:
-                print("❌ Failed to generate magic image")
+                logger.error("❌ Failed to generate magic image")
                 return {"error": "Failed to generate magic image"}
             return result
         except Exception as e:
             error_msg = f"Error in magic image generation: {str(e)}"
-            print(f"❌ {error_msg}")
+            logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
     async def generate_image(self, user_prompt: str, image_content: str, template_id: str) -> Optional[Dict[str, Any]]:
@@ -293,7 +292,7 @@ class MagicDrawService:
             Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
         """
         try:
-            print("generate_image")
+            logger.info("generate_image")
             
             # 确保user_data目录存在
             user_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'user_data')
@@ -322,14 +321,13 @@ class MagicDrawService:
             with open(file_path, 'wb') as f:
                 f.write(image_data)
             
-            print(f"✅ 图片已保存到: {file_path}")
+            logger.info(f"✅ 图片已保存到: {file_path}")
 
             result = await analyser.generate_magic_image([file_path], magic_prompt)
             if result:
-                print(
-                f"✅ Magic image generated successfully: {result.get('result_url')}")
+                logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:
-                print("❌ Failed to generate magic image")
+                logger.error("❌ Failed to generate magic image")
                 return {"error": "Failed to generate magic image"}
             return result
         except Exception as e:
@@ -390,8 +388,7 @@ class MagicDrawService:
         if not result.get('result_url'):
             raise Exception("No result URL found in video generation response")
 
-        print(
-            f"✅ Video generated successfully: {result.get('result_url')}")
+        logger.info(f"✅ Video generated successfully: {result.get('result_url')}")
         return result
 
     async def generate_video_by_seedance(
@@ -451,7 +448,7 @@ class MagicDrawService:
                     error_text = await response.text()
                     raise Exception(f"Failed to create Seedance video task: HTTP {response.status} - {error_text}")
 
-        print(f"✅ Seedance video task created: {task_id}")
+        logger.info(f"✅ Seedance video task created: {task_id}")
 
         # 2. 等待任务完成
         result = await self.poll_for_task_completion(task_id)
@@ -464,8 +461,7 @@ class MagicDrawService:
         if not result.get('result_url'):
             raise Exception("No result URL found in Seedance video generation response")
 
-        print(
-            f"✅ Seedance video generated successfully: {result.get('result_url')}")
+        logger.info(f"✅ Seedance video generated successfully: {result.get('result_url')}")
         return result
 
     async def create_midjourney_task(
@@ -505,7 +501,7 @@ class MagicDrawService:
                     data = await response.json()
                     task_id = data.get('task_id', '')
                     if task_id:
-                        print(f"✅ Midjourney task created: {task_id}")
+                        logger.info(f"✅ Midjourney task created: {task_id}")
                         return task_id
                     else:
                         raise Exception("No task_id in response")
@@ -545,7 +541,7 @@ class MagicDrawService:
 
         # 2. 等待任务完成
         task_result = await self.poll_for_task_completion(task_id, max_attempts=150, interval=2.0)
-        print(f"🎨 Midjourney task result: {task_result}")
+        logger.info(f"🎨 Midjourney task result: {task_result}")
         if not task_result:
             raise Exception("Midjourney image generation failed")
 
@@ -556,7 +552,7 @@ class MagicDrawService:
             raise Exception("No result found in Midjourney image generation response")
 
         result = task_result.get('result')
-        print(f"✅ Midjourney image generated successfully: {result}")
+        logger.info(f"✅ Midjourney image generated successfully: {result}")
         return result or {}
 
     def is_configured(self) -> bool:

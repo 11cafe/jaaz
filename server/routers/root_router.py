@@ -1,7 +1,12 @@
 import os
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 import requests
 import httpx
+from log import get_logger
+from utils.auth_utils import get_current_user_optional, get_user_uuid_for_database_operations, CurrentUser
+from typing import Optional
+
+logger = get_logger(__name__)
 from models.tool_model import ToolInfoJson
 from services.tool_service import tool_service
 from services.config_service import config_service
@@ -24,7 +29,7 @@ def get_ollama_model_list() -> List[str]:
         data = response.json()
         return [model['name'] for model in data.get('models', [])]
     except requests.RequestException as e:
-        print(f"Error querying Ollama: {e}")
+        logger.error(f"Error querying Ollama: {e}")
         return []
 
 
@@ -44,12 +49,12 @@ async def get_comfyui_model_list(base_url: str) -> List[str]:
                 print(f"ComfyUI server returned status {response.status_code}")
                 return []
     except Exception as e:
-        print(f"Error querying ComfyUI: {e}")
+        logger.error(f"Error querying ComfyUI: {e}")
         return []
 
 # List all LLM models
 @router.get("/list_models")
-async def get_models() -> list[ModelInfo]:
+async def get_models(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)) -> list[ModelInfo]:
     config = config_service.get_config()
     res: List[ModelInfo] = []
 
@@ -96,7 +101,7 @@ async def get_models() -> list[ModelInfo]:
 
 
 @router.get("/list_tools")
-async def list_tools() -> list[ToolInfoJson]:
+async def list_tools(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)) -> list[ToolInfoJson]:
     config = config_service.get_config()
     res: list[ToolInfoJson] = []
     for tool_id, tool_info in tool_service.tools.items():
@@ -132,13 +137,15 @@ async def list_tools() -> list[ToolInfoJson]:
 
 
 @router.get("/list_chat_sessions")
-async def list_chat_sessions():
-    return await db_service.list_sessions()
+async def list_chat_sessions(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
+    user_uuid = get_user_uuid_for_database_operations(current_user)
+    return await db_service.list_sessions(user_uuid=user_uuid)
 
 
 @router.get("/chat_session/{session_id}")
-async def get_chat_session(session_id: str):
-    return await db_service.get_chat_history(session_id)
+async def get_chat_session(session_id: str, request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
+    user_uuid = get_user_uuid_for_database_operations(current_user)
+    return await db_service.get_chat_history(session_id, user_uuid=user_uuid)
 
 
 @router.post("/create_checkout")
@@ -165,5 +172,5 @@ async def create_checkout():
                 return {'success': False, 'error': f'API调用失败: {response.status_code}'}
                 
     except Exception as e:
-        print(f"创建支付订单失败: {e}")
+        logger.error(f"创建支付订单失败: {e}")
         return {'success': False, 'error': '创建支付订单失败'}

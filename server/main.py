@@ -2,15 +2,18 @@ import os
 import sys
 import io
 from dotenv import load_dotenv
+from log import get_logger
+
+logger = get_logger(__name__)
 
 # 加载 .env 文件
 load_dotenv()
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-print('Importing websocket_router')
+logger.info('Importing websocket_router')
 from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
-print('Importing routers')
+logger.info('Importing routers')
 from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings, tool_confirmation, templates_router, auth_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,19 +24,20 @@ from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
 import socketio # type: ignore
-print('Importing websocket_state')
+logger.info('Importing websocket_state')
 from services.websocket_state import sio
-print('Importing websocket_service')
+logger.info('Importing websocket_service')
 from services.websocket_service import broadcast_init_done
-print('Importing config_service')
+logger.info('Importing config_service')
 from services.config_service import config_service
-print('Importing tool_service')
+logger.info('Importing tool_service')
 from services.tool_service import tool_service
 
+
 async def initialize():
-    print('Initializing config_service')
+    logger.info('Initializing config_service')
     await config_service.initialize()
-    print('Initializing broadcast_init_done')
+    logger.info('Initializing broadcast_init_done')
     await broadcast_init_done()
 
 root_dir = os.path.dirname(__file__)
@@ -47,7 +51,7 @@ async def lifespan(app: FastAPI):
     yield
     # onshutdown
 
-print('Creating FastAPI app')
+logger.info('Creating FastAPI app')
 app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware
@@ -67,7 +71,7 @@ app.add_middleware(
 )
 
 # Include routers
-print('Including routers')
+logger.info('Including routers')
 app.include_router(config_router.router)
 app.include_router(settings.router)
 app.include_router(auth_router.router)
@@ -126,7 +130,7 @@ async def serve_static_files(filename: str):
 
 
 
-print('Creating socketio app')
+logger.info('Creating socketio app')
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
 
 if __name__ == "__main__":
@@ -138,10 +142,10 @@ if __name__ == "__main__":
         sorted(_bypass | current - {""}))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=57988,
+    parser.add_argument('--port', type=int, default=8000,
                         help='Port to run the server on')
     args = parser.parse_args()
     import uvicorn
-    print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
+    logger.info(f"🌟Starting server, UI_DIST_DIR: {os.environ.get('UI_DIST_DIR')}")
 
     uvicorn.run(socket_app, host="127.0.0.1", port=args.port)

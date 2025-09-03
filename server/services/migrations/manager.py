@@ -4,10 +4,16 @@ from services.migrations.v1_initial_schema import V1InitialSchema
 from services.migrations.v2_add_canvases import V2AddCanvases
 from services.migrations.v3_add_comfy_workflow import V3AddComfyWorkflow
 from services.migrations.v4_add_user_email import V4AddUserEmail
+from services.migrations.v5_add_multi_user import V5AddMultiUser
+from services.migrations.v6_add_user_uuid import V6AddUserUuid
+from services.migrations.v7_rename_user_id_to_uuid import V7RenameUserIdToUuid
 from . import Migration
+from log import get_logger
+
+logger = get_logger(__name__)
 
 # Database version
-CURRENT_VERSION = 4
+CURRENT_VERSION = 7
 
 ALL_MIGRATIONS = [
     {
@@ -26,6 +32,18 @@ ALL_MIGRATIONS = [
         'version': 4,
         'migration': V4AddUserEmail,
     },
+    {
+        'version': 5,
+        'migration': V5AddMultiUser,
+    },
+    {
+        'version': 6,
+        'migration': V6AddUserUuid,
+    },
+    {
+        'version': 7,
+        'migration': V7RenameUserIdToUuid,
+    },
 ]
 class MigrationManager:
     def get_migrations_to_apply(self, current_version: int, target_version: int) -> List[Type[Migration]]:
@@ -42,13 +60,13 @@ class MigrationManager:
         """Apply or rollback migrations to reach target version"""
         if from_version < to_version:
             # Apply migrations forward
-            print('🦄 Applying migrations forward', from_version, '->', to_version)
+            logger.info(f'🦄 Applying migrations forward {from_version} -> {to_version}')
             migrations_to_apply = self.get_migrations_to_apply(from_version, to_version)
-            print('🦄 Migrations to apply', migrations_to_apply)
+            logger.info(f'🦄 Migrations to apply {migrations_to_apply}')
             for migration in migrations_to_apply:
                 migration_class = migration['migration']
                 migration = migration_class()
-                print(f"Applying migration {migration.version}: {migration.description}")
+                logger.info(f"Applying migration {migration.version}: {migration.description}")
                 migration.up(conn)
                 conn.execute("UPDATE db_version SET version = ?", (migration.version,))
         # Do not do rollback migrations

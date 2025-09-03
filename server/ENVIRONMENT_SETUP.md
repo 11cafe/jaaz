@@ -19,7 +19,7 @@ export JWT_SECRET="your_jwt_secret_here"  # Optional, will generate random if no
 
 ```bash
 export UI_DIST_DIR="path/to/ui/dist"
-export DEFAULT_PORT=57988
+export DEFAULT_PORT=8000
 export USER_DATA_DIR="path/to/user/data"
 export BASE_API_URL="https://jaaz.app"
 export OLLAMA_HOST="http://localhost:11434"

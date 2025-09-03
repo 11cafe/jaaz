@@ -13,6 +13,9 @@ import httpx
 import aiofiles
 from mimetypes import guess_type
 from utils.http_client import HttpClient
+from log import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api")
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -20,12 +23,12 @@ os.makedirs(FILES_DIR, exist_ok=True)
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
 async def upload_image(request: Request, file: UploadFile = File(...), max_size_mb: float = 3.0):
-    print('🦄upload_image file', file.filename)
+    logger.info(f'🦄upload_image file {file.filename}')
     
     # 获取用户信息（优先使用邮箱，向后兼容用户ID）
     user_email = get_user_email_from_request(request)
     user_id = get_user_id_from_request(request)
-    print(f'🦄upload_image user_email: {user_email}, user_id: {user_id}')
+    logger.info(f'🦄upload_image user_email: {user_email}, user_id: {user_id}')
     
     # 获取用户文件目录（优先使用邮箱）
     user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
@@ -47,7 +50,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), max_size_
         
         # Check if compression is needed
         if original_size_mb > max_size_mb:
-            print(f'🦄 Image size ({original_size_mb:.2f}MB) exceeds limit ({max_size_mb}MB), compressing...')
+            logger.info(f'🦄 Image size ({original_size_mb:.2f}MB) exceeds limit ({max_size_mb}MB), compressing...')
             
             # Convert to RGB if necessary (for JPEG compression)
             if img.mode in ('RGBA', 'LA', 'P'):
@@ -74,7 +77,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), max_size_
                 # compressed_img.save(file_path, format='JPEG', quality=95, optimize=True)
             
             final_size_mb = len(compressed_content) / (1024 * 1024)
-            print(f'🦄 Compressed from {original_size_mb:.2f}MB to {final_size_mb:.2f}MB')
+            logger.info(f'🦄 Compressed from {original_size_mb:.2f}MB to {final_size_mb:.2f}MB')
         else:
             # Determine the file extension from original file
             mime_type, _ = guess_type(filename)
@@ -98,7 +101,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), max_size_
             await run_in_threadpool(img.save, file_path, format=save_format)
 
     # 返回文件信息
-    print('🦄upload_image file_path', file_path)
+    logger.info(f'🦄upload_image file_path {file_path}')
     return {
         'file_id': f'{file_id}.{extension}',
         'url': f'http://localhost:{DEFAULT_PORT}/api/file/{file_id}.{extension}',
@@ -167,7 +170,7 @@ async def get_file(request: Request, file_id: str):
     if user_email or user_id:
         user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
         file_path = os.path.join(user_files_dir, file_id)
-        print(f'🦄get_file user file_path: {file_path}')
+        logger.info(f'🦄get_file user file_path: {file_path}')
         
         if os.path.exists(file_path):
             return FileResponse(file_path)
@@ -176,7 +179,7 @@ async def get_file(request: Request, file_id: str):
         if user_email and user_id:
             legacy_user_dir = get_user_files_dir(user_email=None, user_id=user_id)
             legacy_file_path = os.path.join(legacy_user_dir, file_id)
-            print(f'🦄get_file legacy user file_path: {legacy_file_path}')
+            logger.info(f'🦄get_file legacy user file_path: {legacy_file_path}')
             
             if os.path.exists(legacy_file_path):
                 return FileResponse(legacy_file_path)
@@ -184,14 +187,14 @@ async def get_file(request: Request, file_id: str):
     # 如果用户目录中没有找到，尝试从匿名用户目录查找
     anonymous_files_dir = get_user_files_dir(user_email=None, user_id=None)  # 使用匿名用户
     anonymous_file_path = os.path.join(anonymous_files_dir, file_id)
-    print(f'🦄get_file anonymous file_path: {anonymous_file_path}')
+    logger.info(f'🦄get_file anonymous file_path: {anonymous_file_path}')
     
     if os.path.exists(anonymous_file_path):
         return FileResponse(anonymous_file_path)
     
     # 向后兼容：最后尝试从旧的FILES_DIR查找
     legacy_file_path = os.path.join(get_legacy_files_dir(), file_id)
-    print(f'🦄get_file legacy file_path: {legacy_file_path}')
+    logger.info(f'🦄get_file legacy file_path: {legacy_file_path}')
     
     if os.path.exists(legacy_file_path):
         return FileResponse(legacy_file_path)
@@ -216,9 +219,9 @@ async def get_object_info(data: dict):
                     status_code=response.status_code, detail=f"ComfyUI server returned status {response.status_code}")
     except Exception as e:
         if "ConnectError" in str(type(e)) or "timeout" in str(e).lower():
-            print(f"ComfyUI connection error: {str(e)}")
+            logger.error(f"ComfyUI connection error: {str(e)}")
             raise HTTPException(
                 status_code=503, detail="ComfyUI server is not available. Please make sure ComfyUI is running.")
-        print(f"Unexpected error connecting to ComfyUI: {str(e)}")
+        logger.error(f"Unexpected error connecting to ComfyUI: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")

@@ -1,7 +1,6 @@
-import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
-import { useConfigs, useRefreshModels } from '@/contexts/configs'
+import { useConfigs } from '@/contexts/configs'
 import { BASE_API_URL } from '@/constants'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,16 +16,20 @@ import { logout } from '@/api/auth'
 import { PointsDisplay } from './PointsDisplay'
 
 export function UserMenu() {
-  const { authStatus, refreshAuth } = useAuth()
+  const { authStatus } = useAuth()
   const { setShowLoginDialog } = useConfigs()
-  const refreshModels = useRefreshModels()
   const { t } = useTranslation()
 
   const handleLogout = async () => {
-    await logout()
-    await refreshAuth()
-    // Refresh models list after logout and config update
-    refreshModels()
+    console.log('🚪 UserMenu: Starting logout...')
+    try {
+      // 🚀 调用优化后的logout函数
+      // 它会：1.调用后端API 2.清理前端数据 3.通知其他标签页 4.跳转到首页
+      await logout()
+    } catch (error) {
+      console.error('❌ UserMenu logout failed:', error)
+      // 即使出错，logout函数内部也有兜底方案
+    }
   }
 
   // 如果用户已登录，显示用户菜单
