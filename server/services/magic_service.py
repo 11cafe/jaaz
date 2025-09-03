@@ -11,7 +11,9 @@ from services.db_service import db_service
 from services.OpenAIAgents_service import create_local_magic_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
+from log import get_logger
 
+logger = get_logger(__name__)
 
 async def handle_magic(data: Dict[str, Any]) -> None:
     """
@@ -53,7 +55,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         except Exception as e:
             # 如果session已存在，忽略错误
             if "UNIQUE constraint failed" in str(e):
-                print(f"Session {session_id} already exists, skipping creation")
+                logger.warn(f"Session {session_id} already exists, skipping creation")
             else:
                 raise e
 
@@ -78,7 +80,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         # Await completion of the magic generation task
         await task
     except asyncio.exceptions.CancelledError:
-        print(f"🛑Magic generation session {session_id} cancelled")
+        logger.warn(f"🛑Magic generation session {session_id} cancelled")
     finally:
         # Always remove the task from stream_tasks after completion/cancellation
         remove_stream_task(session_id)
@@ -123,7 +125,7 @@ async def _push_user_images_to_frontend(messages: List[Dict[str, Any]], session_
                 if template:
                     template_name = template.get("title", "未知模板")
             except (ValueError, ImportError):
-                print("出错了...")
+                logger.error("出错了...")
         
         for content_item in content:
             if content_item.get('type') == 'image_url':
@@ -154,10 +156,10 @@ async def _push_user_images_to_frontend(messages: List[Dict[str, Any]], session_
                 'message': user_image_message
             })
             
-            print(f"✅ 已推送 {len(user_images)} 张用户图片到前端")
+            logger.info(f"✅ 已推送 {len(user_images)} 张用户图片到前端")
             
     except Exception as e:
-        print(f"❌ 推送用户图片失败: {e}")
+        logger.error(f"❌ 推送用户图片失败: {e}")
 
 
 async def _process_magic_generation(

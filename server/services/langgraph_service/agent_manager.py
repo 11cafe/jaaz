@@ -7,6 +7,9 @@ from services.langgraph_service.configs.image_vide_creator_config import ImageVi
 from .configs import PlannerAgentConfig, create_handoff_tool, BaseAgentConfig
 from services.tool_service import tool_service
 from services.langgraph_service.configs.image_template_config import ImageTemplaterAgentConfig
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class AgentManager:
@@ -36,8 +39,8 @@ class AgentManager:
         image_tools =  [tool for tool in tool_list if tool.get('type') == 'image']
         video_tools = [tool for tool in tool_list if tool.get('type') == 'video']
 
-        print(f"📸 图像工具: {image_tools}")
-        print(f"🎬 视频工具: {video_tools}")
+        logger.info(f"📸 图像工具: {image_tools}")
+        logger.info(f"🎬 视频工具: {video_tools}")
 
         if not template_prompt:
             planner_config = PlannerAgentConfig()
@@ -62,7 +65,7 @@ class AgentManager:
 
             return [planner_agent, image_video_creator_agent]
         else:
-            print(f"👇template_prompt: {template_prompt}")
+            logger.info(f"👇template_prompt: {template_prompt}")
             image_template_config = ImageTemplaterAgentConfig(
                 image_tools, system_prompt)
             image_template_agent = AgentManager._create_langgraph_agent(
@@ -101,12 +104,12 @@ class AgentManager:
         business_tools: List[BaseTool] = []
         for tool_json in config.tools:
             tool = tool_service.get_tool(tool_json['id'])
-            print('👇create_react_agent tool', tool)
+            logger.info(f'👇create_react_agent tool {tool}')
             if tool:
                 business_tools.append(tool)
 
         # 创建并返回 LangGraph 智能体
-        print('👇create_react_agent config.name', business_tools)
+        logger.info(f'👇create_react_agent config.name {business_tools}')
         return create_react_agent(
             name=config.name,
             model=model,

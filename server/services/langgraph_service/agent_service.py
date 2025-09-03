@@ -14,7 +14,9 @@ from models.config_model import ModelInfo
 import base64
 import os
 from routers.templates_router import TEMPLATES
+from log import get_logger
 
+logger = get_logger(__name__)
 
 class ContextInfo(TypedDict):
     """Context information passed to tools"""
@@ -60,8 +62,7 @@ def _fix_chat_history(messages: List[Dict[str, Any]],
 
             # 记录修复信息
             if removed_calls:
-                print(
-                    f"🔧 修复消息历史：移除了 {len(removed_calls)} 个不完整的工具调用: {removed_calls}")
+                logger.info(f"🔧 修复消息历史：移除了 {len(removed_calls)} 个不完整的工具调用: {removed_calls}")
 
             # 更新消息
             if valid_tool_calls:
@@ -111,12 +112,12 @@ def _fix_chat_history(messages: List[Dict[str, Any]],
                     template = next((t for t in TEMPLATES if t["id"] == int(template_id)), None)
                     if template and template.get("image"):
                         image_path = template["image"]
-                        print(f"🖼️ 模板图片路径: {image_path}")
+                        logger.info(f"🖼️ 模板图片路径: {image_path}")
                         # 构建完整路径
                         # image_path 是 /static/template_images/nizhen.png 格式的URL
                         # 去掉开头的 / 并直接使用
                         full_image_path = image_path.lstrip('/')
-                        print(f"📁 完整文件路径: {full_image_path}")
+                        logger.info(f"📁 完整文件路径: {full_image_path}")
                         
                         if os.path.exists(full_image_path):
                             with open(full_image_path, "rb") as image_file:
@@ -153,10 +154,10 @@ def _fix_chat_history(messages: List[Dict[str, Any]],
                                         }
                                     })
                         else:
-                            print(f"❌ 模板图片文件不存在: {full_image_path}")
+                            logger.warn(f"❌ 模板图片文件不存在: {full_image_path}")
                     new_messages.append(msg)
                 except Exception as e:
-                    print(f"❌ 加载模板图片失败: {e}")
+                    logger.error(f"❌ 加载模板图片失败: {e}")
                     import traceback
                     traceback.print_exc()
             else:
@@ -211,11 +212,11 @@ async def langgraph_multi_agent(
             )
         
         agent_names = [agent.name for agent in agents]
-        print('👇agent_names', agent_names)
+        logger.info(f'👇agent_names {agent_names}')
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
-        print('👇last_agent', last_agent)
+        logger.info(f'👇last_agent {last_agent}')
 
         # 4. 创建智能体群组
         swarm = create_swarm(
@@ -230,7 +231,7 @@ async def langgraph_multi_agent(
             'tool_list': tool_list,
         }
 
-        print('👇测试走到了这里')
+        logger.info('👇测试走到了这里')
         # 6. 流处理
         processor = StreamProcessor(
             session_id, db_service, send_to_websocket)  # type: ignore
@@ -260,7 +261,7 @@ def _create_text_model(text_model: ModelInfo) -> Any:
         # Create httpx client with SSL configuration for ChatOpenAI
         http_client = HttpClient.create_sync_client()
         http_async_client = HttpClient.create_async_client()
-        print('👇_create_text_model model', model)
+        logger.info(f'👇_create_text_model model {model}')
         return ChatOpenAI(
             model=model,
             api_key=api_key,  # type: ignore
@@ -275,9 +276,9 @@ def _create_text_model(text_model: ModelInfo) -> Any:
 
 async def _handle_error(error: Exception, session_id: str) -> None:
     """处理错误"""
-    print('Error in langgraph_agent', error)
+    logger.error(f'Error in langgraph_agent {error}')
     tb_str = traceback.format_exc()
-    print(f"Full traceback:\n{tb_str}")
+    logger.error(f"Full traceback:\n{tb_str}")
     traceback.print_exc()
 
     await send_to_websocket(session_id, cast(Dict[str, Any], {

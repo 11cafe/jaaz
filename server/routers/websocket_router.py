@@ -1,9 +1,12 @@
 # routers/websocket_router.py
 from services.websocket_state import sio, add_connection, remove_connection
+from log import get_logger
+
+logger = get_logger(__name__)
 
 @sio.event
 async def connect(sid, environ, auth):
-    print(f"Client {sid} connected")
+    logger.info(f"Client {sid} connected")
     
     user_info = auth or {}
     add_connection(sid, user_info)
@@ -12,7 +15,7 @@ async def connect(sid, environ, auth):
 
 @sio.event
 async def disconnect(sid):
-    print(f"Client {sid} disconnected")
+    logger.info(f"Client {sid} disconnected")
     remove_connection(sid)
 
 @sio.event

@@ -1,15 +1,18 @@
 #server/routers/chat_router.py
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from services.chat_service import handle_chat
 from services.magic_service import handle_magic
 from services.stream_service import get_stream_task
-from utils.auth_utils import ensure_user_directory_exists
-from typing import Dict
+from utils.auth_utils import get_current_user_optional, CurrentUser
+from typing import Dict, Optional
+from log import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api")
 
 @router.post("/chat")
-async def chat(request: Request):
+async def chat(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
     """
     Endpoint to handle chat requests.
 
@@ -22,10 +25,17 @@ async def chat(request: Request):
     Response:
         {"status": "done"}
     """
-    # 🗂️ 确保用户目录存在
-    user_files_dir = ensure_user_directory_exists(request)
-    
     data = await request.json()
+    
+    # 🔍 添加用户信息到请求数据中
+    if current_user:
+        data['user_info'] = {
+            'id': current_user.id,
+            'uuid': current_user.uuid,
+            'email': current_user.email,
+            'nickname': current_user.nickname
+        }
+    
     await handle_chat(data)
     return {"status": "done"}
 
@@ -50,7 +60,7 @@ async def cancel_chat(session_id: str):
     return {"status": "not_found_or_done"}
 
 @router.post("/magic")
-async def magic(request: Request):
+async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
     """
     Endpoint to handle magic generation requests.
 
@@ -63,11 +73,18 @@ async def magic(request: Request):
     Response:
         {"status": "done"}
     """
-    # 🗂️ 确保用户目录存在
-    user_files_dir = ensure_user_directory_exists(request)
-    
     data = await request.json()
-    print(f"magic data: {data}")
+    
+    # 🔍 添加用户信息到请求数据中
+    if current_user:
+        data['user_info'] = {
+            'id': current_user.id,
+            'uuid': current_user.uuid,
+            'email': current_user.email,
+            'nickname': current_user.nickname
+        }
+    
+    logger.info(f"magic data: {data}")
     await handle_magic(data)
     return {"status": "done"}
 

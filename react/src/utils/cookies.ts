@@ -113,6 +113,16 @@ export const AUTH_COOKIES = {
  * 设置认证Cookie（带安全配置）
  */
 export function setAuthCookie(name: string, value: string, expiresInDays: number = 30): void {
+  // 🚨 检查是否在退出登录过程中，如果是则阻止设置cookie
+  const isLoggingOut = sessionStorage.getItem('is_logging_out')
+  const forceLogout = sessionStorage.getItem('force_logout')
+  
+  if (isLoggingOut === 'true' || forceLogout === 'true') {
+    console.error(`🚨 BLOCKED: Attempted to set auth cookie '${name}' during logout process!`)
+    return
+  }
+  
+  console.log(`🍪 Setting auth cookie: ${name}`)
   setCookie(name, value, {
     expires: expiresInDays,
     secure: location.protocol === 'https:' || process.env.NODE_ENV === 'production',

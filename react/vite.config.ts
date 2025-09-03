@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { defineConfig, UserConfig } from 'vite'
 
-const PORT = 57988
+const PORT = 8000
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
