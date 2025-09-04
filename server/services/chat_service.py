@@ -58,6 +58,11 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     template_id: str = data.get('template_id', '')
     user_info: Dict[str, Any] = data.get('user_info', {})
     
+    # Validate required fields
+    if not session_id or session_id.strip() == '':
+        logger.error("[error] session_id is required but missing or empty")
+        raise ValueError("session_id is required")
+    
     # Extract user information
     user_uuid = user_info.get('uuid') if user_info else None
     

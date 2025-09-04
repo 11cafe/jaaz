@@ -8,6 +8,11 @@ logger = get_logger(__name__)
 
 
 async def broadcast_session_update(session_id: str, canvas_id: str | None, event: Dict[str, Any]):
+    # Validate session_id to prevent empty session_id from being broadcast
+    if not session_id or session_id.strip() == '':
+        logger.warn(f"[warn] Attempted to broadcast with empty session_id, event: {event}")
+        return
+    
     socket_ids = get_all_socket_ids()
     if socket_ids:
         try:

@@ -806,9 +806,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setPending('text')
       setMessages(data)
 
+      // Ensure we have a valid sessionId
+      const effectiveSessionId = sessionId || sessionIdRef.current || nanoid()
+      
       const sendStart = performance.now()
       sendMessages({
-        sessionId: sessionId!,
+        sessionId: effectiveSessionId,
         canvasId: canvasId,
         newMessages: data,
         textModel: configs.textModel,
@@ -817,8 +820,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       })
       console.log(`[debug] API调用耗时: ${(performance.now() - sendStart).toFixed(2)}ms`)
 
-      if (searchSessionId !== sessionId) {
-        window.history.pushState({}, '', `/canvas/${canvasId}?sessionId=${sessionId}`)
+      if (searchSessionId !== effectiveSessionId) {
+        window.history.pushState({}, '', `/canvas/${canvasId}?sessionId=${effectiveSessionId}`)
       }
 
       forceScrollToBottom() // 用户发送消息时强制滚动到底部
@@ -984,7 +987,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* 魔法生成组件 */}
           <ChatMagicGenerator
-            sessionId={sessionId || ''}
+            sessionId={sessionId || sessionIdRef.current || nanoid()}
             canvasId={canvasId}
             messages={messages}
             setMessages={setMessages}
