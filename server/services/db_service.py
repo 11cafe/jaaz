@@ -81,7 +81,7 @@ class DatabaseService:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-    async def create_chat_session(self, id: str, model: str, provider: str, canvas_id: str, user_uuid: str = None, title: Optional[str] = None):
+    async def create_chat_session(self, id: str, model: str, provider: str, canvas_id: str, user_uuid: Optional[str] = None, title: Optional[str] = None):
         """Save a new chat session"""
         # 如果没有提供user_uuid，使用匿名用户的UUID
         if user_uuid is None:
@@ -89,13 +89,22 @@ class DatabaseService:
             user_uuid = anonymous_user['uuid'] if anonymous_user else None
             
         async with aiosqlite.connect(self.db_path) as db:
+            # 检查会话是否已存在，如果存在就不重复创建
+            cursor = await db.execute("SELECT id FROM tb_chat_sessions WHERE id = ?", (id,))
+            existing_session = await cursor.fetchone()
+            
+            if existing_session:
+                logger.info(f"Chat session {id} already exists, skipping creation")
+                return
+                
             await db.execute("""
                 INSERT INTO tb_chat_sessions (id, model, provider, canvas_id, uuid, title)
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (id, model, provider, canvas_id, user_uuid, title))
             await db.commit()
+            logger.info(f"Created new chat session: {id}")
 
-    async def create_message(self, session_id: str, role: str, message: str, user_uuid: str = None):
+    async def create_message(self, session_id: str, role: str, message: str, user_uuid: Optional[str] = None):
         """Save a chat message"""
         # 如果没有提供user_uuid，使用匿名用户的UUID
         if user_uuid is None:

@@ -44,6 +44,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
             - canvas_id: canvas identifier (contextual use)
             - text_model: text model configuration
             - tool_list: list of tool model configurations (images/videos)
+            - user_info: user information (optional)
     """
     start_time = time.time()
     logger.info(f"[debug] === 开始处理聊天请求 ===")
@@ -55,8 +56,12 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     text_model: ModelInfo = data.get('text_model', {})
     tool_list: List[ToolInfoJson] = data.get('tool_list', [])
     template_id: str = data.get('template_id', '')
+    user_info: Dict[str, Any] = data.get('user_info', {})
     
-    logger.info(f"[debug] 请求参数: session_id={session_id}, canvas_id={canvas_id}")
+    # Extract user information
+    user_uuid = user_info.get('uuid') if user_info else None
+    
+    logger.info(f"[debug] 请求参数: session_id={session_id}, canvas_id={canvas_id}, user_uuid={user_uuid}")
     logger.info(f"[debug] 消息数量: {len(messages)}, 工具数量: {len(tool_list)}")
     logger.info(f"[debug] 文本模型: {text_model.get('provider')}/{text_model.get('model')}")
 
@@ -83,14 +88,15 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        # 使用传统方式创建会话（保持兼容性）
-        await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
-        logger.info(f"[debug] 创建聊天会话")
+        title = prompt[:200] if isinstance(prompt, str) else ''
+        # 正确传递参数：id, model, provider, canvas_id, user_uuid, title
+        await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, user_uuid, title)
+        logger.info(f"[debug] 创建聊天会话: session_id={session_id}, user_uuid={user_uuid}")
 
     # 批量创建消息
     if len(messages) > 0:
         # 为了简化，我们仍然使用单个消息创建，但添加了性能监控
-        await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]))
+        await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]), user_uuid)
     
     logger.info(f"[debug] 数据库操作耗时: {(time.time() - db_start) * 1000:.2f}ms")
     
