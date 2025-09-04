@@ -44,13 +44,45 @@ async def create_canvas(request: Request, current_user: Optional[CurrentUser] = 
     name = data.get('name')
     template_id = data.get('template_id')
     
+    # 添加详细的调试日志
+    logger.info(f"[debug] Canvas create request data: {list(data.keys())}")
+    logger.info(f"[debug] Canvas ID: {id}, Name: {name}, Template ID: {template_id}")
+    logger.info(f"[debug] Messages count: {len(data.get('messages', []))}")
+    logger.info(f"[debug] Session ID: {data.get('session_id')}")
+    logger.info(f"[debug] Text model: {data.get('text_model')}")
+    
     # 🔍 获取用户UUID和邮箱
     user_uuid = get_user_uuid_for_database_operations(current_user)
     user_email = current_user.email if current_user else None
     
     # 只有在没有template_id或template_id为空时才执行handle_chat
     if not template_id:
-        asyncio.create_task(handle_chat(data))
+        # 添加用户信息到请求数据中
+        if current_user:
+            data['user_info'] = {
+                'id': current_user.id,
+                'uuid': current_user.uuid,
+                'email': current_user.email,
+                'nickname': current_user.nickname
+            }
+        
+        # 创建带错误处理的异步任务
+        async def handle_chat_with_error_handling():
+            try:
+                await handle_chat(data)
+            except Exception as e:
+                logger.error(f"Error in canvas chat handling: {e}")
+                # 发送错误到前端
+                from services.websocket_service import send_to_websocket
+                try:
+                    await send_to_websocket(data.get('session_id', ''), {
+                        'type': 'error',
+                        'error': f"Chat processing failed: {str(e)}"
+                    })
+                except Exception as ws_error:
+                    logger.error(f"Failed to send error via websocket: {ws_error}")
+        
+        asyncio.create_task(handle_chat_with_error_handling())
     
     # 📝 创建canvas，关联用户UUID和邮箱
     await db_service.create_canvas(id, name, user_uuid=user_uuid, user_email=user_email)
