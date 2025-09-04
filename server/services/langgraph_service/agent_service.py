@@ -1,7 +1,9 @@
 from models.tool_model import ToolInfoJson
 from services.db_service import db_service
+from services.message_optimization_service import message_optimization_service
 from .StreamProcessor import StreamProcessor
 from .agent_manager import AgentManager
+from .agent_cache_service import AgentCacheService
 import traceback
 from utils.http_client import HttpClient
 from langgraph_swarm import create_swarm  # type: ignore
@@ -15,6 +17,7 @@ import base64
 import os
 from routers.templates_router import TEMPLATES
 from log import get_logger
+import time
 
 logger = get_logger(__name__)
 
@@ -33,21 +36,28 @@ def _fix_chat_history(messages: List[Dict[str, Any]],
     根据LangGraph文档建议，移除没有对应ToolMessage的tool_calls
     参考: https://langchain-ai.github.io/langgraph/troubleshooting/errors/INVALID_CHAT_HISTORY/
     """
+    fix_start = time.time()
+    
     if not messages:
         return messages
+
+    # 首先使用消息优化服务进行预处理
+    logger.info(f"[debug] 开始消息历史修复，原始消息数: {len(messages)}")
+    optimized_messages = message_optimization_service.optimize_message_history(messages)
+    logger.info(f"[debug] 消息优化完成，优化后消息数: {len(optimized_messages)}")
 
     fixed_messages: List[Dict[str, Any]] = []
     tool_call_ids: Set[str] = set()
 
     # 第一遍：收集所有ToolMessage的tool_call_id
-    for msg in messages:
+    for msg in optimized_messages:
         if msg.get('role') == 'tool' and msg.get('tool_call_id'):
             tool_call_id = msg.get('tool_call_id')
             if tool_call_id:
                 tool_call_ids.add(tool_call_id)
 
     # 第二遍：修复AIMessage中的tool_calls
-    for msg in messages:
+    for msg in optimized_messages:
         if msg.get('role') == 'assistant' and msg.get('tool_calls'):
             # 过滤掉没有对应ToolMessage的tool_calls
             valid_tool_calls: List[Dict[str, Any]] = []
@@ -164,6 +174,13 @@ def _fix_chat_history(messages: List[Dict[str, Any]],
                 new_messages.append(msg)
     else:
         new_messages = fixed_messages
+    
+    logger.info(f"[debug] 消息历史修复完成，最终消息数: {len(new_messages)}, 总耗时: {(time.time() - fix_start) * 1000:.2f}ms")
+    
+    # 获取消息优化服务统计
+    msg_stats = message_optimization_service.get_cache_stats()
+    logger.info(f"[debug] 消息优化统计: {msg_stats}")
+    
     return new_messages
 
 
@@ -188,41 +205,75 @@ async def langgraph_multi_agent(
         system_prompt: 系统提示词
     """
     try:
-        print("langgraph_multi_agent")
-        # 0. 修复消息历史
-        fixed_messages = _fix_chat_history(messages, template_id, template_prompt)
-
-        # 2. 文本模型
-        text_model_instance = _create_text_model(text_model)
-
-        # 3. 创建智能体
-        if not template_prompt:
-            agents = AgentManager.create_agents(
-                text_model_instance,
-                tool_list,  # 传入所有注册的工具
-                system_prompt or "",
-                template_prompt or ""
-            )
-        else:
-            agents = AgentManager.create_agents(
-                text_model_instance,
-                tool_list,  # 传入所有注册的工具
-                system_prompt = """直接调用相关工具""",
-                template_prompt = template_prompt or ""
-            )
+        logger.info("[debug] langgraph_multi_agent 开始处理")
+        start_time = time.time()
         
-        agent_names = [agent.name for agent in agents]
-        logger.info(f'👇agent_names {agent_names}')
+        # 0. 修复消息历史
+        fix_start = time.time()
+        fixed_messages = _fix_chat_history(messages, template_id, template_prompt)
+        logger.info(f"[debug] 消息历史修复耗时: {(time.time() - fix_start) * 1000:.2f}ms")
+
+        # 1. 尝试获取缓存的agents
+        cache_start = time.time()
+        cached_result = AgentCacheService.get_cached_agents(
+            text_model, tool_list, system_prompt or "", template_prompt or ""
+        )
+        
+        if cached_result:
+            agents, agent_names = cached_result
+            text_model_instance = AgentCacheService.get_cached_model(text_model)
+            if not text_model_instance:
+                text_model_instance = _create_text_model(text_model)
+                AgentCacheService.cache_model(text_model, text_model_instance)
+            logger.info(f"[debug] Agent缓存命中，耗时: {(time.time() - cache_start) * 1000:.2f}ms")
+        else:
+            # 2. 缓存未命中，创建新的agents
+            model_start = time.time()
+            text_model_instance = AgentCacheService.get_cached_model(text_model)
+            if not text_model_instance:
+                text_model_instance = _create_text_model(text_model)
+                AgentCacheService.cache_model(text_model, text_model_instance)
+            logger.info(f"[debug] 文本模型创建耗时: {(time.time() - model_start) * 1000:.2f}ms")
+
+            # 3. 创建智能体
+            agent_start = time.time()
+            if not template_prompt:
+                agents = AgentManager.create_agents(
+                    text_model_instance,
+                    tool_list,  # 传入所有注册的工具
+                    system_prompt or "",
+                    template_prompt or ""
+                )
+            else:
+                agents = AgentManager.create_agents(
+                    text_model_instance,
+                    tool_list,  # 传入所有注册的工具
+                    system_prompt = """直接调用相关工具""",
+                    template_prompt = template_prompt or ""
+                )
+            
+            agent_names = [agent.name for agent in agents]
+            logger.info(f"[debug] Agent创建耗时: {(time.time() - agent_start) * 1000:.2f}ms")
+            
+            # 缓存新创建的agents
+            AgentCacheService.cache_agents(
+                text_model, tool_list, agents, agent_names, system_prompt or "", template_prompt or ""
+            )
+            logger.info(f"[debug] Agent缓存未命中，总创建耗时: {(time.time() - cache_start) * 1000:.2f}ms")
+        
+        logger.info(f'[debug] agent_names: {agent_names}')
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
-        logger.info(f'👇last_agent {last_agent}')
+        logger.info(f'[debug] last_agent: {last_agent}')
 
         # 4. 创建智能体群组
+        swarm_start = time.time()
         swarm = create_swarm(
             agents=agents,  # type: ignore
             default_active_agent=last_agent if last_agent else agent_names[0]
         )
+        logger.info(f"[debug] Swarm创建耗时: {(time.time() - swarm_start) * 1000:.2f}ms")
 
         # 5. 创建上下文
         context = {
@@ -231,11 +282,15 @@ async def langgraph_multi_agent(
             'tool_list': tool_list,
         }
 
-        logger.info('👇测试走到了这里')
+        logger.info(f"[debug] 总初始化耗时: {(time.time() - start_time) * 1000:.2f}ms")
+        
         # 6. 流处理
+        stream_start = time.time()
         processor = StreamProcessor(
             session_id, db_service, send_to_websocket)  # type: ignore
         await processor.process_stream(swarm, fixed_messages, context)
+        logger.info(f"[debug] 流处理耗时: {(time.time() - stream_start) * 1000:.2f}ms")
+        logger.info(f"[debug] langgraph_multi_agent 总耗时: {(time.time() - start_time) * 1000:.2f}ms")
 
     except Exception as e:
         await _handle_error(e, session_id)

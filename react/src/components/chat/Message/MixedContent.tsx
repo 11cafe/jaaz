@@ -56,6 +56,12 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
     .replace(/^\s*$/gm, '') // 移除空行
     .trim()
 
+  console.log('[debug] MixedContentText渲染:', {
+    role: message.role,
+    combinedText: combinedText.substring(0, 50) + '...',
+    willRenderAsUser: message.role === 'user'
+  })
+
   if (!combinedText) return null
 
   return (

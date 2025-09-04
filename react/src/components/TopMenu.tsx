@@ -24,7 +24,7 @@ export default function TopMenu({
           onClick={() => navigate({ to: '/' })}
         >
           <img src={LOGO_URL} alt="logo" className="size-7 transition-transform duration-200 group-hover:rotate-12" draggable={false} />
-          <div className="flex relative overflow-hidden items-center text-2xl font-bold text-foreground">
+          <div className="flex relative overflow-hidden items-center text-lg sm:text-2xl font-bold text-foreground">
             <span className="flex items-center">
               MagicArt
             </span>
