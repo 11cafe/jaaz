@@ -11,10 +11,11 @@ logger = get_logger(__name__)
 class StreamProcessor:
     """流式处理器 - 负责处理智能体的流式输出"""
 
-    def __init__(self, session_id: str, db_service: Any, websocket_service: Callable[[str, Dict[str, Any]], Awaitable[None]]):
+    def __init__(self, session_id: str, db_service: Any, websocket_service: Callable[[str, Dict[str, Any]], Awaitable[None]], user_uuid: Optional[str] = None):
         self.session_id = session_id
         self.db_service = db_service
         self.websocket_service = websocket_service
+        self.user_uuid = user_uuid
         self.tool_calls: List[ToolCall] = []
         self.last_saved_message_index = 0
         self.last_streaming_tool_call_id: Optional[str] = None
@@ -73,7 +74,8 @@ class StreamProcessor:
                 await self.db_service.create_message(
                     self.session_id,
                     new_message.get('role', 'user'),
-                    json.dumps(new_message)
+                    json.dumps(new_message),
+                    self.user_uuid
                 )
             self.last_saved_message_index = i
 

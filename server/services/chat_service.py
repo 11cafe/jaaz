@@ -117,7 +117,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     # Create and start langgraph_agent task for chat processing
     task_start = time.time()
     task = asyncio.create_task(langgraph_multi_agent(
-        messages, canvas_id, session_id, text_model, tool_list, system_prompt, template_id, template_prompt))
+        messages, canvas_id, session_id, text_model, tool_list, system_prompt, template_id, template_prompt, user_uuid))
     logger.info(f"[debug] 任务创建耗时: {(time.time() - task_start) * 1000:.2f}ms")
 
     # Register the task in stream_tasks (for possible cancellation)
