@@ -3,7 +3,7 @@
 # Import necessary modules
 import asyncio
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # Import service modules
 from services.db_service import db_service
@@ -39,6 +39,10 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     canvas_id: str = data.get('canvas_id', '')
     system_prompt: str = data.get('system_prompt', '')
     template_id: str = data.get('template_id', '')
+    user_info: Dict[str, Any] = data.get('user_info', {})
+    
+    # Extract user information
+    user_uuid = user_info.get('uuid') if user_info else None
 
     # print('✨ magic_service 接收到数据:', {
     #     'session_id': session_id,
@@ -51,7 +55,8 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         # create new session (只有在session不存在时才创建)
         prompt = messages[0].get('content', '')
         try:
-            await db_service.create_chat_session(session_id, 'gpt', 'jaaz', canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
+            title = prompt[:200] if isinstance(prompt, str) else ''
+            await db_service.create_chat_session(session_id, 'gpt', 'jaaz', canvas_id, user_uuid, title)
         except Exception as e:
             # 如果session已存在，忽略错误
             if "UNIQUE constraint failed" in str(e):
@@ -62,7 +67,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     # Save user message to database
     if len(messages) > 0:
         await db_service.create_message(
-            session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])
+            session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]), user_uuid
         )
 
     
@@ -72,7 +77,7 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id, system_prompt, template_id))
+    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id, system_prompt, template_id, user_uuid))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -167,7 +172,8 @@ async def _process_magic_generation(
     session_id: str,
     canvas_id: str,
     system_prompt: str = "",
-    template_id: str = ""
+    template_id: str = "",
+    user_uuid: Optional[str] = None
 ) -> None:
     """
     Process magic generation in a separate async task.
@@ -183,7 +189,7 @@ async def _process_magic_generation(
     ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id)
 
     # Save AI response to database
-    await db_service.create_message(session_id, 'assistant', json.dumps(ai_response))
+    await db_service.create_message(session_id, 'assistant', json.dumps(ai_response), user_uuid)
 
     # Send messages to frontend immediately
     all_messages = messages + [ai_response]

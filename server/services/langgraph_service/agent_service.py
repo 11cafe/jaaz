@@ -192,7 +192,8 @@ async def langgraph_multi_agent(
     tool_list: List[ToolInfoJson],
     system_prompt: Optional[str] = None,
     template_id: str = "",
-    template_prompt: Optional[str] = None
+    template_prompt: Optional[str] = None,
+    user_uuid: Optional[str] = None
 ) -> None:
     """多智能体处理函数
 
@@ -287,7 +288,7 @@ async def langgraph_multi_agent(
         # 6. 流处理
         stream_start = time.time()
         processor = StreamProcessor(
-            session_id, db_service, send_to_websocket)  # type: ignore
+            session_id, db_service, send_to_websocket, user_uuid)  # type: ignore
         await processor.process_stream(swarm, fixed_messages, context)
         logger.info(f"[debug] 流处理耗时: {(time.time() - stream_start) * 1000:.2f}ms")
         logger.info(f"[debug] langgraph_multi_agent 总耗时: {(time.time() - start_time) * 1000:.2f}ms")
