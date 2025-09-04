@@ -33,16 +33,23 @@ function Canvas() {
 
     const fetchCanvas = async () => {
       try {
+        console.log('[debug] 开始获取Canvas数据:', id)
+        const startTime = performance.now()
         setIsLoading(true)
         setError(null)
         const data = await getCanvas(id)
+        const endTime = performance.now()
+        console.log(`[debug] Canvas数据获取完成，耗时: ${(endTime - startTime).toFixed(2)}ms`)
+        
         if (mounted) {
           setCanvas(data)
           setCanvasName(data.name)
           setSessionList(data.sessions)
+          console.log('[debug] Canvas状态更新完成，sessions数量:', data.sessions?.length || 0)
           // Video elements now handled by native Excalidraw embeddable elements
         }
       } catch (err) {
+        console.error('[debug] Canvas数据获取失败:', err)
         if (mounted) {
           setError(err instanceof Error ? err : new Error('Failed to fetch canvas data'))
           console.error('Failed to fetch canvas data:', err)
@@ -65,6 +72,53 @@ function Canvas() {
     await renameCanvas(id, canvasName)
   }
 
+  if (isLoading) {
+    return (
+      <CanvasProvider>
+        <div className='flex flex-col w-screen h-screen'>
+          <CanvasHeader
+            canvasName="加载中..."
+            canvasId={id}
+            onNameChange={() => {}}
+            onNameSave={() => {}}
+          />
+          <div className='flex items-center justify-center h-full bg-background/50'>
+            <div className='flex flex-col items-center gap-4'>
+              <Loader2 className='w-8 h-8 animate-spin text-primary' />
+              <p className='text-muted-foreground'>正在加载画布...</p>
+            </div>
+          </div>
+        </div>
+      </CanvasProvider>
+    )
+  }
+
+  if (error) {
+    return (
+      <CanvasProvider>
+        <div className='flex flex-col w-screen h-screen'>
+          <CanvasHeader
+            canvasName="加载失败"
+            canvasId={id}
+            onNameChange={() => {}}
+            onNameSave={() => {}}
+          />
+          <div className='flex items-center justify-center h-full bg-background/50'>
+            <div className='flex flex-col items-center gap-4'>
+              <p className='text-red-500'>加载失败: {error.message}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className='px-4 py-2 bg-primary text-primary-foreground rounded'
+              >
+                重试
+              </button>
+            </div>
+          </div>
+        </div>
+      </CanvasProvider>
+    )
+  }
+
   return (
     <CanvasProvider>
       <div className='flex flex-col w-screen h-screen'>
@@ -81,19 +135,11 @@ function Canvas() {
         >
           <ResizablePanel className='relative' defaultSize={75}>
             <div className='w-full h-full'>
-              {isLoading ? (
-                <div className='flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0'>
-                  <div className='flex items-center justify-center h-full'>
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                  </div>
-                </div>
-              ) : (
-                <div className='relative w-full h-full'>
-                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
-                  <CanvasMenu />
-                  <CanvasPopbarWrapper />
-                </div>
-              )}
+              <div className='relative w-full h-full'>
+                <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                <CanvasMenu />
+                <CanvasPopbarWrapper />
+              </div>
             </div>
           </ResizablePanel>
 
