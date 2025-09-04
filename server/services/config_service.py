@@ -32,7 +32,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gpt-4o': {'type': 'text'},
             'gpt-4o-mini': {'type': 'text'}
         },
-        'url': 'https://6b657f6d.proxy-2nb.pages.dev/v1',
+        'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
         'max_tokens': 8192,
     },
@@ -52,13 +52,13 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gpt-4o': {'type': 'text'},
             'gpt-4o-mini': {'type': 'text'},
         },
-        'url': 'https://6b657f6d.proxy-2nb.pages.dev/v1',
+        'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
         'max_tokens': 8192,
     },
     'google': {
         'models': {},
-        'url': 'https://6b657f6d.proxy-2nb.pages.dev/v1',
+        'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
     },
 

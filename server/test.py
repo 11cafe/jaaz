@@ -5,7 +5,7 @@ import os
 # 在这里填入你的API密钥和基础URL
 client = OpenAI(
     api_key="sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH",  # 请替换为你的实际API密钥
-    base_url="https://6b657f6d.proxy-2nb.pages.dev/v1",  # 请替换为你的实际基础URL
+    base_url="https://api.tu-zi.com/v1",  # 请替换为你的实际基础URL
 )
 
 completion = client.chat.completions.create(

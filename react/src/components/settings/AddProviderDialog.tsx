@@ -114,7 +114,7 @@ const PROVIDER_OPTIONS = [
     value: 'Google',
     label: 'Google',
     data: {
-      apiUrl: 'https://api.tu-zi.com/v1',
+      apiUrl: 'https://api./v1',
       models: {
         'nano-banana': { type: 'image' },
         // not supported yet!
