@@ -57,7 +57,7 @@ from services.db_service import db_service
 
 TOOL_MAPPING: Dict[str, ToolInfo] = {
     "generate_image_by_google_nano_banana": {
-        "display_name": "google/nano-banana",
+        "display_name": "gemini-2.5-flash-image",
         "type": "image",
         "provider": "google",
         "tool_function": generate_image_by_google_nano_banana,

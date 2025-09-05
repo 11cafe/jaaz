@@ -26,16 +26,6 @@ AppConfig = Dict[str, ProviderConfig]
 
 
 DEFAULT_PROVIDERS_CONFIG: AppConfig = {
-    'tuzi': {
-        'models': {
-            # text models
-            'gpt-4o': {'type': 'text'},
-            'gpt-4o-mini': {'type': 'text'}
-        },
-        'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
-        'max_tokens': 8192,
-    },
     'comfyui': {
         'models': {},
         'url': 'http://127.0.0.1:8188',
@@ -57,7 +47,9 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
         'max_tokens': 8192,
     },
     'google': {
-        'models': {},
+        'models': {
+            'gemini-2.5-flash-image': {'type': 'image'},
+        },
         'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
     },

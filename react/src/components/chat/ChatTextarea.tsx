@@ -170,16 +170,16 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
 
-    if (!textModel) {
+    // 检查是否至少选择了一个模型（文本或工具）
+    const hasTextModel = !!textModel
+    const hasToolModels = selectedTools && selectedTools.length > 0
+    
+    if (!hasTextModel && !hasToolModels) {
       toast.error(t('chat:textarea.selectModel'))
       if (!authStatus.is_logged_in) {
         setShowLoginDialog(true)
       }
       return
-    }
-
-    if (!selectedTools || selectedTools.length === 0) {
-      toast.warning(t('chat:textarea.selectTool'))
     }
 
     let text_content: MessageContent[] | string = prompt
@@ -246,7 +246,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     setPrompt('')
 
     onSendMessages(newMessage, {
-      textModel: textModel,
+      textModel: textModel || null,
       toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
     })
   }, [
@@ -588,7 +588,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !selectedTools || prompt.length === 0}
+            disabled={(!textModel && (!selectedTools || selectedTools.length === 0)) || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

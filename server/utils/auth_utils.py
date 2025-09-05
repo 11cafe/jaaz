@@ -203,10 +203,6 @@ async def get_current_user_optional(request: Request) -> Optional[CurrentUser]:
     可选的用户认证：优先从cookie读取，然后尝试Authorization header
     用于那些支持匿名访问但需要区分用户的API
     """
-    logger.info("🔍 === GET_CURRENT_USER_OPTIONAL CALLED ===")
-    logger.info(f"🔍 Request URL: {request.url}")
-    logger.info(f"🔍 Request cookies: {dict(request.cookies)}")
-    logger.info(f"🔍 Request headers: {dict(request.headers)}")
     
     token = None
     
@@ -214,7 +210,6 @@ async def get_current_user_optional(request: Request) -> Optional[CurrentUser]:
     auth_token_cookie = request.cookies.get("auth_token")
     if auth_token_cookie:
         token = auth_token_cookie
-        logger.info(f"✅ Using auth token from cookie: {auth_token_cookie[:20]}...")
     else:
         # 2. 备选方案：从Authorization header获取token
         auth_header = request.headers.get("Authorization", "")

@@ -1,16 +1,14 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, Component } from 'lucide-react'
+import { Component } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu'
-import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
@@ -19,13 +17,11 @@ import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ModelSelectorV3Props {
-  onModelToggle?: (modelId: string, checked: boolean) => void
-  onAutoToggle?: (enabled: boolean) => void
+  onModelChange?: (modelId: string, type: 'text' | 'image' | 'video') => void
 }
 
 const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
-  onModelToggle,
-  onAutoToggle
+  onModelChange
 }) => {
   const {
     textModel,
@@ -40,9 +36,40 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const { t } = useTranslation()
 
-  // 初始化时判断auto模式：如果所有工具都被选中，则为auto模式
-  const initialAutoMode = allTools.length > 0 && selectedTools.length === allTools.length
-  const [autoMode, setAutoMode] = useState(initialAutoMode)
+  // 全局单选：只能选择一个模型（文本或工具）
+  const [globalSelectedModel, setGlobalSelectedModel] = useState<{model: ModelInfo | ToolInfo, type: 'text' | 'image' | 'video'} | null>(() => {
+    // 优先返回当前选中的文本模型
+    if (textModel) {
+      return { model: textModel, type: 'text' }
+    }
+    // 然后检查工具模型
+    const selectedTool = selectedTools[0]
+    if (selectedTool) {
+      return { model: selectedTool, type: selectedTool.type as 'image' | 'video' }
+    }
+    // 默认选择第一个可用的图像模型
+    const imageTools = allTools.filter(tool => tool.type === 'image')
+    if (imageTools.length > 0) {
+      return { model: imageTools[0], type: 'image' }
+    }
+    return null
+  })
+
+  // 智能初始化：确保有默认选择
+  React.useEffect(() => {
+    if (!globalSelectedModel) {
+      // 优先选择文本模型
+      if (textModel) {
+        setGlobalSelectedModel({ model: textModel, type: 'text' })
+      } else {
+        // 选择第一个可用的图像模型
+        const imageTools = allTools.filter(tool => tool.type === 'image')
+        if (imageTools.length > 0) {
+          setGlobalSelectedModel({ model: imageTools[0], type: 'image' })
+        }
+      }
+    }
+  }, [globalSelectedModel, textModel, allTools])
 
   // Group models by provider
   const groupModelsByProvider = (models: typeof allTools) => {
@@ -78,7 +105,6 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   }
 
   const groupedLLMs = sortProviders(groupLLMsByProvider(textModels))
-  const groupedTools = groupModelsByProvider(allTools)
 
   // Filter tools by type
   const getToolsByType = (type: 'image' | 'video') => {
@@ -86,120 +112,58 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
     return groupModelsByProvider(filteredTools)
   }
 
-  const handleModelToggle = (modelKey: string, checked: boolean) => {
+  const handleModelSelect = (modelKey: string) => {
     if (activeTab === 'text') {
-      // Text models are single select
+      // 选择文本模型
       const model = textModels?.find((m) => m.provider + ':' + m.model === modelKey)
       if (model) {
+        // 清空所有工具选择
+        setSelectedTools([])
+        localStorage.setItem('disabled_tool_ids', JSON.stringify(allTools.map(t => t.id)))
+        
+        // 设置文本模型
         setTextModel(model)
         localStorage.setItem('text_model', modelKey)
+        
+        // 更新全局选择状态
+        setGlobalSelectedModel({ model, type: 'text' })
+        onModelChange?.(modelKey, 'text')
       }
     } else {
-      // Image and video models are multi select
-      let newSelected: ToolInfo[] = []
+      // 选择工具模型（图像或视频）
       const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
-
-      if (checked) {
-        if (tool) {
-          newSelected = [...selectedTools, tool]
-        }
-      } else {
-        newSelected = selectedTools.filter(
-          (t) => t.provider + ':' + t.id !== modelKey
-        )
-      }
-
-      setSelectedTools(newSelected)
-      localStorage.setItem(
-        'disabled_tool_ids',
-        JSON.stringify(
-          allTools.filter((t) => !newSelected.includes(t)).map((t) => t.id)
-        )
-      )
-
-      // 更新auto模式状态
-      const isAuto = newSelected.length === allTools.length
-      setAutoMode(isAuto)
-    }
-    onModelToggle?.(modelKey, checked)
-  }
-
-  const handleModelClick = (modelKey: string) => {
-    if (activeTab === 'text') {
-      // Text models: always single select, no auto mode
-      const model = textModels?.find((m) => m.provider + ':' + m.model === modelKey)
-      if (model) {
-        setTextModel(model)
-        localStorage.setItem('text_model', modelKey)
-        onModelToggle?.(modelKey, true)
-      }
-    } else {
-      // Image and video models
-      if (autoMode) {
-        // 如果当前是auto模式，切换到非auto模式并只选中点击的模型
-        setAutoMode(false)
-        const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
-        if (tool) {
-          setSelectedTools([tool])
-          localStorage.setItem(
-            'disabled_tool_ids',
-            JSON.stringify(
-              allTools.filter((t) => t.id !== tool.id).map((t) => t.id)
-            )
-          )
-          onModelToggle?.(modelKey, true)
-        }
-      } else {
-        // 非auto模式，切换当前模型的选中状态
-        const isSelected = selectedTools.some(t => t.provider + ':' + t.id === modelKey)
-        handleModelToggle(modelKey, !isSelected)
-      }
-    }
-  }
-
-  const handleAutoToggle = (enabled: boolean) => {
-    if (activeTab === 'text') {
-      // Text models don't support auto mode
-      return
-    }
-
-    if (enabled) {
-      // 开启auto模式时，选中所有工具模型
-      setSelectedTools(allTools)
-      localStorage.setItem('disabled_tool_ids', JSON.stringify([]))
-    } else {
-      // 关闭auto模式时，默认选中image和video的第一个工具
-      const imageTools = allTools.filter(tool => tool.type === 'image')
-      const videoTools = allTools.filter(tool => tool.type === 'video')
-
-      const firstImageTool = imageTools.length > 0 ? imageTools[0] : null
-      const firstVideoTool = videoTools.length > 0 ? videoTools[0] : null
-
-      const selectedToolsList: ToolInfo[] = []
-      if (firstImageTool) selectedToolsList.push(firstImageTool)
-      if (firstVideoTool) selectedToolsList.push(firstVideoTool)
-
-      if (selectedToolsList.length > 0) {
-        setSelectedTools(selectedToolsList)
+      if (tool) {
+        // 清空文本模型选择
+        setTextModel(null)
+        localStorage.removeItem('text_model')
+        
+        // 只选择当前工具
+        setSelectedTools([tool])
         localStorage.setItem(
           'disabled_tool_ids',
           JSON.stringify(
-            allTools.filter((t) => !selectedToolsList.includes(t)).map((t) => t.id)
+            allTools.filter((t) => t.id !== tool.id).map((t) => t.id)
           )
         )
+        
+        // 更新全局选择状态
+        setGlobalSelectedModel({ model: tool, type: tool.type as 'image' | 'video' })
+        onModelChange?.(modelKey, activeTab)
       }
     }
-    setAutoMode(enabled)
-    onAutoToggle?.(enabled)
+    setDropdownOpen(false) // Close dropdown after selection
   }
 
-  // Get selected models count
-  const getSelectedModelsCount = () => {
-    if (activeTab === 'text') {
-      return textModel ? 1 : 0
-    } else {
-      return selectedTools.length
+
+
+  // Get selected model for current tab
+  const getSelectedModel = () => {
+    if (!globalSelectedModel) return null
+    
+    if (activeTab === globalSelectedModel.type) {
+      return globalSelectedModel.model
     }
+    return null
   }
 
   // Get current models based on active tab
@@ -213,11 +177,16 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
 
   // Check if a model is selected
   const isModelSelected = (modelKey: string) => {
-    if (activeTab === 'text') {
-      return textModel?.provider + ':' + textModel?.model === modelKey
-    } else {
-      return selectedTools.some(t => t.provider + ':' + t.id === modelKey)
+    if (!globalSelectedModel) return false
+    
+    if (activeTab === 'text' && globalSelectedModel.type === 'text') {
+      const model = globalSelectedModel.model as ModelInfo
+      return model.provider + ':' + model.model === modelKey
+    } else if ((activeTab === 'image' || activeTab === 'video') && globalSelectedModel.type === activeTab) {
+      const tool = globalSelectedModel.model as ToolInfo
+      return tool.provider + ':' + tool.id === modelKey
     }
+    return false
   }
 
   // Get provider display info
@@ -241,30 +210,45 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
         <Button
           size={'sm'}
           variant="outline"
-          className={`w-fit max-w-[40%] justify-between overflow-hidden ${autoMode
-            ? 'bg-background border-border text-muted-foreground'
-            : 'text-primary border-green-200 bg-green-50'
-            }`}
+          className={`w-fit max-w-[40%] justify-between overflow-hidden ${
+            globalSelectedModel 
+              ? 'text-primary border-green-200 bg-green-50' 
+              : 'text-muted-foreground border-border bg-background'
+          }`}
         >
-          {autoMode ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M14 7l6 0" /><path d="M17 4l0 6" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="icon icon-tabler icons-tabler-filled icon-tabler-apps"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 3h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M9 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M19 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M17 3a1 1 0 0 1 .993 .883l.007 .117v2h2a1 1 0 0 1 .117 1.993l-.117 .007h-2v2a1 1 0 0 1 -1.993 .117l-.007 -.117v-2h-2a1 1 0 0 1 -.117 -1.993l.117 -.007h2v-2a1 1 0 0 1 1 -1z" /></svg>
+          <Component className="h-4 w-4" />
+          <span className="ml-2 text-xs font-medium">
+            {globalSelectedModel ? '✓' : '0'}
+          </span>
+          {globalSelectedModel && (
+            <span className="ml-2 text-xs truncate max-w-20">
+              {globalSelectedModel.type === 'text' 
+                ? (globalSelectedModel.model as ModelInfo).model
+                : (globalSelectedModel.model as ToolInfo).display_name || (globalSelectedModel.model as ToolInfo).id
+              }
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-96 select-none">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b">
-          <div>{t('chat:modelSelector.title')}</div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('chat:modelSelector.auto')}</span>
-            <Switch
-              checked={autoMode}
-              onCheckedChange={handleAutoToggle}
-            // disabled={activeTab === 'text'}
-            />
+        <div className="px-4 py-2 border-b">
+          <div className="text-sm font-medium">{t('chat:modelSelector.title')}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {t('chat:modelSelector.globalSingleSelectMode', 'Global single selection - only one model at a time')}
           </div>
+          {globalSelectedModel && (
+            <div className="mt-2 px-2 py-1 bg-primary/10 rounded text-xs text-primary">
+              {t('chat:modelSelector.currentSelection', 'Current')}: {' '}
+              <span className="font-medium">
+                {globalSelectedModel.type === 'text' 
+                  ? (globalSelectedModel.model as ModelInfo).model
+                  : (globalSelectedModel.model as ToolInfo).display_name || (globalSelectedModel.model as ToolInfo).id
+                }
+              </span>
+              <span className="text-primary/70 ml-1">({globalSelectedModel.type})</span>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -312,17 +296,45 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
                     return (
                       <div
                         key={modelKey}
-                        className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors mb-2 cursor-pointer"
-                        onClick={() => handleModelClick(modelKey)}
+                        className={`flex items-center justify-between p-3 transition-all duration-200 mb-2 cursor-pointer rounded-lg ${
+                          isModelSelected(modelKey) 
+                            ? 'bg-primary/10 border border-primary/20 shadow-sm' 
+                            : 'hover:bg-muted/50 border border-transparent'
+                        }`}
+                        onClick={() => handleModelSelect(modelKey)}
                       >
                         <div className="flex-1">
-                          <div className="font-medium text-sm">{modelName}</div>
+                          <div className={`font-medium text-sm transition-colors ${
+                            isModelSelected(modelKey) ? 'text-primary' : 'text-foreground'
+                          }`}>
+                            {modelName}
+                          </div>
+                          {isModelSelected(modelKey) && (
+                            <div className="text-xs text-primary/70 mt-1">
+                              {t('chat:modelSelector.selected', 'Selected')} - {globalSelectedModel?.type}
+                            </div>
+                          )}
+                          {!isModelSelected(modelKey) && globalSelectedModel && globalSelectedModel.type !== activeTab && (
+                            <div className="text-xs text-muted-foreground/70 mt-1">
+                              {t('chat:modelSelector.willReplace', 'Will replace current selection')}
+                            </div>
+                          )}
                         </div>
-                        <Checkbox
-                          checked={isModelSelected(modelKey)}
-                          className={`ml-4 ${autoMode && activeTab !== 'text' ? 'opacity-50' : ''}`}
-                          disabled={autoMode && activeTab !== 'text'}
-                        />
+                        <div className={`ml-4 transition-all duration-200 ${
+                          isModelSelected(modelKey) 
+                            ? 'scale-110 text-primary' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          {isModelSelected(modelKey) ? (
+                            <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                <path d="M6.5 2L3 5.5L1.5 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
+                          )}
+                        </div>
                       </div>
                     )
                   })}

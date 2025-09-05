@@ -43,9 +43,9 @@ class AgentManager:
         logger.info(f"🎬 视频工具: {video_tools}")
 
         if not template_prompt:
-            planner_config = PlannerAgentConfig()
-            planner_agent = AgentManager._create_langgraph_agent(
-                model, planner_config)
+            # planner_config = PlannerAgentConfig()
+            # planner_agent = AgentManager._create_langgraph_agent(
+            #     model, planner_config)
 
             # image_designer_config = ImageDesignerAgentConfig(
             #     image_tools, system_prompt)
@@ -63,7 +63,7 @@ class AgentManager:
             image_video_creator_agent = AgentManager._create_langgraph_agent(
                 model, image_video_creator_config)
 
-            return [planner_agent, image_video_creator_agent]
+            return [image_video_creator_agent]
         else:
             logger.info(f"👇template_prompt: {template_prompt}")
             image_template_config = ImageTemplaterAgentConfig(

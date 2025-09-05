@@ -5,7 +5,7 @@
   "insufficientBalanceDescription": "您的积分已用完，请充值后继续使用",
   "textarea": {
     "placeholder": "输入您的设计需求",
-    "selectModel": "请选择一个文本模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
+    "selectModel": "请选择一个模型（文本、图像或视频）！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "selectTool": "请选择一个图片模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "enterPrompt": "请输入提示内容",
     "quantity": "生成数量"
@@ -48,6 +48,11 @@
   "modelSelector": {
     "title": "模型",
     "auto": "自动",
+    "singleSelectMode": "单选模式",
+    "globalSingleSelectMode": "全局单选 - 同时只能选择一个模型",
+    "selected": "已选择",
+    "currentSelection": "当前选择",
+    "willReplace": "将替换当前选择",
     "tabs": {
       "image": "图像",
       "video": "视频",

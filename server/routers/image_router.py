@@ -3,14 +3,14 @@ from fastapi.concurrency import run_in_threadpool
 from common import DEFAULT_PORT
 from tools.utils.image_canvas_utils import generate_file_id
 from services.config_service import FILES_DIR, get_user_files_dir, get_legacy_files_dir
-from utils.auth_utils import get_user_id_from_request, get_user_email_from_request, extract_user_from_request
+from utils.auth_utils import get_current_user_optional, CurrentUser
+from typing import Optional
 
 from PIL import Image
 from io import BytesIO
 import os
-from fastapi import APIRouter, HTTPException, UploadFile, File, Request
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 import httpx
-import aiofiles
 from mimetypes import guess_type
 from utils.http_client import HttpClient
 from log import get_logger
@@ -22,16 +22,20 @@ os.makedirs(FILES_DIR, exist_ok=True)
 
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
-async def upload_image(request: Request, file: UploadFile = File(...), max_size_mb: float = 3.0):
+async def upload_image(
+    file: UploadFile = File(...), 
+    max_size_mb: float = 3.0,
+    current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
+):
     logger.info(f'🦄upload_image file {file.filename}')
     
-    # 获取用户信息（优先使用邮箱，向后兼容用户ID）
-    user_email = get_user_email_from_request(request)
-    user_id = get_user_id_from_request(request)
+    # 正确使用 FastAPI 依赖注入获取用户信息（参考 chat_router.py）
+    user_email = current_user.email if current_user else None
+    user_id = str(current_user.id) if current_user else None
     logger.info(f'🦄upload_image user_email: {user_email}, user_id: {user_id}')
     
     # 获取用户文件目录（优先使用邮箱）
-    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)  # type: ignore
     
     # 生成文件 ID 和文件名
     file_id = generate_file_id()
@@ -161,31 +165,37 @@ def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
 
 # 文件下载接口
 @router.get("/file/{file_id}")
-async def get_file(request: Request, file_id: str):
-    # 获取用户信息
-    user_email = get_user_email_from_request(request)
-    user_id = get_user_id_from_request(request)
+async def get_file(
+    file_id: str,
+    current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
+):
+    # 正确使用 FastAPI 依赖注入获取用户信息（参考 chat_router.py）
+    user_email = current_user.email if current_user else None
+    user_id = str(current_user.id) if current_user else None
+    logger.info(f"[debug] get_file - user_email: {user_email}, user_id: {user_id}")
     
     # 首先尝试从用户目录查找文件（优先使用邮箱目录）
     if user_email or user_id:
-        user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+        user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)  # type: ignore
         file_path = os.path.join(user_files_dir, file_id)
         logger.info(f'🦄get_file user file_path: {file_path}')
         
         if os.path.exists(file_path):
+            logger.info(f'🦄get_file 成功在用户目录找到文件: {file_path}')
             return FileResponse(file_path)
         
         # 如果邮箱目录中没有，尝试用户ID目录（向后兼容）
         if user_email and user_id:
-            legacy_user_dir = get_user_files_dir(user_email=None, user_id=user_id)
+            legacy_user_dir = get_user_files_dir(user_email=None, user_id=user_id)  # type: ignore
             legacy_file_path = os.path.join(legacy_user_dir, file_id)
             logger.info(f'🦄get_file legacy user file_path: {legacy_file_path}')
             
             if os.path.exists(legacy_file_path):
+                logger.info(f'🦄get_file 成功在遗留用户目录找到文件: {legacy_file_path}')
                 return FileResponse(legacy_file_path)
     
     # 如果用户目录中没有找到，尝试从匿名用户目录查找
-    anonymous_files_dir = get_user_files_dir(user_email=None, user_id=None)  # 使用匿名用户
+    anonymous_files_dir = get_user_files_dir(user_email=None, user_id=None)  # type: ignore  # 使用匿名用户
     anonymous_file_path = os.path.join(anonymous_files_dir, file_id)
     logger.info(f'🦄get_file anonymous file_path: {anonymous_file_path}')
     
