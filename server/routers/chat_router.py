@@ -1,6 +1,6 @@
 #server/routers/chat_router.py
 from fastapi import APIRouter, Request, Depends
-from services.chat_service import handle_chat
+from services.new_chat import handle_chat
 from services.magic_service import handle_magic
 from services.stream_service import get_stream_task
 from utils.auth_utils import get_current_user_optional, CurrentUser

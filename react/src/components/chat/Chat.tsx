@@ -795,13 +795,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
+    (data: Message[], modelName: string) => {
       console.log('[debug] === 开始发送消息 ===')
       const startTime = performance.now()
       
       console.log('[debug] 消息数量:', data.length)
-      console.log('[debug] 工具配置:', configs.toolList?.length || 0, '个工具')
-      console.log('[debug] 文本模型:', configs.textModel?.provider, '/', configs.textModel?.model)
+      console.log('[debug] 选择的模型:', modelName)
       
       setPending('text')
       setMessages(data)
@@ -814,8 +813,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sessionId: effectiveSessionId,
         canvasId: canvasId,
         newMessages: data,
-        textModel: configs.textModel,
-        toolList: configs.toolList,
+        modelName: modelName,
         systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
       console.log(`[debug] API调用耗时: ${(performance.now() - sendStart).toFixed(2)}ms`)

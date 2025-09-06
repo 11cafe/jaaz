@@ -57,18 +57,42 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
 
   // 智能初始化：确保有默认选择
   React.useEffect(() => {
+    console.log('[debug] 🔄 ModelSelectorV3 - 初始化检查')
+    console.log('[debug] 🔍 globalSelectedModel:', globalSelectedModel)
+    console.log('[debug] 🔍 检查现有 cookie:', localStorage.getItem('current_selected_model'))
+    
     if (!globalSelectedModel) {
       // 优先选择文本模型
       if (textModel) {
         setGlobalSelectedModel({ model: textModel, type: 'text' })
+        localStorage.setItem('current_selected_model', textModel.model)
+        console.log('[debug] ✅ 初始化：设置默认文本模型到 cookie:', textModel.model)
       } else {
         // 选择第一个可用的图像模型
         const imageTools = allTools.filter(tool => tool.type === 'image')
         if (imageTools.length > 0) {
-          setGlobalSelectedModel({ model: imageTools[0], type: 'image' })
+          const firstTool = imageTools[0]
+          setGlobalSelectedModel({ model: firstTool, type: 'image' })
+          const modelName = firstTool.display_name || firstTool.id
+          localStorage.setItem('current_selected_model', modelName)
+          console.log('[debug] ✅ 初始化：设置默认图像模型到 cookie:', modelName)
         }
       }
+    } else {
+      // 如果已有选择，确保 cookie 同步
+      if (globalSelectedModel.type === 'text') {
+        const model = globalSelectedModel.model as ModelInfo
+        localStorage.setItem('current_selected_model', model.model)
+        console.log('[debug] ✅ 同步现有文本模型到 cookie:', model.model)
+      } else {
+        const tool = globalSelectedModel.model as ToolInfo
+        const modelName = tool.display_name || tool.id
+        localStorage.setItem('current_selected_model', modelName)
+        console.log('[debug] ✅ 同步现有工具模型到 cookie:', modelName)
+      }
     }
+    
+    console.log('[debug] 🔍 初始化完成，current_selected_model:', localStorage.getItem('current_selected_model'))
   }, [globalSelectedModel, textModel, allTools])
 
   // Group models by provider
@@ -113,9 +137,16 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   }
 
   const handleModelSelect = (modelKey: string) => {
+    console.log('[debug] 🔄 ModelSelectorV3 - 用户选择模型')
+    console.log('[debug] 🔍 选择的 modelKey:', modelKey)
+    console.log('[debug] 🔍 当前 activeTab:', activeTab)
+    console.log('[debug] 🔍 检查现有 cookie 中的 current_selected_model:', localStorage.getItem('current_selected_model'))
+    
     if (activeTab === 'text') {
       // 选择文本模型
       const model = textModels?.find((m) => m.provider + ':' + m.model === modelKey)
+      console.log('[debug] 🔍 找到的文本模型:', model?.model || 'null')
+      
       if (model) {
         // 清空所有工具选择
         setSelectedTools([])
@@ -125,13 +156,22 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
         setTextModel(model)
         localStorage.setItem('text_model', modelKey)
         
+        // 保存当前选择的模型到 cookie
+        localStorage.setItem('current_selected_model', model.model)
+        console.log('[debug] ✅ 已将文本模型保存到 cookie:', model.model)
+        console.log('[debug] 🔍 验证 cookie 写入成功:', localStorage.getItem('current_selected_model'))
+        
         // 更新全局选择状态
         setGlobalSelectedModel({ model, type: 'text' })
         onModelChange?.(modelKey, 'text')
+      } else {
+        console.warn('[debug] ❌ 未找到匹配的文本模型:', modelKey)
       }
     } else {
       // 选择工具模型（图像或视频）
       const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
+      console.log('[debug] 🔍 找到的工具模型:', tool?.display_name || tool?.id || 'null')
+      
       if (tool) {
         // 清空文本模型选择
         setTextModel(null)
@@ -146,9 +186,17 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
           )
         )
         
+        // 保存当前选择的模型到 cookie
+        const modelName = tool.display_name || tool.id
+        localStorage.setItem('current_selected_model', modelName)
+        console.log('[debug] ✅ 已将工具模型保存到 cookie:', modelName)
+        console.log('[debug] 🔍 验证 cookie 写入成功:', localStorage.getItem('current_selected_model'))
+        
         // 更新全局选择状态
         setGlobalSelectedModel({ model: tool, type: tool.type as 'image' | 'video' })
         onModelChange?.(modelKey, activeTab)
+      } else {
+        console.warn('[debug] ❌ 未找到匹配的工具模型:', modelKey)
       }
     }
     setDropdownOpen(false) // Close dropdown after selection

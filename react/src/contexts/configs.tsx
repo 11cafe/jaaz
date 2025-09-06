@@ -43,17 +43,33 @@ export const ConfigsProvider = ({
     setAllTools(toolList || [])
 
     // 设置选择的文本模型
+    console.log('[debug] 🔄 初始化模型配置...')
+    const currentSelectedModel = localStorage.getItem('current_selected_model')
+    console.log('[debug] 🔍 检查现有的 current_selected_model:', currentSelectedModel)
+    
     const textModel = localStorage.getItem('text_model')
     if (
       textModel &&
       llmModels.find((m) => m.provider + ':' + m.model === textModel)
     ) {
-      setTextModel(
-        llmModels.find((m) => m.provider + ':' + m.model === textModel)
-      )
+      const selectedModel = llmModels.find((m) => m.provider + ':' + m.model === textModel)
+      setTextModel(selectedModel)
+      // 同时设置为当前选择的模型
+      if (selectedModel) {
+        localStorage.setItem('current_selected_model', selectedModel.model)
+        console.log('[debug] ✅ 初始化：使用已保存的文本模型:', selectedModel.model)
+      }
     } else {
-      setTextModel(llmModels.find((m) => m.type === 'text'))
+      const defaultModel = llmModels.find((m) => m.type === 'text')
+      setTextModel(defaultModel)
+      // 同时设置为当前选择的模型
+      if (defaultModel) {
+        localStorage.setItem('current_selected_model', defaultModel.model)
+        console.log('[debug] ✅ 初始化：使用默认文本模型:', defaultModel.model)
+      }
     }
+    
+    console.log('[debug] 🔍 初始化完成，current_selected_model:', localStorage.getItem('current_selected_model'))
 
     // 设置选中的工具模型
     const disabledToolsJson = localStorage.getItem('disabled_tool_ids')

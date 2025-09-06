@@ -48,10 +48,7 @@ type ChatTextareaProps = {
   sessionId?: string
   onSendMessages: (
     data: Message[],
-    configs: {
-      textModel: Model
-      toolList: ToolInfo[]
-    }
+    modelName: string
   ) => void
   onCancelChat?: () => void
 }
@@ -245,10 +242,33 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     setImages([])
     setPrompt('')
 
-    onSendMessages(newMessage, {
-      textModel: textModel || null,
-      toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
-    })
+    // 直接读取用户在模型选择器中选择的模型
+    console.log('[debug] 🚀 发送消息 - 开始检查模型选择')
+    const currentSelectedModel = localStorage.getItem('current_selected_model')
+    console.log('[debug] 🔍 cookie 中的 current_selected_model:', currentSelectedModel)
+    
+    let modelName = ''
+    
+    if (currentSelectedModel) {
+      modelName = currentSelectedModel
+      console.log('[debug] ✅ 从 cookie 读取用户选择的模型:', modelName)
+    } else {
+      // 如果 cookie 中没有，创建默认选择
+      console.warn('[debug] ⚠️ cookie 中没有模型选择，创建默认选择')
+      if (textModel) {
+        modelName = textModel.model
+        localStorage.setItem('current_selected_model', modelName)
+        console.log('[debug] ✅ 创建并使用当前文本模型:', modelName)
+      } else {
+        modelName = 'gpt-4o' // 默认模型
+        localStorage.setItem('current_selected_model', modelName)
+        console.log('[debug] ✅ 创建并使用默认模型:', modelName)
+      }
+      console.log('[debug] 🔍 验证创建的 cookie:', localStorage.getItem('current_selected_model'))
+    }
+    
+    console.log('[debug] 🎯 最终传递的模型名称:', modelName)
+    onSendMessages(newMessage, modelName)
   }, [
     pending,
     textModel,

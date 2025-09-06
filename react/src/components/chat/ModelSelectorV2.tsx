@@ -49,7 +49,19 @@ const ModelSelector: React.FC = () => {
     const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
     // single select mode
     if (singleMode) {
-      tool && setSelectedTools([tool])
+      console.log('[debug] 🔍 单选模式 - 用户选择工具模型:', tool?.display_name || tool?.id || 'null')
+      console.log('[debug] 🔍 检查 cookie 中的 current_selected_model:', localStorage.getItem('current_selected_model'))
+      
+      if (tool) {
+        setSelectedTools([tool])
+        // 保存当前选择的模型到 cookie
+        const modelName = tool.display_name || tool.id
+        localStorage.setItem('current_selected_model', modelName)
+        console.log('[debug] ✅ 已将工具模型保存到 cookie:', modelName)
+        console.log('[debug] 🔍 验证 cookie 写入成功:', localStorage.getItem('current_selected_model'))
+      } else {
+        console.warn('[debug] ❌ 未找到匹配的工具模型')
+      }
       // Close dropdown after selection in single mode
       setDropdownOpen(false)
       return
@@ -72,6 +84,18 @@ const ModelSelector: React.FC = () => {
         allTools.filter((t) => !newSelected.includes(t)).map((t) => t.id)
       )
     )
+    
+    // 多选模式下，选择第一个工具作为当前模型
+    console.log('[debug] 🔍 多选模式 - 选中的工具数量:', newSelected.length)
+    if (newSelected.length > 0) {
+      const firstTool = newSelected[0]
+      const modelName = firstTool.display_name || firstTool.id
+      localStorage.setItem('current_selected_model', modelName)
+      console.log('[debug] ✅ 多选模式，使用第一个工具模型:', modelName)
+      console.log('[debug] 🔍 验证 cookie 写入成功:', localStorage.getItem('current_selected_model'))
+    } else {
+      console.log('[debug] ⚠️ 多选模式，没有选中任何工具，保持原有选择')
+    }
   }
 
   // 获取显示文本
@@ -111,9 +135,20 @@ const ModelSelector: React.FC = () => {
         value={textModel?.provider + ':' + textModel?.model}
         onValueChange={(value) => {
           localStorage.setItem('text_model', value)
-          setTextModel(
-            textModels?.find((m) => m.provider + ':' + m.model == value)
-          )
+          const selectedModel = textModels?.find((m) => m.provider + ':' + m.model == value)
+          setTextModel(selectedModel)
+          
+          // 检查并设置当前选择的模型到 cookie
+          console.log('[debug] 🔍 用户选择了文本模型:', selectedModel?.model || 'null')
+          console.log('[debug] 🔍 检查 cookie 中的 current_selected_model:', localStorage.getItem('current_selected_model'))
+          
+          if (selectedModel) {
+            localStorage.setItem('current_selected_model', selectedModel.model)
+            console.log('[debug] ✅ 已将文本模型保存到 cookie:', selectedModel.model)
+            console.log('[debug] 🔍 验证 cookie 写入成功:', localStorage.getItem('current_selected_model'))
+          } else {
+            console.warn('[debug] ❌ 未找到匹配的文本模型:', value)
+          }
         }}
       >
         <SelectTrigger className="w-fit max-w-[100px] bg-background" size="sm">
