@@ -42,6 +42,35 @@ class CosUtils:
         except Exception as e:
             sys.stderr.write(f"上传文件失败: {e}\n")
             return None
+
+    def upload_image_from_bytes(self, image_bytes: bytes, cos_file_path: str, content_type: str = 'image/png') -> Optional[str]:
+        """
+        上传字节数据
+    
+        Args:
+            image_bytes: 图片的字节数据
+            cos_file_path: COS上的文件路径
+            content_type: 文件类型
+        """
+        try:
+            response = self.client.put_object(
+                Bucket=self.bucket_name,
+                Body=image_bytes,
+                Key=cos_file_path,
+                ContentType=content_type
+            )
+            url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{cos_file_path}"
+            return url
+        except Exception as e:
+            sys.stderr.write(f"上传失败: {e}\n")
+            return None
+        
+    def get_file_url(self, key: str) -> Optional[str]:
+        """
+        获取文件URL
+        """
+        url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{key}"
+        return url
         
 if __name__  == "__main__":
     cos = CosUtils()

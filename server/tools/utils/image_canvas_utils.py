@@ -14,6 +14,7 @@ from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
 from services.websocket_service import send_to_websocket
 from utils.canvas import find_next_best_element_position
+from utils.cos_image_service import get_cos_image_service
 
 def generate_file_id() -> str:
     """Generate unique file ID"""
@@ -108,7 +109,17 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
             canvas_data['files'] = {}
 
         file_id = generate_file_id()
-        url = f'/api/file/{filename}'
+        
+        # 获取腾讯云图片URL，如果失败则使用本地URL作为回退
+        cos_service = get_cos_image_service()
+        cos_url = cos_service.get_image_url(filename)
+        
+        if cos_url:
+            url = cos_url
+            print(f"✅ 使用腾讯云URL: {filename} -> {cos_url}")
+        else:
+            url = f'/api/file/{filename}'
+            print(f"⚠️ 腾讯云URL获取失败，使用本地URL: {filename} -> {url}")
 
         file_data: Dict[str, Any] = {
             'mimeType': mime_type,
@@ -132,7 +143,8 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
         elements_list.append(new_image_element)
         canvas_data['files'][file_id] = file_data
 
-        image_url = f"/api/file/{filename}"
+        # 使用腾讯云URL或本地URL（与上面的逻辑保持一致）
+        image_url = url
 
         # Save the updated canvas data back to the database
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data))
