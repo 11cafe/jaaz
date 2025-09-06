@@ -10,16 +10,19 @@
 
 ### 1. 开发环境（默认）
 ```bash
-# 不设置任何环境变量，默认使用 localhost
+# 不设置任何环境变量，自动使用 localhost
 # BASE_URL=http://localhost:8000
 ```
 
-### 2. 生产环境
+### 2. 生产环境（推荐方法）
 ```bash
-# 设置为线上域名
+# 方法1: 直接设置BASE_URL（推荐）
 export BASE_URL=https://www.magicart.cc
 
-# 或者在 .env 文件中设置
+# 方法2: 设置环境变量，自动检测
+export NODE_ENV=production  # 自动使用 https://www.magicart.cc
+
+# 方法3: 在 .env 文件中设置
 echo "BASE_URL=https://www.magicart.cc" >> .env
 ```
 
@@ -27,6 +30,30 @@ echo "BASE_URL=https://www.magicart.cc" >> .env
 ```yaml
 environment:
   - BASE_URL=https://www.magicart.cc
+  # 或者
+  - NODE_ENV=production
+```
+
+### 4. 自动检测机制
+系统会自动检测以下环境变量来判断是否为生产环境：
+- `NODE_ENV=production`
+- `ENVIRONMENT=production` 
+- `ENV=production`
+- `HOST` 或 `HOSTNAME` 包含 `magicart.cc`
+
+如果检测到生产环境，会自动使用 `https://www.magicart.cc`
+
+## ⚠️ 重要提醒
+**线上环境必须使用 HTTPS 协议！**
+
+❌ 错误配置（会导致Mixed Content错误）：
+```bash
+BASE_URL=http://www.magicart.cc
+```
+
+✅ 正确配置：
+```bash
+BASE_URL=https://www.magicart.cc
 ```
 
 ## 修改的文件
