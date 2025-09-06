@@ -94,6 +94,7 @@ function Home() {
                   session_id: nanoid(),
                   text_model: configs.textModel,
                   tool_list: configs.toolList,
+                  model_name: configs.modelName,
                   system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
                 })
               }}

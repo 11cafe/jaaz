@@ -201,6 +201,20 @@ function TemplateUsePage() {
 
       // 1. 先创建画布
       setGeneratingStep('正在创建画布...')
+      // 获取当前选择的模型名称
+      const currentSelectedModel = localStorage.getItem('current_selected_model')
+      let modelName = ''
+      
+      if (currentSelectedModel) {
+        modelName = currentSelectedModel
+      } else if (textModel) {
+        modelName = textModel.model
+        localStorage.setItem('current_selected_model', modelName)
+      } else {
+        modelName = 'gpt-4o-mini' // 默认模型
+        localStorage.setItem('current_selected_model', modelName)
+      }
+
       const canvasResult = await createCanvas({
         name: `${template?.title} - ${characterName}`,
         canvas_id: canvasId,
@@ -217,6 +231,7 @@ function TemplateUsePage() {
           url: '',
         },
         tool_list: selectedTools && selectedTools.length > 0 ? selectedTools : [],
+        model_name: modelName,
         system_prompt: systemPrompt,
         template_id: parseInt(templateId),
       })
