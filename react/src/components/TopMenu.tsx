@@ -30,11 +30,11 @@ export default function TopMenu({
             </span>
           </div>
         </div>
-        <nav className="hidden sm:flex items-center gap-1">
+        <nav className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-4 py-2 rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/templates' })}
           >
             模版
@@ -42,7 +42,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-4 py-2 rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/pricing' })}
           >
             定价
