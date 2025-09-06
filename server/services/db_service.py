@@ -63,15 +63,28 @@ class DatabaseService:
             await db.commit()
 
     async def list_canvases(self, user_uuid: str = None, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get canvases filtered by user UUID"""
-        # 如果没有提供user_uuid，使用匿名用户的UUID
-        if user_uuid is None:
-            anonymous_user = await self.get_user_by_id(1)
-            user_uuid = anonymous_user['uuid'] if anonymous_user else None
-            
+        """Get canvases filtered by user email (preferred) or UUID (fallback)"""
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
-            logger.info(f"Listing canvases for user UUID: {user_uuid}")
+            
+            # 优先使用email查询，因为email是用户的真正唯一标识，跨设备一致
+            if user_email and user_email != 'anonymous':
+                logger.info(f"Listing canvases for user email: {user_email}")
+                cursor = await db.execute("""
+                    SELECT id, name, description, thumbnail, created_at, updated_at, email, uuid
+                    FROM tb_canvases
+                    WHERE email = ?
+                    ORDER BY updated_at DESC
+                """, (user_email,))
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+            
+            # 如果没有提供user_uuid，使用匿名用户的UUID
+            if user_uuid is None:
+                anonymous_user = await self.get_user_by_id(1)
+                user_uuid = anonymous_user['uuid'] if anonymous_user else None
+                
+            logger.info(f"Listing canvases for user UUID: {user_uuid} (fallback)")
             cursor = await db.execute("""
                 SELECT id, name, description, thumbnail, created_at, updated_at, email, uuid
                 FROM tb_canvases
@@ -147,7 +160,7 @@ class DatabaseService:
                 
             return messages
 
-    async def list_sessions(self, canvas_id: str = None, user_uuid: str = None) -> List[Dict[str, Any]]:
+    async def list_sessions(self, canvas_id: str = None, user_uuid: str = None, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all chat sessions for a user"""
         # 如果没有提供user_uuid，使用匿名用户的UUID
         if user_uuid is None:
@@ -174,13 +187,23 @@ class DatabaseService:
             return [dict(row) for row in rows]
 
     async def save_canvas_data(self, id: str, data: str, user_uuid: str = None, thumbnail: Optional[str] = None, user_email: Optional[str] = None):
-        """Save canvas data with user UUID verification"""
-        # 如果没有提供user_uuid，使用匿名用户的UUID
-        if user_uuid is None:
-            anonymous_user = await self.get_user_by_id(1)
-            user_uuid = anonymous_user['uuid'] if anonymous_user else None
-            
+        """Save canvas data with user email (preferred) or UUID verification"""
         async with aiosqlite.connect(self.db_path) as db:
+            # 优先使用email进行验证
+            if user_email and user_email != 'anonymous':
+                await db.execute("""
+                    UPDATE tb_canvases 
+                    SET data = ?, thumbnail = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE id = ? AND email = ?
+                """, (data, thumbnail, id, user_email))
+                await db.commit()
+                return
+            
+            # 如果没有提供user_uuid，使用匿名用户的UUID
+            if user_uuid is None:
+                anonymous_user = await self.get_user_by_id(1)
+                user_uuid = anonymous_user['uuid'] if anonymous_user else None
+                
             await db.execute("""
                 UPDATE tb_canvases 
                 SET data = ?, thumbnail = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
@@ -189,14 +212,32 @@ class DatabaseService:
             await db.commit()
 
     async def get_canvas_data(self, id: str, user_uuid: str = None, user_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Get canvas data with user UUID verification"""
-        # 如果没有提供user_uuid，使用匿名用户的UUID
-        if user_uuid is None:
-            anonymous_user = await self.get_user_by_id(1)
-            user_uuid = anonymous_user['uuid'] if anonymous_user else None
-            
+        """Get canvas data with user email (preferred) or UUID verification"""
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
+            
+            # 优先使用email查询
+            if user_email and user_email != 'anonymous':
+                cursor = await db.execute("""
+                    SELECT data, name, email, uuid
+                    FROM tb_canvases
+                    WHERE id = ? AND email = ?
+                """, (id, user_email))
+                row = await cursor.fetchone()
+                if row:
+                    sessions = await self.list_sessions(id, user_uuid, user_email)
+                    return {
+                        'data': json.loads(row['data']) if row['data'] else {},
+                        'name': row['name'],
+                        'sessions': sessions
+                    }
+                return None
+            
+            # 如果没有提供user_uuid，使用匿名用户的UUID
+            if user_uuid is None:
+                anonymous_user = await self.get_user_by_id(1)
+                user_uuid = anonymous_user['uuid'] if anonymous_user else None
+                
             cursor = await db.execute("""
                 SELECT data, name, email, uuid
                 FROM tb_canvases
@@ -205,7 +246,7 @@ class DatabaseService:
             row = await cursor.fetchone()
 
             if row:
-                sessions = await self.list_sessions(id, user_uuid)
+                sessions = await self.list_sessions(id, user_uuid, user_email)
                 return {
                     'data': json.loads(row['data']) if row['data'] else {},
                     'name': row['name'],
@@ -214,24 +255,36 @@ class DatabaseService:
             return None
 
     async def delete_canvas(self, id: str, user_uuid: str = None, user_email: Optional[str] = None):
-        """Delete canvas with user UUID verification"""
-        # 如果没有提供user_uuid，使用匿名用户的UUID
-        if user_uuid is None:
-            anonymous_user = await self.get_user_by_id(1)
-            user_uuid = anonymous_user['uuid'] if anonymous_user else None
-            
+        """Delete canvas with user email (preferred) or UUID verification"""
         async with aiosqlite.connect(self.db_path) as db:
+            # 优先使用email进行验证
+            if user_email and user_email != 'anonymous':
+                await db.execute("DELETE FROM tb_canvases WHERE id = ? AND email = ?", (id, user_email))
+                await db.commit()
+                return
+            
+            # 如果没有提供user_uuid，使用匿名用户的UUID
+            if user_uuid is None:
+                anonymous_user = await self.get_user_by_id(1)
+                user_uuid = anonymous_user['uuid'] if anonymous_user else None
+                
             await db.execute("DELETE FROM tb_canvases WHERE id = ? AND uuid = ?", (id, user_uuid))
             await db.commit()
 
     async def rename_canvas(self, id: str, name: str, user_uuid: str = None, user_email: Optional[str] = None):
-        """Rename canvas with user UUID verification"""
-        # 如果没有提供user_uuid，使用匿名用户的UUID
-        if user_uuid is None:
-            anonymous_user = await self.get_user_by_id(1)
-            user_uuid = anonymous_user['uuid'] if anonymous_user else None
-            
+        """Rename canvas with user email (preferred) or UUID verification"""
         async with aiosqlite.connect(self.db_path) as db:
+            # 优先使用email进行验证
+            if user_email and user_email != 'anonymous':
+                await db.execute("UPDATE tb_canvases SET name = ? WHERE id = ? AND email = ?", (name, id, user_email))
+                await db.commit()
+                return
+            
+            # 如果没有提供user_uuid，使用匿名用户的UUID
+            if user_uuid is None:
+                anonymous_user = await self.get_user_by_id(1)
+                user_uuid = anonymous_user['uuid'] if anonymous_user else None
+                
             await db.execute("UPDATE tb_canvases SET name = ? WHERE id = ? AND uuid = ?", (name, id, user_uuid))
             await db.commit()
 
