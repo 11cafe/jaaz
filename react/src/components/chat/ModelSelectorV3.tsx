@@ -256,24 +256,14 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
     <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          size={'sm'}
           variant='outline'
-          className={`w-fit max-w-[40%] justify-between overflow-hidden ${
+          className={`shrink-0 h-8 w-8 p-0 flex items-center justify-center ${
             globalSelectedModel
               ? 'text-primary border-green-200 bg-green-50'
               : 'text-muted-foreground border-border bg-background'
           }`}
         >
-          <Component className='h-4 w-4' />
-          <span className='ml-2 text-xs font-medium'>{globalSelectedModel ? '✓' : '0'}</span>
-          {globalSelectedModel && (
-            <span className='ml-2 text-xs truncate max-w-20'>
-              {globalSelectedModel.type === 'text'
-                ? (globalSelectedModel.model as ModelInfo).model
-                : (globalSelectedModel.model as ToolInfo).display_name ||
-                  (globalSelectedModel.model as ToolInfo).id}
-            </span>
-          )}
+          <Component className='size-4' />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-96 select-none'>

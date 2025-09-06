@@ -70,8 +70,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const [isFocused, setIsFocused] = useState(false)
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('auto')
   const [quantity, setQuantity] = useState<number>(1)
-  const [showQuantitySlider, setShowQuantitySlider] = useState(false)
-  const quantitySliderRef = useRef<HTMLDivElement>(null)
   const MAX_QUANTITY = 30
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -350,22 +348,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
   }, [uploadImageMutation])
 
-  // Close quantity slider when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (quantitySliderRef.current && !quantitySliderRef.current.contains(event.target as Node)) {
-        setShowQuantitySlider(false)
-      }
-    }
-
-    if (showQuantitySlider) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showQuantitySlider])
 
   return (
     <motion.div
@@ -460,7 +442,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       />
 
       <div className='flex items-center justify-between gap-2 w-full'>
-        <div className='flex items-center gap-1 sm:gap-2 max-w-[calc(100%-50px)] flex-wrap'>
+        <div className='flex items-center gap-2 max-w-[calc(100%-45px)] flex-nowrap overflow-x-auto'>
           <input
             ref={imageInputRef}
             type='file'
@@ -469,22 +451,29 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             onChange={handleImagesUpload}
             hidden
           />
-          <Button variant='outline' size='sm' onClick={() => imageInputRef.current?.click()}>
+          <Button 
+            variant='outline' 
+            onClick={() => imageInputRef.current?.click()} 
+            className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
+          >
             <PlusIcon className='size-4' />
           </Button>
 
-          <ModelSelectorV3 />
+          <div className='shrink-0'>
+            <ModelSelectorV3 />
+          </div>
 
-          {/* Aspect Ratio Selector */}
-          <DropdownMenu>
+          {/* Aspect Ratio Selector - Hidden */}
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant='outline' className='flex items-center gap-1' size={'sm'}>
+              <Button 
+                variant='outline' 
+                className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
+              >
                 <RectangleVertical className='size-4' />
-                <span className='text-sm'>{selectedAspectRatio}</span>
-                <ChevronDown className='size-3 opacity-50' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='start' className='w-32'>
+            <DropdownMenuContent align='start' className='w-36'>
               {['auto', '1:1', '4:3', '3:4', '16:9', '9:16'].map((ratio) => (
                 <DropdownMenuItem
                   key={ratio}
@@ -498,80 +487,84 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
 
           {/* Quantity Selector */}
-          <div className='relative' ref={quantitySliderRef}>
-            <Button
-              variant='outline'
-              className='flex items-center gap-1'
-              onClick={() => setShowQuantitySlider(!showQuantitySlider)}
-              size={'sm'}
-            >
-              <Hash className='size-4' />
-              <span className='text-sm'>{quantity}</span>
-              <ChevronDown className='size-3 opacity-50' />
-            </Button>
-
-            {/* Quantity Slider */}
-            <AnimatePresence>
-              {showQuantitySlider && (
-                <motion.div
-                  className='absolute bottom-full mb-2 left-0  bg-background border border-border rounded-lg p-4 shadow-lg min-w-48'
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                >
-                  <div className='flex flex-col gap-3'>
-                    <div className='flex items-center justify-between'>
-                      <span className='text-sm font-medium'>
-                        {t('chat:textarea.quantity', 'Image Quantity')}
-                      </span>
-                      <span className='text-sm text-muted-foreground'>{quantity}</span>
-                    </div>
-                    <div className='flex items-center gap-3'>
-                      <span className='text-xs text-muted-foreground'>1</span>
-                      <input
-                        type='range'
-                        min='1'
-                        max={MAX_QUANTITY}
-                        value={quantity}
-                        onChange={(e) => setQuantity(Number(e.target.value))}
-                        className='flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
-                                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
-                                  [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-sm
-                                  [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
-                                  [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0'
-                      />
-                      <span className='text-xs text-muted-foreground'>{MAX_QUANTITY}</span>
-                    </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant='outline' 
+                className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
+              >
+                <Hash className='size-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='start' className='w-72 p-0'>
+              <div className='p-4'>
+                <div className='flex items-center justify-between mb-4'>
+                  <span className='text-sm font-medium'>
+                    {t('chat:textarea.quantity', 'Image Quantity')}
+                  </span>
+                  <span className='text-sm text-primary font-medium bg-primary/10 px-2 py-1 rounded'>{quantity}</span>
+                </div>
+                
+                {/* Quick Selection Buttons */}
+                <div className='mb-4'>
+                  <div className='text-xs text-muted-foreground mb-2'>Quick Select:</div>
+                  <div className='grid grid-cols-6 gap-2'>
+                    {[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30].map((num) => (
+                      <Button
+                        key={num}
+                        variant={quantity === num ? 'default' : 'outline'}
+                        size='sm'
+                        className='h-8 text-xs'
+                        onClick={() => setQuantity(num)}
+                      >
+                        {num}
+                      </Button>
+                    ))}
                   </div>
-                  {/* Arrow pointing down */}
-                  <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border'></div>
-                  <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-background translate-y-[-1px]'></div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                </div>
+
+                {/* Slider */}
+                <div>
+                  <div className='text-xs text-muted-foreground mb-2'>Custom Value:</div>
+                  <div className='flex items-center gap-3'>
+                    <span className='text-xs text-muted-foreground w-4'>1</span>
+                    <input
+                      type='range'
+                      min='1'
+                      max={MAX_QUANTITY}
+                      value={quantity}
+                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      className='flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
+                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
+                                [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-sm
+                                [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
+                                [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0'
+                    />
+                    <span className='text-xs text-muted-foreground w-6'>{MAX_QUANTITY}</span>
+                  </div>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {pending ? (
           <Button
-            className='shrink-0 relative'
+            className='shrink-0 relative h-8 w-8 p-0 flex items-center justify-center'
             variant='default'
-            size='icon'
             onClick={handleCancelChat}
           >
-            <Loader2 className='size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
-            <Square className='size-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
+            <Loader2 className='size-4 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
+            <Square className='size-1.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
           </Button>
         ) : (
           <Button
-            className='shrink-0'
+            className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
             variant='default'
-            size='icon'
             onClick={handleSendPrompt}
             disabled={
               (!textModel && (!selectedTools || selectedTools.length === 0)) || prompt.length === 0
