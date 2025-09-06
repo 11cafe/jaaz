@@ -423,12 +423,7 @@ class TuziLLMService:
             return None
 
     async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """GPT 图片生成并保存到用户目录"""
-        from services.config_service import get_user_files_dir
-        from tools.utils.image_utils import get_image_info_and_save
-        from nanoid import generate
-        import os
-        
+        """GPT 图片生成并保存到用户目录""" 
         logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
         logger.info(f"🔍 [DEBUG] 使用模型: {model}")
         logger.info(f"🔍 [DEBUG] 提示词: {prompt}")
@@ -438,7 +433,7 @@ class TuziLLMService:
             client = AsyncOpenAI(
                 api_key=self.api_token,
                 base_url=self.api_url,
-                timeout=180.0,  # 增加到3分钟，确保足够的时间生成图片
+                timeout=30.0,  # 增加到3分钟，确保足够的时间生成图片
                 max_retries=0   # 禁用重试，避免重复调用和额外日志
             )
             
