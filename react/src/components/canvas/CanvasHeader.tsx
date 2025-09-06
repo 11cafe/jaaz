@@ -17,7 +17,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   return (
     <TopMenu
       middle={
-        <div className="hidden min-[401px]:block">
+        <div className="hidden sm:block">
           <Input
             className="text-sm text-muted-foreground text-center bg-transparent border-none shadow-none w-fit h-7 hover:bg-primary-foreground transition-all"
             value={canvasName}
