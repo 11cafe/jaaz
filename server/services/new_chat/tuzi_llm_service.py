@@ -333,12 +333,8 @@ class TuziLLMService:
                     text_response = await self.gpt_by_tuzi(user_prompt, model_name, user_info)
                     if text_response:
                         # 返回文本响应，格式化为与图像生成一致的结构
-                        result = {
-                            'text_content': text_response,
-                            'type': 'text'
-                        }
                         logger.info(f"✅ GPT-4o 文本对话成功")
-                        return result
+                        return text_response
                     else:
                         logger.error("❌ GPT-4o 文本对话失败")
                         return {"error": "GPT-4o text conversation failed"}
@@ -356,7 +352,7 @@ class TuziLLMService:
         prompt: str,
         model: str = "gpt-4o",
         user_info: Optional[Dict[str, Any]] = None
-    ) -> Optional[str]:
+    ) -> Optional[Dict[str, Any]]:
         """
         使用 GPT 模型进行文本对话或图片生成
         
@@ -442,7 +438,8 @@ class TuziLLMService:
             client = AsyncOpenAI(
                 api_key=self.api_token,
                 base_url=self.api_url,
-                timeout=60.0  # 设置60秒超时
+                timeout=180.0,  # 增加到3分钟，确保足够的时间生成图片
+                max_retries=0   # 禁用重试，避免重复调用和额外日志
             )
             
             logger.info(f"🚀 [DEBUG] AsyncOpenAI 客户端创建成功，开始调用...")
@@ -525,7 +522,8 @@ class TuziLLMService:
             client = AsyncOpenAI(
                 base_url=self.api_url,
                 api_key=self.api_token,
-                timeout=120.0  # 图片编辑可能需要更长时间
+                timeout=180.0,  # 增加到3分钟，确保足够的时间
+                max_retries=0   # 禁用重试，保持一致性
             )
             
             # 打印详细的调试信息
@@ -634,7 +632,8 @@ class TuziLLMService:
             client = AsyncOpenAI(
                 base_url=self.api_url,
                 api_key=self.api_token,
-                timeout=120.0  # 图片生成可能需要更长时间
+                timeout=180.0,  # 增加到3分钟，确保足够的时间
+                max_retries=0   # 禁用重试，保持一致性
             )
             
             # 打印详细的调试信息
