@@ -115,8 +115,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })
         }
       }, 100) // 减少延迟以提供更好的响应性
-    } else {
-      console.log('[debug] 跳过自动滚动 - 用户不在底部或正在滚动')
     }
   }, [])
 
@@ -141,22 +139,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         try {
           const { sessionId: storedSessionId, message, timestamp } = JSON.parse(initialMessageData)
 
-          console.log('[debug] 发现初始消息:', {
-            storedSessionId,
-            currentSearchSessionId: searchSessionId,
-            messageContent: message,
-          })
-
           // 检查timestamp是否在5分钟内，更宽松的session匹配
           if (Date.now() - timestamp < 5 * 60 * 1000) {
             // 如果searchSessionId匹配或者还没有sessionId，就显示消息
             if (!searchSessionId || storedSessionId === searchSessionId) {
-              console.log('[debug] ✅ 立即显示初始用户消息:', {
-                role: message.role,
-                content: message.content,
-                contentType: typeof message.content,
-                isArray: Array.isArray(message.content),
-              })
               setMessages([message])
               setHasDisplayedInitialMessage(true)
 
@@ -177,11 +163,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               return true
             }
           } else {
-            console.log('[debug] 初始消息已过期，清理')
             localStorage.removeItem('initial_user_message')
           }
         } catch (error) {
-          console.error('[debug] 解析初始消息失败:', error)
           localStorage.removeItem('initial_user_message')
         }
       }
@@ -210,13 +194,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           const { sessionId: storedSessionId, message, timestamp } = JSON.parse(initialMessageData)
 
           if (storedSessionId === sessionId && Date.now() - timestamp < 5 * 60 * 1000) {
-            console.log('[debug] 兜底显示初始用户消息:', {
-              role: message.role,
-              content:
-                typeof message.content === 'string'
-                  ? message.content.substring(0, 50) + '...'
-                  : 'complex content',
-            })
             setMessages([message])
             setHasDisplayedInitialMessage(true)
 
@@ -235,7 +212,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             }, 2000)
           }
         } catch (error) {
-          console.error('[debug] 兜底解析失败:', error)
           setTimeout(() => {
             localStorage.removeItem('initial_user_message')
           }, 1000)
@@ -247,7 +223,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // 监听messages变化，确保用户消息显示后立即滚动
   useEffect(() => {
     if (messages.length > 0 && hasDisplayedInitialMessage) {
-      console.log('[debug] 消息列表已更新，确保滚动到底部')
       // 延迟一点确保DOM已更新
       setTimeout(() => {
         forceScrollToBottom()
@@ -294,8 +269,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // 用户消息和助手消息不进行内容去重，允许重复内容
       return true
     })
-
-    console.log('[debug] 消息去重：原始', messages.length, '去重后', uniqueMessages.length)
 
     const messagesWithToolCallResult = uniqueMessages.map((message, index) => {
       if (message.role === 'assistant' && message.tool_calls) {
@@ -374,7 +347,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(
         produce((prev) => {
-          console.log('👇tool_call event get', data)
           setPending('tool')
           prev.push({
             role: 'assistant',
@@ -638,16 +610,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
-
-      console.log('[debug] 收到所有消息，数量:', data.messages?.length || 0)
-      console.log('[debug] 当前前端消息数量:', messages.length)
-      console.log('[debug] 已显示初始消息:', hasDisplayedInitialMessage)
-
       const processedMessages = mergeToolCallResult(data.messages)
 
       // 如果已经显示了初始用户消息，且后端消息为空，则不覆盖
       if (hasDisplayedInitialMessage && processedMessages.length === 0 && messages.length > 0) {
-        console.log('[debug] 🚫 阻止空消息覆盖用户初始消息')
         return
       }
 
@@ -655,15 +621,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (hasDisplayedInitialMessage && messages.length > 0) {
         const hasUserMessage = processedMessages.some((msg) => msg.role === 'user')
         if (!hasUserMessage) {
-          console.log('[debug] 🔄 合并用户初始消息和后端消息')
           const mergedMessages = [...messages, ...processedMessages]
           setMessages(mergedMessages)
           scrollToBottom()
           return
         }
       }
-
-      console.log('[debug] 📝 直接设置后端消息')
       setMessages(processedMessages)
       scrollToBottom()
     },
@@ -676,14 +639,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
-      console.log('[debug] === 聊天完成 ===')
       setPending(false)
       scrollToBottom()
 
       // 聊天输出完毕后更新余额
       if (authStatus.is_logged_in) {
         queryClient.invalidateQueries({ queryKey: ['balance'] })
-        console.log('[debug] 余额查询已刷新')
       }
     },
     [sessionId, scrollToBottom, authStatus.is_logged_in, queryClient]
@@ -768,10 +729,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return
     }
 
-    console.log('[debug] 初始化聊天，sessionId:', sessionId)
-    console.log('[debug] 当前消息数量:', currentMessagesRef.current.length)
-    console.log('[debug] 已显示初始消息:', hasDisplayedInitialMessageRef.current)
-
     sessionIdRef.current = sessionId
 
     try {
@@ -779,18 +736,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const data = await resp.json()
       const msgs = data?.length ? data : []
 
-      console.log('[debug] 加载历史消息，数量:', msgs.length)
-
       // 如果已经显示了初始用户消息，且历史消息为空或者历史消息不包含用户消息，则不覆盖
       if (hasDisplayedInitialMessageRef.current && currentMessagesRef.current.length > 0) {
         if (msgs.length === 0) {
-          console.log('[debug] 🚫 已显示初始消息且历史为空，跳过覆盖')
           return
         }
 
         const hasUserInHistory = msgs.some((msg: Message) => msg.role === 'user')
         if (!hasUserInHistory) {
-          console.log('[debug] 🔄 历史消息不含用户消息，合并显示')
           const processedMessages = mergeToolCallResult(msgs)
           const mergedMessages = [...currentMessagesRef.current, ...processedMessages]
           setMessages(mergedMessages)
@@ -838,12 +791,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const onSendMessages = useCallback(
     (data: Message[], modelName: string) => {
-      console.log('[debug] === 开始发送消息 ===')
       const startTime = performance.now()
-
-      console.log('[debug] 消息数量:', data.length)
-      console.log('[debug] 选择的模型:', modelName)
-
       setPending('text')
       setMessages(data)
 
@@ -858,14 +806,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         modelName: modelName,
         systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
-      console.log(`[debug] API调用耗时: ${(performance.now() - sendStart).toFixed(2)}ms`)
-
       if (searchSessionId !== effectiveSessionId) {
         window.history.pushState({}, '', `/canvas/${canvasId}?sessionId=${effectiveSessionId}`)
       }
 
       forceScrollToBottom() // 用户发送消息时强制滚动到底部
-      console.log(`[debug] 消息发送总耗时: ${(performance.now() - startTime).toFixed(2)}ms`)
     },
     [canvasId, sessionId, searchSessionId, forceScrollToBottom]
   )

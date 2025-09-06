@@ -33,19 +33,16 @@ function Canvas() {
 
     const fetchCanvas = async () => {
       try {
-        console.log('[debug] 开始获取Canvas数据:', id)
         const startTime = performance.now()
         setIsLoading(true)
         setError(null)
         const data = await getCanvas(id)
         const endTime = performance.now()
-        console.log(`[debug] Canvas数据获取完成，耗时: ${(endTime - startTime).toFixed(2)}ms`)
-        
+
         if (mounted) {
           setCanvas(data)
           setCanvasName(data.name)
           setSessionList(data.sessions)
-          console.log('[debug] Canvas状态更新完成，sessions数量:', data.sessions?.length || 0)
           // Video elements now handled by native Excalidraw embeddable elements
         }
       } catch (err) {
@@ -77,7 +74,7 @@ function Canvas() {
       <CanvasProvider>
         <div className='flex flex-col w-screen h-screen'>
           <CanvasHeader
-            canvasName="加载中..."
+            canvasName='加载中...'
             canvasId={id}
             onNameChange={() => {}}
             onNameSave={() => {}}
@@ -98,7 +95,7 @@ function Canvas() {
       <CanvasProvider>
         <div className='flex flex-col w-screen h-screen'>
           <CanvasHeader
-            canvasName="加载失败"
+            canvasName='加载失败'
             canvasId={id}
             onNameChange={() => {}}
             onNameSave={() => {}}
@@ -106,8 +103,8 @@ function Canvas() {
           <div className='flex items-center justify-center h-full bg-background/50'>
             <div className='flex flex-col items-center gap-4'>
               <p className='text-red-500'>加载失败: {error.message}</p>
-              <button 
-                onClick={() => window.location.reload()} 
+              <button
+                onClick={() => window.location.reload()}
                 className='px-4 py-2 bg-primary text-primary-foreground rounded'
               >
                 重试
