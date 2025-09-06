@@ -4,7 +4,7 @@ from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from services.jaaz_service import JaazService
 from tools.utils.image_canvas_utils import save_image_to_canvas, send_image_start_notification, send_image_error_notification
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 import os
 from tools.utils.image_utils import get_image_info_and_save, generate_image_id, process_input_image
 from services.config_service import FILES_DIR
@@ -134,7 +134,7 @@ async def generate_image_by_midjourney_jaaz(
         image_links: List[str] = []
         for saved_image in saved_images:
             image_links.append(
-                f"![image_{saved_image['index']+1}: {saved_image['image_id']}](http://localhost:{DEFAULT_PORT}{saved_image['url']})"
+                f"![image_{saved_image['index']+1}: {saved_image['image_id']}]({BASE_URL}{saved_image['url']})"
             )
 
         result_message = f"Midjourney generated {len(saved_images)} images successfully:\n\n" + "\n\n".join(image_links)

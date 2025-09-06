@@ -8,7 +8,7 @@ from services.new_chat.tuzi_llm_service import TuziLLMService
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import get_user_files_dir
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 
 from log import get_logger
 
@@ -124,7 +124,7 @@ async def create_local_response(messages: List[Dict[str, Any]],
 
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({BASE_URL}{image_url})'
         }
         
 

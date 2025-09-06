@@ -7,7 +7,7 @@ from nanoid import generate
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 from ..magic_draw_service import MagicDrawService
 from routers.templates_router import TEMPLATES
 
@@ -134,7 +134,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
 
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'✨ Image Generate Success\n\nResult url: {result_url}\n\n![image_id: {filename}]({BASE_URL}{image_url})'
         }
         
 

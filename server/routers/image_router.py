@@ -1,6 +1,6 @@
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 from tools.utils.image_canvas_utils import generate_file_id
 from services.config_service import FILES_DIR, get_user_files_dir, get_legacy_files_dir
 from utils.auth_utils import get_current_user_optional, CurrentUser
@@ -108,7 +108,7 @@ async def upload_image(
     logger.info(f'🦄upload_image file_path {file_path}')
     return {
         'file_id': f'{file_id}.{extension}',
-        'url': f'http://localhost:{DEFAULT_PORT}/api/file/{file_id}.{extension}',
+        'url': f'{BASE_URL}/api/file/{file_id}.{extension}',
         'width': width,
         'height': height,
         'user_email': user_email,  # 返回用户邮箱用于调试

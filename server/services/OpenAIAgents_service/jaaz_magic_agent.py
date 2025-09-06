@@ -7,7 +7,7 @@ from nanoid import generate
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 from ..jaaz_service import JaazService
 
 
@@ -124,7 +124,7 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
 
         return {
             'role': 'assistant',
-            'content': f'✨ Magic Success!!!\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'✨ Magic Success!!!\n\nResult url: {result_url}\n\n![image_id: {filename}]({BASE_URL}{image_url})'
         }
 
     except (asyncio.TimeoutError, Exception) as e:
