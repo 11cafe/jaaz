@@ -46,7 +46,15 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
         localStorage.setItem('current_selected_model', selectedModel.model)
       }
     } else {
-      const defaultModel = llmModels.find((m) => m.type === 'text')
+      // 优先选择 OpenAI GPT-4o 作为默认模型，其次是 GPT-4o-mini，最后是其他文本模型
+      let defaultModel = llmModels.find((m) => m.type === 'text' && m.model === 'gpt-4o')
+      if (!defaultModel) {
+        defaultModel = llmModels.find((m) => m.type === 'text' && m.model === 'gpt-4o-mini')
+      }
+      if (!defaultModel) {
+        defaultModel = llmModels.find((m) => m.type === 'text')
+      }
+      
       setTextModel(defaultModel)
       // 同时设置为当前选择的模型
       if (defaultModel) {
@@ -54,11 +62,26 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
       }
     }
 
+    // 默认工具选择函数：优先选择 Google 的 gemini-2.5-flash-image 画图工具
+    const getDefaultSelectedTools = (toolList: ToolInfo[]): ToolInfo[] => {
+      const googleImageTool = toolList.find((t) => 
+        t.provider === 'google' && 
+        (t.display_name === 'gemini-2.5-flash-image' || t.id === 'generate_image_by_google_nano_banana')
+      )
+      
+      if (googleImageTool) {
+        // 如果找到 Google 画图工具，默认只选择它
+        return [googleImageTool]
+      } else {
+        // 如果没有找到，选择所有工具作为兜底
+        return toolList
+      }
+    }
+
     // 设置选中的工具模型
     const disabledToolsJson = localStorage.getItem('disabled_tool_ids')
     let currentSelectedTools: ToolInfo[] = []
-    // by default, all tools are selected
-    currentSelectedTools = toolList
+    
     if (disabledToolsJson) {
       try {
         const disabledToolIds: string[] = JSON.parse(disabledToolsJson)
@@ -66,7 +89,12 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
         currentSelectedTools = toolList.filter((t) => !disabledToolIds.includes(t.id))
       } catch (error) {
         console.error(error)
+        // 如果解析失败，使用默认选择
+        currentSelectedTools = getDefaultSelectedTools(toolList)
       }
+    } else {
+      // 如果没有保存的设置，使用默认选择：优先选择 Google 的画图工具
+      currentSelectedTools = getDefaultSelectedTools(toolList)
     }
 
     setSelectedTools(currentSelectedTools)

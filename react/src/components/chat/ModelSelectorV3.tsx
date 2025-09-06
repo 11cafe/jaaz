@@ -53,18 +53,53 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
   // 智能初始化：确保有默认选择
   React.useEffect(() => {
     if (!globalSelectedModel) {
-      // 优先选择文本模型
-      if (textModel) {
+      // 优先选择 Google 的画图工具
+      const googleImageTool = allTools.find((tool) => 
+        tool.type === 'image' && 
+        tool.provider === 'google' && 
+        (tool.display_name === 'gemini-2.5-flash-image' || tool.id === 'generate_image_by_google_nano_banana')
+      )
+      
+      if (googleImageTool) {
+        setGlobalSelectedModel({ model: googleImageTool, type: 'image' })
+        const modelName = googleImageTool.display_name || googleImageTool.id
+        localStorage.setItem('current_selected_model', modelName)
+        
+        // 同步设置选中的工具：只选择 Google 画图工具
+        setSelectedTools([googleImageTool])
+        // 更新 localStorage，禁用其他工具
+        const disabledToolIds = allTools.filter((t) => t.id !== googleImageTool.id).map((t) => t.id)
+        localStorage.setItem('disabled_tool_ids', JSON.stringify(disabledToolIds))
+        
+        // 清空文本模型选择
+        setTextModel(null)
+        localStorage.removeItem('text_model')
+      } else if (textModel) {
+        // 如果没有找到 Google 画图工具，才选择文本模型
         setGlobalSelectedModel({ model: textModel, type: 'text' })
         localStorage.setItem('current_selected_model', textModel.model)
+        
+        // 同步状态：选择文本模型，清空工具选择
+        setSelectedTools([])
+        localStorage.setItem('disabled_tool_ids', JSON.stringify(allTools.map((t) => t.id)))
+        localStorage.setItem('text_model', textModel.provider + ':' + textModel.model)
       } else {
-        // 选择第一个可用的图像模型
+        // 最后的兜底：选择第一个可用的图像模型
         const imageTools = allTools.filter((tool) => tool.type === 'image')
         if (imageTools.length > 0) {
           const firstTool = imageTools[0]
           setGlobalSelectedModel({ model: firstTool, type: 'image' })
           const modelName = firstTool.display_name || firstTool.id
           localStorage.setItem('current_selected_model', modelName)
+          
+          // 同步设置选中的工具
+          setSelectedTools([firstTool])
+          const disabledToolIds = allTools.filter((t) => t.id !== firstTool.id).map((t) => t.id)
+          localStorage.setItem('disabled_tool_ids', JSON.stringify(disabledToolIds))
+          
+          // 清空文本模型选择
+          setTextModel(null)
+          localStorage.removeItem('text_model')
         }
       }
     } else {

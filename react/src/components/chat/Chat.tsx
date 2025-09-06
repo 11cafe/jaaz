@@ -854,13 +854,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className='flex flex-col flex-1 px-4 pb-50 pt-15'>
               {/* Messages */}
               {messages.map((message, idx) => {
-                console.log(`[debug] 渲染消息 ${idx}:`, {
-                  role: message.role,
-                  contentType: typeof message.content,
-                  isArray: Array.isArray(message.content),
-                  content: message.content,
-                })
-
                 return (
                   <div key={`${idx}`} className='flex flex-col gap-4 mb-2'>
                     {/* 根据消息类型选择合适的渲染方式 */}

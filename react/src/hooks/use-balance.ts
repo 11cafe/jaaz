@@ -6,18 +6,12 @@ import { useEffect } from 'react'
 export function useBalance() {
   const { authStatus } = useAuth()
 
-  const {
-    data,
-    error,
-    refetch,
-    isLoading,
-  } = useQuery({
+  const { data, error, refetch, isLoading } = useQuery({
     queryKey: ['balance'],
     queryFn: async () => {
-      console.log('🔄 useBalance: 开始获取积分...')
       try {
         const result = await getBalance()
-        console.log('✅ useBalance: 获取积分成功:', result)
+
         return result
       } catch (err) {
         console.error('❌ useBalance: 获取积分失败:', err)
@@ -35,21 +29,12 @@ export function useBalance() {
   // 当认证状态变为已登录时，立即刷新积分
   useEffect(() => {
     if (authStatus.is_logged_in && authStatus.user_info) {
-      console.log('🔄 useBalance: 检测到用户登录，刷新积分')
       refetch()
     }
   }, [authStatus.is_logged_in, authStatus.user_info, refetch])
 
   // 调试信息
-  useEffect(() => {
-    console.log('🔍 useBalance 状态:', {
-      isLoggedIn: authStatus.is_logged_in,
-      hasUserInfo: !!authStatus.user_info,
-      isLoading,
-      balance: data?.balance,
-      error: error?.message,
-    })
-  }, [authStatus.is_logged_in, authStatus.user_info, isLoading, data, error])
+  useEffect(() => {}, [authStatus.is_logged_in, authStatus.user_info, isLoading, data, error])
 
   return {
     balance: data?.balance || '0.00',

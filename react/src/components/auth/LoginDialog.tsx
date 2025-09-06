@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
-import { Dialog, DialogContent } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import { Lock } from 'lucide-react'
 import { directLogin } from '../../api/auth'
 import { useConfigs } from '../../contexts/configs'
@@ -28,7 +28,7 @@ export function LoginDialog() {
 
           {/* 标题和副标题 */}
           <div className='text-center space-y-3'>
-            <h1 className='text-3xl font-bold text-foreground tracking-tight'>欢迎使用 MagicArt</h1>
+            <DialogTitle className='text-3xl font-bold text-foreground tracking-tight'>欢迎使用 MagicArt</DialogTitle>
             <p className='text-base text-muted-foreground leading-relaxed max-w-sm'>
               请登录以继续使用 AI 设计助手
             </p>
