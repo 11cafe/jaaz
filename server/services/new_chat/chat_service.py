@@ -117,15 +117,41 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     template_id: str = data.get('template_id', '')
     user_info: Dict[str, Any] = data.get('user_info', {})
     model_name: str = data.get('model_name', '')
+    text_model_data = data.get('text_model')
     
     # 添加详细的调试信息
     logger.info(f"🔍 [DEBUG] 前端传入的完整请求数据 keys: {list(data.keys())}")
     logger.info(f"🔍 [DEBUG] 前端传入的 model_name: '{model_name}'")
+    logger.info(f"🔍 [DEBUG] 前端传入的 text_model: {text_model_data}")
     
-    # 如果没有传递模型名称，使用默认值
+    # 类型安全检查：确保 model_name 是字符串
+    if isinstance(model_name, dict):
+        logger.warning(f"🚨 [WARNING] model_name 是字典类型，尝试提取 modelName 字段: {model_name}")
+        if 'modelName' in model_name:
+            model_name = model_name['modelName']
+            logger.info(f"🔧 [DEBUG] 从字典中提取模型名称: {model_name}")
+        else:
+            model_name = ''
+            logger.warning(f"🚨 [WARNING] 字典中没有 modelName 字段，重置为空字符串")
+    
+    # 如果没有传递模型名称，尝试从 text_model 中提取
     if not model_name:
-        model_name = 'gpt-4o'
-        logger.info(f"🔍 [DEBUG] 使用默认模型: {model_name}")
+        if text_model_data and isinstance(text_model_data, dict):
+            model_name = text_model_data.get('model', '')
+            logger.info(f"🔍 [DEBUG] 从 text_model 中提取模型名称: {model_name}")
+        
+        # 如果还是没有，使用默认值
+        if not model_name:
+            model_name = 'gpt-4o'
+            logger.info(f"🔍 [DEBUG] 使用默认模型: {model_name}")
+        else:
+            logger.info(f"🔍 [DEBUG] 成功提取模型名称: {model_name}")
+    
+    # 最终验证：确保 model_name 是字符串类型
+    if not isinstance(model_name, str):
+        logger.error(f"🚨 [ERROR] model_name 类型错误，期望字符串，实际收到: {type(model_name)}, 值: {model_name}")
+        model_name = 'gpt-4o'  # 强制使用默认值
+        logger.info(f"🔧 [DEBUG] 强制使用默认模型: {model_name}")
     
     # 根据模型名称确定提供商
     provider = ''

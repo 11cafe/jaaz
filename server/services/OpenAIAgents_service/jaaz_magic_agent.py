@@ -71,12 +71,13 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
         if result.get('error'):
             error_msg = result['error']
             print(f"❌ Magic generation error: {error_msg}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
                 'content': [
                     {
                         'type': 'text',
-                        'text': f'✨ Magic Generation Error: {error_msg}'
+                        'text': get_user_friendly_error(error_msg)
                     }
                 ]
             }
@@ -142,12 +143,13 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
             }
         else:
             print(f"❌ 创建魔法回复时出错: {e}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
                 'content': [
                     {
                         'type': 'text',
-                        'text': f'✨ Magic Generation Error: {str(e)}'
+                        'text': get_user_friendly_error(str(e))
                     }
                 ]
             }

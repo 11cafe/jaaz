@@ -42,7 +42,11 @@ type ChatTextareaProps = {
   className?: string
   messages: Message[]
   sessionId?: string
-  onSendMessages: (data: Message[], modelName: string) => void
+  onSendMessages: (data: Message[], configs: {
+    textModel: ModelInfo | null
+    toolList: ToolInfo[]
+    modelName: string
+  }) => void
   onCancelChat?: () => void
 }
 
@@ -258,7 +262,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         localStorage.setItem('current_selected_model', modelName)
       }
     }
-    onSendMessages(newMessage, modelName)
+    onSendMessages(newMessage, {
+      textModel: textModel ? { ...textModel, type: 'text' as const } : null,
+      toolList: selectedTools || [],
+      modelName
+    })
   }, [
     pending,
     textModel,
