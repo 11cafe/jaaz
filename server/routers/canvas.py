@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 #from routers.agent import chat
-from services.chat_service import handle_chat
+from services.new_chat import handle_chat
 from services.db_service import db_service
 from utils.auth_utils import get_current_user_optional, get_user_uuid_for_database_operations, CurrentUser
 from typing import Optional
