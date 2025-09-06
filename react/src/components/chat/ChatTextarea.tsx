@@ -146,6 +146,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleSendPrompt = useCallback(async () => {
     if (pending) return
 
+    // 首先检查登录状态 - 如果未登录，强制跳转到Google登录
+    if (!authStatus.is_logged_in) {
+      setShowLoginDialog(true)
+      return
+    }
+
     // 检查是否使用 Jaaz 服务
     const isUsingJaaz =
       textModel?.provider === 'jaaz' || selectedTools?.some((tool) => tool.provider === 'jaaz')
