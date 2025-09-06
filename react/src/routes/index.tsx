@@ -65,9 +65,9 @@ function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className='w-full max-w-4xl'
+            className='w-full max-w-4xl mx-auto'
           >
-            <h1 className='text-3xl sm:text-4xl md:text-5xl font-bold mb-2 mt-4 sm:mt-8 text-center'>
+            <h1 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 mt-4 sm:mt-8 text-center'>
               {t('home:title')}
             </h1>
           </motion.div>
@@ -75,29 +75,31 @@ function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className='w-full max-w-4xl'
+            className='w-full max-w-4xl mx-auto'
           >
-            <p className='text-base sm:text-lg md:text-xl text-gray-500 mb-6 sm:mb-8 text-center px-4'>
+            <p className='text-sm sm:text-base md:text-lg lg:text-xl text-gray-500 mb-6 sm:mb-8 text-center px-2 sm:px-4'>
               {t('home:subtitle')}
             </p>
           </motion.div>
 
-          <ChatTextarea
-            className='w-full max-w-xl mx-4 sm:mx-0'
-            messages={[]}
-            onSendMessages={(messages, configs) => {
-              createCanvasMutation({
-                name: t('home:newCanvas'),
-                canvas_id: nanoid(),
-                messages: messages,
-                session_id: nanoid(),
-                text_model: configs.textModel,
-                tool_list: configs.toolList,
-                system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
-              })
-            }}
-            pending={isPending}
-          />
+          <div className='w-full max-w-xl mx-auto px-2 sm:px-0'>
+            <ChatTextarea
+              className='w-full'
+              messages={[]}
+              onSendMessages={(messages, configs) => {
+                createCanvasMutation({
+                  name: t('home:newCanvas'),
+                  canvas_id: nanoid(),
+                  messages: messages,
+                  session_id: nanoid(),
+                  text_model: configs.textModel,
+                  tool_list: configs.toolList,
+                  system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
+                })
+              }}
+              pending={isPending}
+            />
+          </div>
         </div>
 
         <CanvasList />
