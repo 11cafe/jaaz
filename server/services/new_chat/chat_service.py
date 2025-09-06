@@ -3,6 +3,8 @@
 # Import necessary modules
 import asyncio
 import json
+import time
+import uuid
 from typing import Dict, Any, List, Optional
 
 # Import service modules
@@ -170,11 +172,66 @@ async def handle_chat(data: Dict[str, Any]) -> None:
             else:
                 raise e
 
-    # Save user message to database
+    # 🔥 关键修复：获取历史消息，确保不清空历史对话
+    # 先获取当前会话的历史消息（get_chat_history返回已解析的消息列表）
+    parsed_history = []
+    try:
+        chat_history = await db_service.get_chat_history(session_id, user_uuid)
+        logger.info(f"[DEBUG] 获取到历史消息数量: {len(chat_history)}")
+        
+        # get_chat_history已经返回解析后的消息列表，直接使用
+        for i, history_message in enumerate(chat_history):
+            try:
+                # 确保消息格式正确
+                if not isinstance(history_message, dict):
+                    logger.warning(f"[WARNING] 历史消息 {i} 不是字典格式: {type(history_message)}")
+                    continue
+                
+                # 确保消息有基本字段，如果没有就添加
+                if 'timestamp' not in history_message:
+                    history_message['timestamp'] = int(time.time() * 1000) - len(chat_history) + i
+                
+                if 'message_id' not in history_message:
+                    history_message['message_id'] = f"{session_id}_{history_message.get('timestamp', i)}_{str(uuid.uuid4())[:8]}"
+                
+                parsed_history.append(history_message)
+                logger.info(f"[DEBUG] 历史消息 {i}: {history_message.get('role', 'unknown')} - {str(history_message.get('content', ''))[:50]}...")
+                
+            except Exception as e:
+                logger.error(f"[ERROR] 处理历史消息 {i} 时出错: {e}, 数据: {history_message}")
+                continue
+    except Exception as e:
+        logger.error(f"[ERROR] 获取历史消息失败: {e}")
+        # 如果获取历史失败，使用空历史
+    
+    # Save user message to database and immediately send to frontend
+    enhanced_user_message = None
     if len(messages) > 0:
+        # 为用户消息添加唯一时间戳，确保相同内容的消息也能被正确区分
+        user_message = messages[-1].copy()  # 创建副本避免修改原消息
+        user_message['timestamp'] = int(time.time() * 1000)  # 添加毫秒级时间戳
+        user_message['message_id'] = f"{session_id}_{user_message['timestamp']}_{str(uuid.uuid4())[:8]}"  # 添加唯一消息ID
+        enhanced_user_message = user_message
+        
         await db_service.create_message(
-            session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1]), user_uuid
+            session_id, user_message.get('role', 'user'), json.dumps(user_message), user_uuid
         )
+        
+        # 🔥 关键修复：发送包含完整历史的消息列表，保留历史对话
+        # 将新用户消息添加到历史消息列表中
+        complete_messages = parsed_history + [user_message]
+        logger.info(f"[DEBUG] 立即发送用户消息到前端，总消息数: {len(complete_messages)}")
+        logger.info(f"[DEBUG] 新用户消息: {user_message.get('content', '')[:50]}...")
+        
+        try:
+            await send_to_websocket(session_id, {
+                'type': 'all_messages', 
+                'messages': complete_messages  # 发送完整历史 + 新用户消息
+            })
+            logger.info(f"[DEBUG] ✅ 用户消息发送成功")
+        except Exception as e:
+            logger.error(f"[ERROR] ❌ 用户消息发送失败: {e}")
+            # 即使 WebSocket 发送失败，也要继续处理
 
     
     # 如果是模版生成，先发送一张图片到前端
@@ -183,7 +240,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid))
+    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -278,7 +335,9 @@ async def _process_generation(
     session_id: str,
     canvas_id: str,
     model_name: str,
-    user_uuid: Optional[str] = None
+    user_uuid: Optional[str] = None,
+    user_info: Optional[Dict[str, Any]] = None,
+    enhanced_user_message: Optional[Dict[str, Any]] = None
 ) -> None:
     """
     Process generation in a separate async task.
@@ -291,13 +350,51 @@ async def _process_generation(
 
     # 原来是基于云端生成
     # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
-    ai_response = await create_local_response(messages, session_id, canvas_id, model_name)
+    ai_response = await create_local_response(messages, session_id, canvas_id, model_name, user_info)
 
+    # 为AI响应添加唯一时间戳和消息ID
+    ai_response_with_id = ai_response.copy()  # 创建副本
+    ai_response_with_id['timestamp'] = int(time.time() * 1000)  # 添加毫秒级时间戳
+    ai_response_with_id['message_id'] = f"{session_id}_{ai_response_with_id['timestamp']}_{str(uuid.uuid4())[:8]}"  # 添加唯一消息ID
+    
     # Save AI response to database
-    await db_service.create_message(session_id, 'assistant', json.dumps(ai_response), user_uuid)
+    await db_service.create_message(session_id, 'assistant', json.dumps(ai_response_with_id), user_uuid)
 
-    # Send messages to frontend immediately
-    all_messages = messages + [ai_response]
-    await send_to_websocket(
-        session_id, {'type': 'all_messages', 'messages': all_messages}
-    )
+    # 🔥 关键修复：再次获取历史消息（包括刚才保存的AI响应），发送完整对话
+    # 重新获取完整历史，包括刚保存的AI响应（get_chat_history返回已解析的消息列表）
+    final_parsed_history = []
+    try:
+        updated_chat_history = await db_service.get_chat_history(session_id, user_uuid)
+        logger.info(f"[DEBUG] AI响应后获取到历史消息数量: {len(updated_chat_history)}")
+        
+        # get_chat_history已经返回解析后的消息列表，直接使用
+        for i, history_message in enumerate(updated_chat_history):
+            try:
+                # 确保消息格式正确
+                if not isinstance(history_message, dict):
+                    logger.warning(f"[WARNING] AI响应后历史消息 {i} 不是字典格式: {type(history_message)}")
+                    continue
+                
+                # 确保消息有基本字段，如果没有就添加
+                if 'timestamp' not in history_message:
+                    history_message['timestamp'] = int(time.time() * 1000) - len(updated_chat_history) + i
+                
+                if 'message_id' not in history_message:
+                    history_message['message_id'] = f"{session_id}_{history_message.get('timestamp', i)}_{str(uuid.uuid4())[:8]}"
+                
+                final_parsed_history.append(history_message)
+                logger.info(f"[DEBUG] AI响应后历史消息 {i}: {history_message.get('role', 'unknown')} - {str(history_message.get('content', ''))[:50]}...")
+                
+            except Exception as e:
+                logger.error(f"[ERROR] 处理AI响应后历史消息 {i} 时出错: {e}, 数据: {history_message}")
+                continue
+    except Exception as e:
+        logger.error(f"[ERROR] 获取AI响应后历史消息失败: {e}")
+        # 如果获取失败，至少发送AI响应
+        final_parsed_history = [ai_response_with_id]
+    
+    # 发送包含完整历史的消息列表（包括用户消息和AI响应）
+    await send_to_websocket(session_id, {
+        'type': 'all_messages', 
+        'messages': final_parsed_history
+    })

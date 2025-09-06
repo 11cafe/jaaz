@@ -1,13 +1,13 @@
 # services/OpenAIAgents_service/jaaz_agent.py
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import asyncio
 import os
 from nanoid import generate
 from services.new_chat.tuzi_llm_service import TuziLLMService
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
-from services.config_service import FILES_DIR
+from services.config_service import get_user_files_dir
 from common import DEFAULT_PORT
 
 from log import get_logger
@@ -17,7 +17,8 @@ logger = get_logger(__name__)
 async def create_local_response(messages: List[Dict[str, Any]], 
                                       session_id: str = "", 
                                       canvas_id: str = "",
-                                      model_name: str = "gpt-4o") -> Dict[str, Any]:
+                                      model_name: str = "gpt-4o",
+                                      user_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     本地的魔法生成功能
     实现和 magic_agent 相同的功能
@@ -56,7 +57,7 @@ async def create_local_response(messages: List[Dict[str, Any]],
 
       
         
-        result = await llm_service.generate(model_name, user_prompt, image_content)
+        result = await llm_service.generate(model_name, user_prompt, image_content, user_info)
         if not result:
             return {
                 'role': 'assistant',
@@ -97,7 +98,12 @@ async def create_local_response(messages: List[Dict[str, Any]],
             try:
                 # 生成唯一文件名
                 file_id = generate(size=10)
-                file_path_without_extension = os.path.join(FILES_DIR, file_id)
+                
+                # 获取用户文件目录
+                user_email = user_info.get('email') if user_info else None
+                user_id = user_info.get('uuid') if user_info else None
+                user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+                file_path_without_extension = os.path.join(user_files_dir, file_id)
 
                 # 下载并保存图片
                 mime_type, width, height, extension = await get_image_info_and_save(
@@ -118,7 +124,7 @@ async def create_local_response(messages: List[Dict[str, Any]],
 
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'✨ Image Generate Success\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
         }
         
 

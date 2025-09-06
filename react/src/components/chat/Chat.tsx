@@ -58,7 +58,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const mergedToolCallIds = useRef<string[]>([])
   const pendingTimeoutRef = useRef<NodeJS.Timeout>()
   const hasDisplayedInitialMessageRef = useRef(false)
-  const currentMessagesRef = useRef<any[]>([])
+  const currentMessagesRef = useRef<Message[]>([])
 
   const sessionId = session?.id ?? searchSessionId
 
@@ -268,22 +268,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [])
 
   const mergeToolCallResult = (messages: Message[]) => {
-    // 首先去重消息，基于内容和角色
+    // 修复：基于消息ID去重，而不是内容去重，避免误删相同内容的不同消息
     const uniqueMessages = messages.filter((message, index, arr) => {
-      // 检查是否有相同的消息
-      const isDuplicate = arr.slice(0, index).some((prevMessage, prevIndex) => {
-        if (message.role !== prevMessage.role) return false
-        
-        // 对于相同角色的消息，检查内容是否相同
-        if (typeof message.content === 'string' && typeof prevMessage.content === 'string') {
-          return message.content === prevMessage.content
-        }
-        
-        // 对于复杂内容，简单检查
-        return JSON.stringify(message.content) === JSON.stringify(prevMessage.content)
-      })
+      // 如果消息有message_id，基于ID去重
+      const messageWithId = message as Message & { message_id?: string }
+      if (messageWithId.message_id) {
+        const isDuplicate = arr.slice(0, index).some((prevMessage) => {
+          const prevMessageWithId = prevMessage as Message & { message_id?: string }
+          return prevMessageWithId.message_id === messageWithId.message_id
+        })
+        return !isDuplicate
+      }
       
-      return !isDuplicate
+      // 对于没有message_id的消息（兼容旧数据），只对工具调用消息进行去重
+      if (message.role === 'tool') {
+        const toolMessage = message as Message & { tool_call_id?: string }
+        const isDuplicate = arr.slice(0, index).some((prevMessage) => {
+          const prevToolMessage = prevMessage as Message & { tool_call_id?: string }
+          return prevMessage.role === 'tool' && 
+                 prevToolMessage.tool_call_id === toolMessage.tool_call_id &&
+                 JSON.stringify(prevMessage.content) === JSON.stringify(message.content)
+        })
+        return !isDuplicate
+      }
+      
+      // 用户消息和助手消息不进行内容去重，允许重复内容
+      return true
     })
 
     console.log('[debug] 消息去重：原始', messages.length, '去重后', uniqueMessages.length)
@@ -746,7 +756,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return
         }
         
-        const hasUserInHistory = msgs.some((msg: any) => msg.role === 'user')
+        const hasUserInHistory = msgs.some((msg: Message) => msg.role === 'user')
         if (!hasUserInHistory) {
           console.log('[debug] 🔄 历史消息不含用户消息，合并显示')
           const processedMessages = mergeToolCallResult(msgs)

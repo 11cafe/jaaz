@@ -10,7 +10,7 @@ from utils.http_client import HttpClient
 from services.config_service import config_service
 from utils.image_analyser import ImageAnalyser
 from log import get_logger
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 logger = get_logger(__name__)
 
@@ -25,16 +25,16 @@ class TuziLLMService:
         self.api_token = str(config.get("api_key", ""))
 
         if not self.api_url:
-            raise ValueError("Jaaz API URL is not configured")
+            raise ValueError("Tu-zi API URL is not configured")
         if not self.api_token:
-            raise ValueError("Jaaz API token is not configured")
+            raise ValueError("Tu-zi API token is not configured")
 
         # API URL 已包含完整路径，无需额外添加后缀
 
-        logger.info(f"✅ Jaaz service initialized with API URL: {self.api_url}")
+        logger.info(f"✅ Tu-zi service initialized with API URL: {self.api_url}")
 
     def _is_configured(self) -> bool:
-        """检查 Jaaz API 是否已配置"""
+        """检查 Tu-zi API 是否已配置"""
         return bool(self.api_url and self.api_token)
 
     def _build_headers(self) -> Dict[str, str]:
@@ -280,7 +280,7 @@ class TuziLLMService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def generate(self, model_name:str, user_prompt: str, image_content: str) -> Optional[Dict[str, Any]]:
+    async def generate(self, model_name:str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         生成魔法图像的完整流程
 
@@ -316,9 +316,9 @@ class TuziLLMService:
                         f.write(image_data)
             
                     logger.info(f"✅ 图片已保存到: {file_path}")
-                    result = await self.edit_image_by_tuzi([file_path], user_prompt)
+                    result = await self.gemini_edit_image_by_tuzi([file_path], user_prompt)
                 else:
-                    result = await self.generate_by_tuzi(user_prompt)
+                    result = await self.gemini_generate_by_tuzi(user_prompt)
                 
                 if result:
                     logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
@@ -330,7 +330,7 @@ class TuziLLMService:
                 # GPT-4o 文本对话模式
                 logger.info(f"🔍 [DEBUG] 使用 gpt-4o 进行文本对话")
                 try:
-                    text_response = await self.gpt_by_tuzi(user_prompt, model_name)
+                    text_response = await self.gpt_by_tuzi(user_prompt, model_name, user_info)
                     if text_response:
                         # 返回文本响应，格式化为与图像生成一致的结构
                         result = {
@@ -354,57 +354,150 @@ class TuziLLMService:
     async def gpt_by_tuzi(
         self,
         prompt: str,
-        model: str = "gpt-4o"
+        model: str = "gpt-4o",
+        user_info: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
-        使用 GPT 模型进行文本对话
+        使用 GPT 模型进行文本对话或图片生成
         
         Args:
             prompt: 用户输入的文本
             model: 使用的模型名称
+            user_info: 用户信息，用于保存图片到正确目录
             
         Returns:
-            文本响应内容
+            文本响应内容或包含图片URL的响应
         """
         try:
             logger.info(f"🔍 [DEBUG] gpt_by_tuzi 参数:")
             logger.info(f"   prompt: {prompt}")
             logger.info(f"   model: {model}")
-            logger.info(f"   base_url: {self.api_url}")
+            logger.info(f"   base_url: {self.api_url}")     
+            # 检查是否需要进行图片生成 - 使用简单的关键词检测，避免额外的API调用
+            image_keywords = ["画", "绘", "生成图片", "制作图片", "创建图片", "draw", "paint", "generate image", "create image", "make image", "图"]
+            needs_image_generation = any(keyword in prompt.lower() for keyword in image_keywords)
             
-            client = OpenAI(
-                api_key=self.api_token,
-                base_url=self.api_url
-            )
-            
-            logger.info(f"🚀 [DEBUG] 调用 client.chat.completions.create...")
-            completion = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
-            
-            if completion.choices and len(completion.choices) > 0:
-                response_content = completion.choices[0].message.content
-                if response_content:
-                    logger.info(f"✅ [DEBUG] GPT 响应: {response_content[:100]}...")
-                    return response_content
-                else:
-                    logger.error("❌ GPT 响应内容为空")
-                    return None
+            logger.info(f"🤖 [DEBUG] 关键词检测结果: 需要图片生成: {needs_image_generation}")
+            logger.info(f"🔍 [DEBUG] 用户输入: {prompt}")
+
+            if needs_image_generation:
+                logger.info(f"🎨 [DEBUG] 使用图片生成模式")
+                return await self._generate_image_with_gpt(prompt, model, user_info)
             else:
-                logger.error("❌ GPT 响应没有choices")
-                return None
+                logger.info(f"💬 [DEBUG] 使用文本对话模式")
+                return await self._chat_with_gpt(prompt, model)
             
         except Exception as e:
             logger.error(f"❌ GPT 调用失败: {e}")
             return None
 
-    async def edit_image_by_tuzi(
+    async def _chat_with_gpt(self, prompt: str, model: str) -> Optional[str]:
+        """GPT 文本对话"""
+        logger.info(f"🚀 [DEBUG] 调用 client.chat.completions.create...")
+
+        client = AsyncOpenAI(
+                api_key=self.api_token,
+                base_url=self.api_url,
+                timeout=60.0  # 设置60秒超时
+            )
+        
+        completion = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        
+        if completion.choices and len(completion.choices) > 0:
+            response_content = completion.choices[0].message.content
+            if response_content:
+                logger.info(f"✅ [DEBUG] GPT 响应: {response_content[:100]}...")
+                return response_content
+            else:
+                logger.error("❌ GPT 响应内容为空")
+                return None
+        else:
+            logger.error("❌ GPT 响应没有choices")
+            return None
+
+    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[str]:
+        """GPT 图片生成并保存到用户目录"""
+        from services.config_service import get_user_files_dir
+        from tools.utils.image_utils import get_image_info_and_save
+        from nanoid import generate
+        import os
+        
+        logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
+        logger.info(f"🔍 [DEBUG] 使用模型: {model}")
+        logger.info(f"🔍 [DEBUG] 提示词: {prompt}")
+        logger.info(f"🔍 [DEBUG] API地址: {self.api_url}")
+
+        try:
+            client = AsyncOpenAI(
+                api_key=self.api_token,
+                base_url=self.api_url,
+                timeout=60.0  # 设置60秒超时
+            )
+            
+            logger.info(f"🚀 [DEBUG] AsyncOpenAI 客户端创建成功，开始调用...")
+            
+            result = await client.images.generate(
+                model=model,
+                prompt=prompt
+            )
+            
+            logger.info(f"✅ [DEBUG] 图片生成API调用成功")
+            
+        except Exception as e:
+            logger.error(f"❌ [ERROR] 图片生成API调用失败: {e}")
+            return f"✨ GPT Image Generation Failed: {str(e)}"
+        
+        if result.data and len(result.data) > 0:
+            image_data = result.data[0]
+            
+            # 获取图片URL
+            if hasattr(image_data, 'url') and image_data.url:
+                image_url = image_data.url
+                logger.info(f"✅ [DEBUG] GPT 图片生成成功: {image_url}")
+                
+                # 保存图片到用户目录
+                try:
+                    # 获取用户文件目录
+                    user_email = user_info.get('email') if user_info else None
+                    user_id = user_info.get('uuid') if user_info else None
+                    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+                    
+                    # 生成唯一文件名
+                    file_id = generate(size=10)
+                    file_path_without_extension = os.path.join(user_files_dir, file_id)
+                    
+                    # 下载并保存图片
+                    mime_type, width, height, extension = await get_image_info_and_save(
+                        image_url, file_path_without_extension, is_b64=False
+                    )
+                    
+                    filename = f'{file_id}.{extension}'
+                    logger.info(f"✅ GPT 图片已保存到用户目录: {filename}")
+                    
+                    # 返回本地文件链接格式
+                    from common import DEFAULT_PORT
+                    local_image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+                    return f"✨ GPT Image Generated Successfully\n\n![image_id: {filename}]({local_image_url})"
+                    
+                except Exception as e:
+                    logger.error(f"❌ 保存 GPT 图片失败: {e}")
+                    return f"✨ GPT Image Generated (remote): 图片已生成但保存到本地失败"
+            else:
+                logger.error("❌ GPT 图片响应无URL")
+                return None
+        else:
+            logger.error("❌ GPT 图片生成失败")
+            return None
+
+    async def gemini_edit_image_by_tuzi(
         self,
         file_path: list[str],
         prompt: str,
@@ -422,9 +515,10 @@ class TuziLLMService:
         """
         try:
             # 创建 OpenAI 客户端
-            client = OpenAI(
+            client = AsyncOpenAI(
                 base_url=self.api_url,
-                api_key=self.api_token
+                api_key=self.api_token,
+                timeout=120.0  # 图片编辑可能需要更长时间
             )
             
             # 打印详细的调试信息
@@ -443,7 +537,7 @@ class TuziLLMService:
             logger.info(f"🚀 [DEBUG] 调用 client.images.edit...")
             logger.info(f"   images 数量: {len(images)}")
             
-            result = client.images.edit(
+            result = await client.images.edit(
                 model=model,
                 image=images,
                 prompt=prompt
@@ -513,7 +607,7 @@ class TuziLLMService:
             print(f"❌ Error generating image: {e}")
             return None
 
-    async def generate_by_tuzi(
+    async def gemini_generate_by_tuzi(
         self,
         prompt: str,
         model: str = "gemini-2.5-flash-image"
@@ -530,9 +624,10 @@ class TuziLLMService:
         """
         try:
             # 创建 OpenAI 客户端
-            client = OpenAI(
+            client = AsyncOpenAI(
                 base_url=self.api_url,
-                api_key=self.api_token
+                api_key=self.api_token,
+                timeout=120.0  # 图片生成可能需要更长时间
             )
             
             # 打印详细的调试信息
@@ -547,19 +642,10 @@ class TuziLLMService:
             logger.info(f"🔍 [DEBUG] 传递给API的模型名称: '{model}'")
             logger.info(f"🔍 [DEBUG] 传递给API的提示词: '{prompt}'")
             logger.info(f"🔍 [DEBUG] API调用URL: {self.api_url}/images/generations")
-            
-            # 检查并修正图像生成模型名称
-            # 兔子API使用OpenAI兼容接口，需要使用实际支持的图像模型名称
-            if model == "gemini-2.5-flash-image":
-                # 兔子API支持的图像生成模型
-                image_model = "dall-e-3"  # 使用DALL-E 3作为图像生成模型
-                logger.info(f"🔄 [DEBUG] 模型映射: {model} -> {image_model}")
-            else:
-                image_model = model
-            
+            image_model = model
             logger.info(f"🎯 [DEBUG] 最终使用的图像生成模型: {image_model}")
             
-            result = client.images.generate(
+            result = await client.images.generate(
                 model=image_model,
                 prompt=prompt
             )

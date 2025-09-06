@@ -13,11 +13,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api/canvas")
 
 @router.get("/list")
-async def list_canvases(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
-    logger.info("🎯 === CANVAS LIST API CALLED ===")
-    logger.info(f"🔍 Request cookies: {dict(request.cookies)}")
-    logger.info(f"🔍 Current user object: {current_user}")
-    
+async def list_canvases(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)): 
     if current_user:
         logger.info(f"🔍 Current user details:")
         logger.info(f"  - ID: {current_user.id}")
