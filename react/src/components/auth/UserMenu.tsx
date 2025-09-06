@@ -13,12 +13,29 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
-import { PointsDisplay } from './PointsDisplay'
+import { useBalance } from '@/hooks/use-balance'
+import { useEffect } from 'react'
+import { Zap, ShoppingCart, LogOut } from 'lucide-react'
 
 export function UserMenu() {
   const { authStatus } = useAuth()
   const { setShowLoginDialog } = useConfigs()
   const { t } = useTranslation()
+  const { balance, isLoading, error } = useBalance()
+
+  // 计算积分显示
+  const points = Math.max(0, Math.floor(parseFloat(balance) * 100))
+
+  // 调试认证状态
+  useEffect(() => {
+    console.log('👤 UserMenu 认证状态:', {
+      isLoggedIn: authStatus.is_logged_in,
+      hasUserInfo: !!authStatus.user_info,
+      userEmail: authStatus.user_info?.email,
+      status: authStatus.status,
+      points,
+    })
+  }, [authStatus, points])
 
   const handleLogout = async () => {
     console.log('🚪 UserMenu: Starting logout...')
@@ -40,19 +57,34 @@ export function UserMenu() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative p-0 h-auto">
-            <PointsDisplay>
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={image_url} alt={username} />
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-            </PointsDisplay>
+          <Button variant="ghost" className="relative p-1 h-auto rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={image_url} alt={username} />
+              <AvatarFallback className="text-sm">{initials}</AvatarFallback>
+            </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>{t('common:auth.myAccount')}</DropdownMenuLabel>
-          <DropdownMenuItem disabled>{username}</DropdownMenuItem>
+          <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+            {username}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
+          
+          {/* 当前积分显示 */}
+          <DropdownMenuItem disabled className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Zap className="w-4 h-4 mr-2" />
+              <span>当前积分</span>
+            </div>
+            <span className="font-semibold">
+              {isLoading ? '...' : error ? '--' : points}
+            </span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          {/* 购买点数 */}
           <DropdownMenuItem
             onClick={() => {
               const billingUrl = `${BASE_API_URL}/billing`
@@ -63,11 +95,16 @@ export function UserMenu() {
               }
             }}
           >
-            {t('common:auth.recharge')}
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            <span>购买点数</span>
           </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
+          
+          {/* 退出 */}
           <DropdownMenuItem onClick={handleLogout}>
-            {t('common:auth.logout')}
+            <LogOut className="w-4 h-4 mr-2" />
+            <span>退出</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

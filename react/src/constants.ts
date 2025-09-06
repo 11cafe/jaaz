@@ -3,9 +3,11 @@ import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 // API Configuration
 // 🚨 Important: Use localhost instead of 127.0.0.1 to avoid cross-origin cookie issues
 // 自动检测环境并使用正确的协议
-export const BASE_API_URL = import.meta.env.PROD
-  ? 'https://www.magicart.cc'
-  : 'http://localhost:8000'
+// export const BASE_API_URL = import.meta.env.PROD
+//   ? 'https://www.magicart.cc'
+//   : 'http://localhost:8000'
+
+export const BASE_API_URL = 'http://localhost:8000'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }

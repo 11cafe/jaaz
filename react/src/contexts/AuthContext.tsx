@@ -1,6 +1,13 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { AuthStatus, getAuthStatus, checkUrlAuthParams, checkDirectAuthParams, completeAuth, saveAuthData } from '../api/auth'
+import {
+  AuthStatus,
+  getAuthStatus,
+  checkUrlAuthParams,
+  checkDirectAuthParams,
+  completeAuth,
+  saveAuthData,
+} from '../api/auth'
 import { updateJaazApiKey } from '../api/config'
 import { tokenManager } from '../utils/tokenManager'
 import { crossTabSync } from '../utils/crossTabSync'
@@ -53,30 +60,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 检查URL参数中的认证状态
     const handleUrlAuth = async () => {
       console.log('🔄 AuthContext initializing...')
-      
+
       // 1. 优先检查直接认证方式
       const directAuth = checkDirectAuthParams()
-      
+
       if (directAuth.authError) {
         toast.error(`登录失败: ${directAuth.authError}`)
         setIsLoading(false)
         return
       }
-      
+
       if (directAuth.authSuccess && directAuth.authData) {
         try {
           console.log('💾 Processing direct auth data...')
           // 直接保存认证数据
           saveAuthData(directAuth.authData.token, directAuth.authData.user_info)
-          
+
           // 更新jaaz provider api_key
           await updateJaazApiKey(directAuth.authData.token)
-          
+
           // 📢 通知其他标签页
           crossTabSync.notifyAuthStatusChanged({ type: 'login_success' })
-          
+
           toast.success('登录成功!')
-          
+
           // 刷新认证状态
           await refreshAuth()
           return
@@ -85,34 +92,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           toast.error('登录过程中出现错误')
         }
       }
-      
+
       // 2. 检查旧的设备码认证方式（向后兼容）
       const deviceAuth = checkUrlAuthParams()
-      
+
       if (deviceAuth.authError) {
         toast.error(`登录失败: ${deviceAuth.authError}`)
         setIsLoading(false)
         return
       }
-      
+
       if (deviceAuth.authSuccess && deviceAuth.deviceCode) {
         try {
           console.log('🔧 Processing device auth code...')
           // 完成认证流程
           const result = await completeAuth(deviceAuth.deviceCode)
-          
+
           if (result.status === 'authorized' && result.token && result.user_info) {
             // 保存认证数据
             saveAuthData(result.token, result.user_info)
-            
+
             // 更新jaaz provider api_key
             await updateJaazApiKey(result.token)
-            
+
             // 📢 通知其他标签页
             crossTabSync.notifyAuthStatusChanged({ type: 'device_login_success' })
-            
+
             toast.success('登录成功!')
-            
+
             // 刷新认证状态
             await refreshAuth()
             return
@@ -122,12 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           toast.error('登录过程中出现错误')
         }
       }
-      
+
       // 3. 正常的认证状态检查（包括页面刷新时的状态恢复）
-      console.log('🔍 Checking existing auth status...')
       await refreshAuth()
     }
-    
+
     handleUrlAuth()
   }, [refreshAuth])
 
