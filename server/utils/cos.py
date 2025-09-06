@@ -2,15 +2,19 @@ from typing import Optional
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 import sys
+import os
+import dotenv
+
+dotenv.load_dotenv()
 
 class CosUtils:
     """
     腾讯云存储工具
     """
     def __init__(self) -> None:
-        secret_id = 'AKIDDIBrJYgePxIPIJ8j6JJ5e2D2f5KMAlAO'      # 替换为用户的 SecretId
-        secret_key = '4wZ3LPIhBUaVDhxzpSozxhEXcUAdsuiJ'    # 替换为用户的 SecretKey
-        self.region = 'ap-hongkong'             # 替换为用户的 region，例如 ap-beijing
+        secret_id = os.getenv('COS_SECRET_ID')    # 替换为用户的 SecretId
+        secret_key = os.getenv('COS_SECRET_KEY')    # 替换为用户的 SecretKey
+        self.region = os.getenv('COS_REGION')              # 替换为用户的 region，例如 ap-beijing
         token = None                      # 如果使用永久密钥不需要填入token，如果使用临时密钥需要填入
         # 2. 获取配置对象
         config = CosConfig(Region=self.region, SecretId=secret_id, SecretKey=secret_key, Token=token)
