@@ -67,6 +67,7 @@ const queryClient = new QueryClient({
 function App() {
   const { theme } = useTheme()
 
+
   // Auto-start ComfyUI on app startup
   useEffect(() => {
     const autoStartComfyUI = async () => {

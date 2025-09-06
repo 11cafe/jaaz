@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from 'react-i18next'
-import { useConfigs } from '@/contexts/configs'
+import { useConfigs, useRefreshModels, ConfigsContext } from '@/contexts/configs'
 import { ModelInfo, ToolInfo } from '@/api/model'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -23,97 +23,59 @@ interface ModelSelectorV3Props {
 const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
   const { textModel, setTextModel, textModels, selectedTools, setSelectedTools, allTools } =
     useConfigs()
+  
+  const configsContext = React.useContext(ConfigsContext)
+  const isModelInitialized = configsContext?.isModelInitialized || false
 
   const [activeTab, setActiveTab] = useState<'image' | 'video' | 'text'>('image')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const { t } = useTranslation()
 
-  // 全局单选：只能选择一个模型（文本或工具）
+  // 全局单选：只能选择一个模型（文本或工具）- 依赖 configs.tsx 的状态
   const [globalSelectedModel, setGlobalSelectedModel] = useState<{
     model: ModelInfo | ToolInfo
     type: 'text' | 'image' | 'video'
-  } | null>(() => {
-    // 优先返回当前选中的文本模型
-    if (textModel) {
-      return { model: textModel, type: 'text' }
-    }
-    // 然后检查工具模型
-    const selectedTool = selectedTools[0]
-    if (selectedTool) {
-      return { model: selectedTool, type: selectedTool.type as 'image' | 'video' }
-    }
-    // 默认选择第一个可用的图像模型
-    const imageTools = allTools.filter((tool) => tool.type === 'image')
-    if (imageTools.length > 0) {
-      return { model: imageTools[0], type: 'image' }
-    }
-    return null
-  })
+  } | null>(null)
 
-  // 智能初始化：确保有默认选择
+  // 等待 configs.tsx 初始化完成后，同步全局选择状态
   React.useEffect(() => {
-    if (!globalSelectedModel) {
-      // 优先选择 Google 的画图工具
-      const googleImageTool = allTools.find((tool) => 
-        tool.type === 'image' && 
-        tool.provider === 'google' && 
-        (tool.display_name === 'gemini-2.5-flash-image' || tool.id === 'generate_image_by_google_nano_banana')
-      )
-      
-      if (googleImageTool) {
-        setGlobalSelectedModel({ model: googleImageTool, type: 'image' })
-        const modelName = googleImageTool.display_name || googleImageTool.id
-        localStorage.setItem('current_selected_model', modelName)
-        
-        // 同步设置选中的工具：只选择 Google 画图工具
-        setSelectedTools([googleImageTool])
-        // 更新 localStorage，禁用其他工具
-        const disabledToolIds = allTools.filter((t) => t.id !== googleImageTool.id).map((t) => t.id)
-        localStorage.setItem('disabled_tool_ids', JSON.stringify(disabledToolIds))
-        
-        // 清空文本模型选择
-        setTextModel(null)
-        localStorage.removeItem('text_model')
-      } else if (textModel) {
-        // 如果没有找到 Google 画图工具，才选择文本模型
+    if (!isModelInitialized) {
+      console.log('🔄 [ModelSelectorV3] 等待模型初始化完成...')
+      return
+    }
+
+    console.log('🔧 [ModelSelectorV3] 同步全局选择状态', {
+      textModel: textModel?.model,
+      selectedToolsCount: selectedTools.length,
+      currentGlobalSelection: globalSelectedModel?.type
+    })
+
+    // 根据 configs.tsx 的状态同步 globalSelectedModel（移除自动切换tab）
+    if (textModel) {
+      // 如果有文本模型选择，优先使用文本模型
+      if (!globalSelectedModel || globalSelectedModel.type !== 'text' || 
+          (globalSelectedModel.model as ModelInfo).model !== textModel.model) {
+        console.log('📝 同步文本模型选择:', textModel.model)
         setGlobalSelectedModel({ model: textModel, type: 'text' })
-        localStorage.setItem('current_selected_model', textModel.model)
-        
-        // 同步状态：选择文本模型，清空工具选择
-        setSelectedTools([])
-        localStorage.setItem('disabled_tool_ids', JSON.stringify(allTools.map((t) => t.id)))
-        localStorage.setItem('text_model', textModel.provider + ':' + textModel.model)
-      } else {
-        // 最后的兜底：选择第一个可用的图像模型
-        const imageTools = allTools.filter((tool) => tool.type === 'image')
-        if (imageTools.length > 0) {
-          const firstTool = imageTools[0]
-          setGlobalSelectedModel({ model: firstTool, type: 'image' })
-          const modelName = firstTool.display_name || firstTool.id
-          localStorage.setItem('current_selected_model', modelName)
-          
-          // 同步设置选中的工具
-          setSelectedTools([firstTool])
-          const disabledToolIds = allTools.filter((t) => t.id !== firstTool.id).map((t) => t.id)
-          localStorage.setItem('disabled_tool_ids', JSON.stringify(disabledToolIds))
-          
-          // 清空文本模型选择
-          setTextModel(null)
-          localStorage.removeItem('text_model')
-        }
+        // 不再自动切换tab，让用户保持当前浏览的tab
+      }
+    } else if (selectedTools.length > 0) {
+      // 如果没有文本模型但有工具选择，使用第一个工具
+      const firstTool = selectedTools[0]
+      if (!globalSelectedModel || globalSelectedModel.type !== firstTool.type ||
+          (globalSelectedModel.model as ToolInfo).id !== firstTool.id) {
+        console.log('🎯 同步工具模型选择:', firstTool.display_name || firstTool.id)
+        setGlobalSelectedModel({ model: firstTool, type: firstTool.type as 'image' | 'video' })
+        // 不再自动切换tab，让用户保持当前浏览的tab
       }
     } else {
-      // 如果已有选择，确保 cookie 同步
-      if (globalSelectedModel.type === 'text') {
-        const model = globalSelectedModel.model as ModelInfo
-        localStorage.setItem('current_selected_model', model.model)
-      } else {
-        const tool = globalSelectedModel.model as ToolInfo
-        const modelName = tool.display_name || tool.id
-        localStorage.setItem('current_selected_model', modelName)
+      // 清空选择
+      if (globalSelectedModel) {
+        console.log('🧹 清空模型选择')
+        setGlobalSelectedModel(null)
       }
     }
-  }, [globalSelectedModel, textModel, allTools])
+  }, [isModelInitialized, textModel, selectedTools, globalSelectedModel])
 
   // Group models by provider
   const groupModelsByProvider = (models: typeof allTools) => {
@@ -170,8 +132,10 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
         setTextModel(model)
         localStorage.setItem('text_model', modelKey)
 
-        // 保存当前选择的模型到 cookie
+        // 保存当前选择的模型到 localStorage，确保格式一致
         localStorage.setItem('current_selected_model', model.model)
+        console.log('✅ [ModelSelectorV3] 选择文本模型:', model.model)
+        
         // 更新全局选择状态
         setGlobalSelectedModel({ model, type: 'text' })
         onModelChange?.(modelKey, 'text')
@@ -193,9 +157,11 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
           JSON.stringify(allTools.filter((t) => t.id !== tool.id).map((t) => t.id))
         )
 
-        // 保存当前选择的模型到 cookie
+        // 保存当前选择的模型到 localStorage，确保格式一致
         const modelName = tool.display_name || tool.id
         localStorage.setItem('current_selected_model', modelName)
+        console.log('✅ [ModelSelectorV3] 选择工具模型:', modelName)
+        
         // 更新全局选择状态
         setGlobalSelectedModel({ model: tool, type: tool.type as 'image' | 'video' })
         onModelChange?.(modelKey, activeTab)
@@ -225,20 +191,23 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
     }
   }
 
-  // Check if a model is selected
+  // Check if a model is selected - 改进版本，支持跨tab的选中状态检测
   const isModelSelected = (modelKey: string) => {
     if (!globalSelectedModel) return false
 
+    // 检查文本模型匹配
     if (activeTab === 'text' && globalSelectedModel.type === 'text') {
       const model = globalSelectedModel.model as ModelInfo
       return model.provider + ':' + model.model === modelKey
-    } else if (
-      (activeTab === 'image' || activeTab === 'video') &&
-      globalSelectedModel.type === activeTab
-    ) {
+    }
+    
+    // 检查工具模型匹配
+    if ((activeTab === 'image' || activeTab === 'video') && 
+        (globalSelectedModel.type === 'image' || globalSelectedModel.type === 'video')) {
       const tool = globalSelectedModel.model as ToolInfo
       return tool.provider + ':' + tool.id === modelKey
     }
+    
     return false
   }
 
@@ -256,6 +225,32 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({ onModelChange }) => {
     { id: 'video', label: t('chat:modelSelector.tabs.video') },
     { id: 'text', label: t('chat:modelSelector.tabs.text') },
   ] as const
+
+  // 智能定位：仅在首次打开下拉菜单时定位到当前选中模型的tab
+  const hasAutoSwitchedRef = React.useRef(false)
+  const lastDropdownStateRef = React.useRef(false)
+  
+  React.useEffect(() => {
+    // 检测下拉菜单从关闭变为打开（首次打开）
+    const justOpened = dropdownOpen && !lastDropdownStateRef.current
+    
+    if (justOpened && globalSelectedModel && !hasAutoSwitchedRef.current) {
+      // 只在刚打开下拉菜单时进行一次智能定位
+      if (activeTab !== globalSelectedModel.type) {
+        console.log('🎯 下拉菜单首次打开，智能定位到:', globalSelectedModel.type)
+        setActiveTab(globalSelectedModel.type)
+        hasAutoSwitchedRef.current = true
+      }
+    }
+    
+    // 更新下拉菜单状态记录
+    lastDropdownStateRef.current = dropdownOpen
+    
+    // 关闭下拉菜单时重置标记
+    if (!dropdownOpen) {
+      hasAutoSwitchedRef.current = false
+    }
+  }, [dropdownOpen, globalSelectedModel]) // 只监听下拉菜单状态和选中模型
 
   return (
     <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
