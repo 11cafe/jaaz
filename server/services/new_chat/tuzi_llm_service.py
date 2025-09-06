@@ -391,7 +391,7 @@ class TuziLLMService:
             logger.error(f"❌ GPT 调用失败: {e}")
             return None
 
-    async def _chat_with_gpt(self, prompt: str, model: str) -> Optional[str]:
+    async def _chat_with_gpt(self, prompt: str, model: str) -> Optional[Dict[str, Any]]:
         """GPT 文本对话"""
         logger.info(f"🚀 [DEBUG] 调用 client.chat.completions.create...")
 
@@ -415,7 +415,10 @@ class TuziLLMService:
             response_content = completion.choices[0].message.content
             if response_content:
                 logger.info(f"✅ [DEBUG] GPT 响应: {response_content[:100]}...")
-                return response_content
+                return {
+                    'text_content': response_content,
+                    'type': 'text'
+                }
             else:
                 logger.error("❌ GPT 响应内容为空")
                 return None
@@ -423,7 +426,7 @@ class TuziLLMService:
             logger.error("❌ GPT 响应没有choices")
             return None
 
-    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[str]:
+    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """GPT 图片生成并保存到用户目录"""
         from services.config_service import get_user_files_dir
         from tools.utils.image_utils import get_image_info_and_save
@@ -455,6 +458,7 @@ class TuziLLMService:
             logger.error(f"❌ [ERROR] 图片生成API调用失败: {e}")
             return f"✨ GPT Image Generation Failed: {str(e)}"
         
+        response_data: Dict[str, Any] = {}
         if result.data and len(result.data) > 0:
             image_data = result.data[0]
             
@@ -466,30 +470,33 @@ class TuziLLMService:
                 # 保存图片到用户目录
                 try:
                     # 获取用户文件目录
-                    user_email = user_info.get('email') if user_info else None
-                    user_id = user_info.get('uuid') if user_info else None
-                    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+                    # user_email = user_info.get('email') if user_info else None
+                    # user_id = user_info.get('uuid') if user_info else None
+                    # user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
                     
-                    # 生成唯一文件名
-                    file_id = generate(size=10)
-                    file_path_without_extension = os.path.join(user_files_dir, file_id)
+                    # # 生成唯一文件名
+                    # file_id = generate(size=10)
+                    # file_path_without_extension = os.path.join(user_files_dir, file_id)
                     
-                    # 下载并保存图片
-                    mime_type, width, height, extension = await get_image_info_and_save(
-                        image_url, file_path_without_extension, is_b64=False
-                    )
+                    # # 下载并保存图片
+                    # mime_type, width, height, extension = await get_image_info_and_save(
+                    #     image_url, file_path_without_extension, is_b64=False
+                    # )
                     
-                    filename = f'{file_id}.{extension}'
-                    logger.info(f"✅ GPT 图片已保存到用户目录: {filename}")
+                    # filename = f'{file_id}.{extension}'
+                    # logger.info(f"✅ GPT 图片已保存到用户目录: {filename}")
                     
-                    # 返回本地文件链接格式
-                    from common import DEFAULT_PORT
-                    local_image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
-                    return f"✨ GPT Image Generated Successfully\n\n![image_id: {filename}]({local_image_url})"
+                    # # 返回本地文件链接格式
+                    # from common import DEFAULT_PORT
+                    # local_image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+                    response_data['result_url'] = image_url
+                    response_data['type'] = 'image'
+                    return response_data
+                    # return f"✨ GPT Image Generated Successfully\n\n![image_id: {filename}]({local_image_url})"
                     
                 except Exception as e:
                     logger.error(f"❌ 保存 GPT 图片失败: {e}")
-                    return f"✨ GPT Image Generated (remote): 图片已生成但保存到本地失败"
+                    return None
             else:
                 logger.error("❌ GPT 图片响应无URL")
                 return None

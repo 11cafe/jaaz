@@ -56,7 +56,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [pending, setPending] = useState<PendingType>(false) // 不再基于initCanvas设置初始状态
   const [hasDisplayedInitialMessage, setHasDisplayedInitialMessage] = useState(false)
   const mergedToolCallIds = useRef<string[]>([])
-  const pendingTimeoutRef = useRef<NodeJS.Timeout>()
+  const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>()
   const hasDisplayedInitialMessageRef = useRef(false)
   const currentMessagesRef = useRef<Message[]>([])
 
@@ -574,9 +574,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       console.log('⭐️dispatching image_generated', data)
-      setPending('image')
+      
+      // 添加图片消息到聊天记录
+      const imageMessage: Message = {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: '🎨 图片已生成并添加到画布'
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: data.image_url
+            }
+          }
+        ] as MessageContent[]
+      }
+      
+      // 添加canvas定位信息到消息（用于点击定位功能）
+      const messageWithCanvasInfo = {
+        ...imageMessage,
+        canvas_element_id: data.element.id, // 添加canvas元素ID
+        canvas_id: data.canvas_id // 添加canvas ID
+      }
+      
+      setMessages(produce((prev) => {
+        prev.push(messageWithCanvasInfo)
+      }))
+      
+      setPending(false) // 取消loading状态
+      scrollToBottom()
     },
-    [canvasId, sessionId]
+    [canvasId, sessionId, scrollToBottom]
   )
 
   const handleUserImages = useCallback(
@@ -900,7 +930,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     ) : Array.isArray(message.content) ? (
                       // 混合内容消息（文本+图片）
                       <>
-                        <MixedContentImages contents={message.content} />
+                        <MixedContentImages 
+                          contents={message.content} 
+                          canvasElementId={(message as any).canvas_element_id} 
+                        />
                         <MixedContentText message={message} contents={message.content} />
                       </>
                     ) : null}
