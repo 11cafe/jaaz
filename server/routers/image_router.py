@@ -24,7 +24,7 @@ os.makedirs(FILES_DIR, exist_ok=True)
 @router.post("/upload_image")
 async def upload_image(
     file: UploadFile = File(...), 
-    max_size_mb: float = 3.0,
+    max_size_mb: float = 50.0,  # 增加默认限制到50MB
     current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
 ):
     logger.info(f'🦄upload_image file {file.filename}')

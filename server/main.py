@@ -17,7 +17,7 @@ logger.info('Importing routers')
 from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings, tool_confirmation, templates_router, auth_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import argparse
 from contextlib import asynccontextmanager
@@ -52,7 +52,11 @@ async def lifespan(app: FastAPI):
     # onshutdown
 
 logger.info('Creating FastAPI app')
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    # 设置请求体大小限制（50MB）
+    # 注意：这个参数在较新版本的FastAPI中可能需要使用其他方式设置
+)
 
 # Add CORS middleware
 app.add_middleware(
@@ -69,6 +73,27 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 明确指定允许的HTTP方法
     allow_headers=["*"],  # 允许所有头部
 )
+
+# 添加文件大小检查中间件
+@app.middleware("http")
+async def limit_upload_size(request: Request, call_next):
+    """限制上传文件大小的中间件"""
+    # 设置最大文件大小 (50MB)
+    MAX_SIZE = 50 * 1024 * 1024  # 50MB in bytes
+    
+    if request.method == "POST":
+        content_length = request.headers.get("content-length")
+        if content_length:
+            content_length = int(content_length)
+            if content_length > MAX_SIZE:
+                logger.warning(f"Request size {content_length} bytes exceeds limit {MAX_SIZE} bytes")
+                raise HTTPException(
+                    status_code=413, 
+                    detail=f"Request entity too large. Maximum size is {MAX_SIZE // (1024*1024)}MB"
+                )
+    
+    response = await call_next(request)
+    return response
 
 # Include routers
 logger.info('Including routers')
