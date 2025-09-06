@@ -591,6 +591,19 @@ class TuziLLMService:
                 else:
                     logger.info(f"   无 url 属性")
                 
+                # 检查是否有文本回复（当没有图片生成时）
+                if "image_base64" not in response_data \
+                    and "result_url" not in response_data \
+                    and hasattr(image_data, 'revised_prompt'):
+                    logger.info(f"   revised_prompt 属性存在: {image_data.revised_prompt}")
+                    if image_data.revised_prompt and not response_data:
+                        # 如果没有图片数据但有文本回复，说明这是一个文本对话
+                        response_data['text_content'] = image_data.revised_prompt
+                        response_data['type'] = 'text'
+                        logger.info(f"✅ Gemini text response: {image_data.revised_prompt}")
+                else:
+                    logger.info(f"   无 revised_prompt 属性")
+                
                 # 尝试其他可能的属性
                 for attr in ['image', 'data', 'content', 'image_url', 'image_data']:
                     if hasattr(image_data, attr):
@@ -697,6 +710,19 @@ class TuziLLMService:
                         logger.info(f"✅ Image generated with URL: {image_data.url}")
                 else:
                     logger.info(f"   无 url 属性")
+                
+                # 检查是否有文本回复（当没有图片生成时）
+                if "image_base64" not in response_data \
+                    and "result_url" not in response_data \
+                    and hasattr(image_data, 'revised_prompt'):
+                    logger.info(f"   revised_prompt 属性存在: {image_data.revised_prompt}")
+                    if image_data.revised_prompt and not response_data:
+                        # 如果没有图片数据但有文本回复，说明这是一个文本对话
+                        response_data['text_content'] = image_data.revised_prompt
+                        response_data['type'] = 'text'
+                        logger.info(f"✅ Gemini text response: {image_data.revised_prompt}")
+                else:
+                    logger.info(f"   无 revised_prompt 属性")
                 
                 # 尝试其他可能的属性
                 for attr in ['image', 'data', 'content', 'image_url', 'image_data']:
