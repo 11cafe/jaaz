@@ -206,12 +206,14 @@ class MagicDrawService:
 
             raise Exception(f"Task polling timeout after {max_attempts} attempts")
 
-    async def generate_magic_image(self, system_prompt: str, image_content: str) -> Optional[Dict[str, Any]]:
+    async def generate_magic_image(self, system_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         生成魔法图像的完整流程
 
         Args:
+            system_prompt: 系统提示词
             image_content: 图片内容（base64 或 URL）
+            user_info: 用户信息，包含email和uuid等
 
         Returns:
             Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
@@ -241,26 +243,27 @@ class MagicDrawService:
                 magic_prompt = "enhance the image with magical effects"
                 logger.error("⚠️ 无法解析图片格式，使用默认提示词")
             
-            # 将图片内容写入user_data目录
-            
-            
-            # 确保user_data目录存在
-            user_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'user_data')
-            os.makedirs(user_data_dir, exist_ok=True)
+            # 将图片内容写入用户目录
+            from services.config_service import get_user_files_dir
             
             # 生成唯一文件名
             file_id = str(uuid.uuid4())
+            
+            # 获取用户文件目录（使用和chat接口相同的逻辑）
+            user_email = user_info.get('email') if user_info else None
+            user_id = user_info.get('uuid') if user_info else None
+            user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
             
             if image_content.startswith('data:image/'):
                 # 从data URL中提取格式和数据
                 header, encoded = image_content.split(',', 1)
                 image_format = header.split(';')[0].split('/')[1]  # 获取图片格式(jpeg, png等)
                 image_data = base64.b64decode(encoded)
-                file_path = os.path.join(user_data_dir, f"{file_id}.{image_format}")
+                file_path = os.path.join(user_files_dir, f"{file_id}.{image_format}")
             else:
                 # 假设是其他格式，默认保存为jpg
-                image_data = image_content.encode() if isinstance(image_content, str) else image_content
-                file_path = os.path.join(user_data_dir, f"{file_id}.jpg")
+                image_data = image_content.encode()
+                file_path = os.path.join(user_files_dir, f"{file_id}.jpg")
             
             # 写入文件
             with open(file_path, 'wb') as f:
@@ -281,12 +284,15 @@ class MagicDrawService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def generate_image(self, user_prompt: str, image_content: str, template_id: str) -> Optional[Dict[str, Any]]:
+    async def generate_image(self, user_prompt: str, image_content: str, template_id: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         生成魔法图像的完整流程
 
         Args:
+            user_prompt: 用户提示词
             image_content: 图片内容（base64 或 URL）
+            template_id: 模板ID
+            user_info: 用户信息，包含email和uuid等
 
         Returns:
             Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
@@ -294,9 +300,12 @@ class MagicDrawService:
         try:
             logger.info("generate_image")
             
-            # 确保user_data目录存在
-            user_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'user_data')
-            os.makedirs(user_data_dir, exist_ok=True)
+            # 获取用户文件目录
+            from services.config_service import get_user_files_dir
+            
+            user_email = user_info.get('email') if user_info else None
+            user_id = user_info.get('uuid') if user_info else None
+            user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
             
             # 使用用户提示词作为魔法提示词
             magic_prompt = user_prompt if user_prompt else "enhance the image with magical effects"
@@ -311,11 +320,11 @@ class MagicDrawService:
                 header, encoded = image_content.split(',', 1)
                 image_format = header.split(';')[0].split('/')[1]  # 获取图片格式(jpeg, png等)
                 image_data = base64.b64decode(encoded)
-                file_path = os.path.join(user_data_dir, f"{file_id}.{image_format}")
+                file_path = os.path.join(user_files_dir, f"{file_id}.{image_format}")
             else:
                 # 假设是其他格式，默认保存为jpg
                 image_data = image_content.encode()
-                file_path = os.path.join(user_data_dir, f"{file_id}.jpg")
+                file_path = os.path.join(user_files_dir, f"{file_id}.jpg")
             
             # 写入文件
             with open(file_path, 'wb') as f:

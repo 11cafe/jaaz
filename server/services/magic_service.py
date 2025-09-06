@@ -82,7 +82,9 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id, system_prompt, template_id, user_uuid))
+    # 从data中获取用户信息，如果有的话
+    user_info = data.get('user_info')
+    task = asyncio.create_task(_process_magic_generation(messages, session_id, canvas_id, system_prompt, template_id, user_uuid, user_info))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -178,7 +180,8 @@ async def _process_magic_generation(
     canvas_id: str,
     system_prompt: str = "",
     template_id: str = "",
-    user_uuid: Optional[str] = None
+    user_uuid: Optional[str] = None,
+    user_info: Optional[Dict[str, Any]] = None
 ) -> None:
     """
     Process magic generation in a separate async task.
@@ -191,7 +194,7 @@ async def _process_magic_generation(
 
     # 原来是基于云端生成
     # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
-    ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id)
+    ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id, user_info=user_info)
 
     # Save AI response to database
     await db_service.create_message(session_id, 'assistant', json.dumps(ai_response), user_uuid)

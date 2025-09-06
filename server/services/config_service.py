@@ -205,7 +205,7 @@ def email_to_directory_name(email: str) -> str:
     return safe_name
 
 
-def get_user_files_dir(user_email: str = None, user_id: str = None) -> str:
+def get_user_files_dir(user_email: Optional[str] = None, user_id: Optional[str] = None) -> str:
     """
     获取用户文件目录路径
     优先使用邮箱，如果没有邮箱则使用用户ID（向后兼容）

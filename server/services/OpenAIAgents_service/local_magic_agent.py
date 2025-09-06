@@ -1,6 +1,6 @@
 # services/OpenAIAgents_service/jaaz_agent.py
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import asyncio
 import os
 from nanoid import generate
@@ -16,7 +16,8 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
                                       session_id: str = "", 
                                       canvas_id: str = "",
                                       system_prompt: str = "",
-                                      template_id: str = "") -> Dict[str, Any]:
+                                      template_id: str = "",
+                                      user_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     本地的魔法生成功能
     实现和 magic_agent 相同的功能
@@ -61,7 +62,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
 
         # 调用tuzi服务生成魔法图像
         if not template_id:
-            result = await magic_draw_service.generate_magic_image(system_prompt, image_content)
+            result = await magic_draw_service.generate_magic_image(system_prompt, image_content, user_info)
         else:
             # 如果有template_id，从TEMPLATES获取对应的prompt
             template_prompt = ""
@@ -80,7 +81,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             
             # 使用模板的prompt或用户的prompt，确保是字符串类型
             final_prompt = str(template_prompt if template_prompt else user_prompt)
-            result = await magic_draw_service.generate_image(final_prompt, image_content, template_id)
+            result = await magic_draw_service.generate_image(final_prompt, image_content, template_id, user_info)
         if not result:
             return {
                 'role': 'assistant',
