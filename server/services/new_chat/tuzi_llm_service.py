@@ -283,7 +283,7 @@ class TuziLLMService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def generate(self, model_name:str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    async def generate(self, model_name:str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]] | str:
         """
         生成魔法图像的完整流程
 
@@ -428,7 +428,7 @@ class TuziLLMService:
             logger.error("❌ GPT 响应没有choices")
             return None
 
-    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]] | str:
         """GPT 图片生成并保存到用户目录""" 
         logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
         logger.info(f"🔍 [DEBUG] 使用模型: {model}")
@@ -454,7 +454,11 @@ class TuziLLMService:
             
         except Exception as e:
             logger.error(f"❌ [ERROR] 图片生成API调用失败: {e}")
-            return f"✨ GPT Image Generation Failed: {str(e)}"
+            # 导入错误消息工具
+            from utils.error_messages import get_user_friendly_error
+            friendly_message = get_user_friendly_error(str(e))
+            logger.info(f"🔄 [DEBUG] 返回用户友好错误消息: {friendly_message}")
+            return friendly_message
         
         response_data: Dict[str, Any] = {}
         if result.data and len(result.data) > 0:

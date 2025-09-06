@@ -4,6 +4,7 @@ from common import DEFAULT_PORT, BASE_URL
 from tools.utils.image_canvas_utils import generate_file_id
 from services.config_service import FILES_DIR, get_user_files_dir, get_legacy_files_dir
 from utils.auth_utils import get_current_user_optional, CurrentUser
+from utils.cos_image_service import get_cos_image_service
 from typing import Optional
 
 from PIL import Image
@@ -104,16 +105,43 @@ async def upload_image(
             # img.save(file_path, format=save_format)
             await run_in_threadpool(img.save, file_path, format=save_format)
 
-    # 返回文件信息
-    logger.info(f'🦄upload_image file_path {file_path}')
-    return {
-        'file_id': f'{file_id}.{extension}',
-        'url': f'{BASE_URL}/api/file/{file_id}.{extension}',
-        'width': width,
-        'height': height,
-        'user_email': user_email,  # 返回用户邮箱用于调试
-        'user_id': user_id,  # 返回用户ID用于调试
-    }
+    # 尝试上传到腾讯云
+    cos_service = get_cos_image_service()
+    filename_with_ext = f'{file_id}.{extension}'
+    content_type = f'image/{extension}' if extension == 'png' else 'image/jpeg'
+    
+    cos_url = await cos_service.upload_image_from_file(
+        local_file_path=file_path,
+        image_key=filename_with_ext,
+        content_type=content_type,
+        delete_local=cos_service.available  # 只有在腾讯云可用时才删除本地文件
+    )
+    
+    if cos_url:
+        # 腾讯云上传成功
+        logger.info(f'✅ 图片上传到腾讯云成功: {filename_with_ext} -> {cos_url}')
+        return {
+            'file_id': filename_with_ext,
+            'url': cos_url,  # 返回腾讯云URL
+            'width': width,
+            'height': height,
+            'user_email': user_email,
+            'user_id': user_id,
+            'storage_type': 'tencent_cloud',  # 标记存储类型
+        }
+    else:
+        # 腾讯云不可用，回退到本地存储
+        logger.info(f'📁 腾讯云不可用，使用本地存储: {filename_with_ext}')
+        local_url = f'{BASE_URL}/api/file/{filename_with_ext}'
+        return {
+            'file_id': filename_with_ext,
+            'url': local_url,  # 返回本地URL
+            'width': width,
+            'height': height,
+            'user_email': user_email,
+            'user_id': user_id,
+            'storage_type': 'local',  # 标记存储类型
+        }
 
 
 def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
@@ -163,16 +191,26 @@ def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
     return buffer.getvalue()
 
 
-# 文件下载接口
+# 文件下载接口 - 重定向到腾讯云
 @router.get("/file/{file_id}")
 async def get_file(
     file_id: str,
     current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
 ):
-    # 正确使用 FastAPI 依赖注入获取用户信息（参考 chat_router.py）
+    # 首先尝试从腾讯云获取图片URL
+    cos_service = get_cos_image_service()
+    cos_url = cos_service.get_image_url(file_id)
+    
+    if cos_url:
+        logger.info(f'✅ 从腾讯云获取图片: {file_id} -> {cos_url}')
+        # 重定向到腾讯云URL
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=cos_url, status_code=302)
+    
+    # 向后兼容：如果腾讯云中没有，尝试从本地文件系统获取
     user_email = current_user.email if current_user else None
     user_id = str(current_user.id) if current_user else None
-    logger.info(f"[debug] get_file - user_email: {user_email}, user_id: {user_id}")
+    logger.info(f"[向后兼容] get_file - user_email: {user_email}, user_id: {user_id}")
     
     # 首先尝试从用户目录查找文件（优先使用邮箱目录）
     if user_email or user_id:

@@ -92,9 +92,10 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         if result.get('error'):
             error_msg = result['error']
             print(f"❌ Magic generation error: {error_msg}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
-                'content': f'✨ Magic Generation Error: {error_msg}'
+                'content': get_user_friendly_error(error_msg)
             }
 
         # 检查是否有结果 URL
@@ -149,9 +150,10 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             }
         else:
             print(f"❌ 创建魔法回复时出错: {e}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
-                'content': f'✨ Magic Generation Error: {str(e)}'
+                'content': get_user_friendly_error(str(e))
             }
 
 if __name__ == "__main__":
