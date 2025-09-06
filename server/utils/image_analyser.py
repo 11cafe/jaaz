@@ -18,7 +18,7 @@ class ImageAnalyser:
         """初始化图片分析器"""
         config = config_service.app_config.get('openai', {})
         self.api_url = str(config.get("url", "")).rstrip("/")
-        self.api_token = "sk-Ipb6VHeNkbBOrAzuq2JJBg76G5Qu9b6sU1LdDRlmQWCq0oKU"
+        self.api_token = str(config.get("api_key", ""))
 
         if not self.api_url:
             raise ValueError("openai API URL is not configured")

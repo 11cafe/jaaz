@@ -43,7 +43,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         try:
             magic_draw_service = MagicDrawService()
         except ValueError as e:
-            print(f"❌ Jaaz service configuration error: {e}")
+            print(f"❌ Tu-zi service configuration error: {e}")
             return {
                 'role': 'assistant',
                 'content': '✨ Cloud API Key not configured'
@@ -134,7 +134,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
 
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\nResult url: {result_url}\n\n![image_id: {filename}]({BASE_URL}{image_url})'
+            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({BASE_URL}{image_url})'
         }
         
 

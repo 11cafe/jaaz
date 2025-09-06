@@ -39,7 +39,7 @@ async def create_local_response(messages: List[Dict[str, Any]],
         try:
             llm_service = TuziLLMService()
         except ValueError as e:
-            logger.error(f"❌ Jaaz service configuration error: {e}")
+            logger.error(f"❌ Tu-zi service configuration error: {e}")
             return {
                 'role': 'assistant',
                 'content': '✨ Cloud API Key not configured'

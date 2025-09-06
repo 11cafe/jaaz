@@ -83,8 +83,6 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
             'email': current_user.email,
             'nickname': current_user.nickname
         }
-    
-    logger.info(f"magic data: {data}")
     await handle_magic(data)
     return {"status": "done"}
 

@@ -19,7 +19,7 @@ class MagicDrawService:
 
     def __init__(self):
         """初始化 Jaaz 服务"""
-        config = config_service.app_config.get('tuzi', {})
+        config = config_service.app_config.get('openai', {})
         self.api_url = str(config.get("url", "")).rstrip("/")
         self.api_token = str(config.get("api_key", ""))
 
