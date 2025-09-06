@@ -790,7 +790,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], modelName: string) => {
+    (data: Message[], configs: {
+      textModel: ModelInfo | null
+      toolList: ToolInfo[]
+      modelName: string
+    }) => {
       const startTime = performance.now()
       setPending('text')
       setMessages(data)
@@ -803,7 +807,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sessionId: effectiveSessionId,
         canvasId: canvasId,
         newMessages: data,
-        modelName: modelName,
+        modelName: configs.modelName,
         systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
       if (searchSessionId !== effectiveSessionId) {

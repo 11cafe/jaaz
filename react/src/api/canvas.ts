@@ -23,8 +23,9 @@ export async function createCanvas(data: {
     provider: string
     model: string
     url: string
-  }
+  } | null
   tool_list: ToolInfo[]
+  model_name?: string
   system_prompt: string
   template_id?: number
 }): Promise<{ id: string }> {
