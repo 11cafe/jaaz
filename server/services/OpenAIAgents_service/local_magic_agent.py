@@ -70,22 +70,29 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         else:
             # 如果有template_id，从TEMPLATES获取对应的prompt
             template_prompt = ""
+            template_image = ""
+            use_mask = 0
+            is_image = 0
             try:
                 template_id_int = int(template_id)
                 template = next((t for t in TEMPLATES if t["id"] == template_id_int), None)
                 if template:
                     template_prompt = template.get("prompt", "")
-                    print(f"✅ 找到模板prompt: {template_prompt}")
+                    template_image = template.get("image", "")
+                    use_mask = template.get("use_mask", 0)
+                    is_image = template.get("is_image", 0)
+                    logger.info(f"✅ 找到模板prompt: {template_prompt}")
                 else:
-                    print(f"❌ 未找到模板ID: {template_id}")
+                    logger.error(f"❌ 未找到模板ID: {template_id}")
                     template_prompt = user_prompt  # 如果没找到模板，使用用户输入
             except ValueError:
-                print(f"❌ 无效的模板ID: {template_id}")
+                logger.error(f"❌ 无效的模板ID: {template_id}")
                 template_prompt = user_prompt  # 如果模板ID无效，使用用户输入
+
             
             # 使用模板的prompt或用户的prompt，确保是字符串类型
             final_prompt = str(template_prompt if template_prompt else user_prompt)
-            result = await magic_draw_service.generate_image(final_prompt, image_content, template_id, user_info)
+            result = await magic_draw_service.generate_template_image(final_prompt, image_content, template_image, user_info, use_mask, is_image)
         if not result:
             return {
                 'role': 'assistant',
@@ -95,7 +102,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         # 检查是否有错误
         if result.get('error'):
             error_msg = result['error']
-            print(f"❌ Magic generation error: {error_msg}")
+            logger.error(f"❌ Magic generation error: {error_msg}")
             from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',

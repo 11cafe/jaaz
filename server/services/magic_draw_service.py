@@ -1,5 +1,6 @@
 # services/OpenAIAgents_service/jaaz_service.py
 import base64
+from email.mime import image
 import os
 import uuid
 import json
@@ -284,7 +285,13 @@ class MagicDrawService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def generate_image(self, user_prompt: str, image_content: str, template_id: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    async def generate_template_image(self, 
+                             user_prompt: str, 
+                             image_content: str, 
+                             template_image: str, 
+                             user_info: Optional[Dict[str, Any]] = None,
+                             use_mask: int = 0,
+                             is_image: int = 0) -> Optional[Dict[str, Any]]:
         """
         生成魔法图像的完整流程
 
@@ -314,6 +321,10 @@ class MagicDrawService:
             analyser = ImageAnalyser()
             # 生成唯一文件名
             file_id = str(uuid.uuid4())
+            images = {
+                "image": "",
+                "mask": ""
+            }
             
             if image_content.startswith('data:image/'):
                 # 从data URL中提取格式和数据
@@ -329,10 +340,30 @@ class MagicDrawService:
             # 写入文件
             with open(file_path, 'wb') as f:
                 f.write(image_data)
-            
             logger.info(f"✅ 图片已保存到: {file_path}")
 
-            result = await analyser.generate_magic_image([file_path], magic_prompt)
+            # 处理模板图片
+            template_file_path = None
+            if use_mask == 1:
+                # 构建模板图片的完整路径
+                template_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), template_image.lstrip('/'))
+                logger.info(f"📝 模板图片路径: {template_file_path}")
+                
+                # 检查模板文件是否存在
+                if not os.path.exists(template_file_path):
+                    logger.error(f"❌ 模板图片不存在: {template_file_path}")
+                    return {"error": f"Template image not found: {template_image}"}
+                    
+                if is_image == 1:
+                    images["mask"] = file_path
+                    images["image"]= template_file_path
+                else:
+                    images["image"] = file_path
+                    images["mask"] = template_file_path
+            else:
+                images["image"] = file_path
+
+            result = await analyser.generate_magic_image(images, magic_prompt)
             if result:
                 logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:

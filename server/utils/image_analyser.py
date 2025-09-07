@@ -1,5 +1,4 @@
 import base64
-from venv import logger
 import aiohttp
 import sys
 import os
@@ -223,7 +222,7 @@ class ImageAnalyser:
         
     async def generate_magic_image(
         self,
-        file_path: list[str],
+        images: Dict[str, str],
         prompt: str,
         model: str = "gemini-2.5-flash-image"
     ) -> Optional[Dict[str, str]]:
@@ -243,15 +242,29 @@ class ImageAnalyser:
                 base_url=self.api_url,
                 api_key=self.api_token
             )
-            # 生成图片
-            images: list[Any] = []
-            for f in file_path:
-                images.append(open(f, 'rb'))
-            result = client.images.edit(
-                model=model,
-                image=images,
-                prompt=prompt
-            )
+            # 根据文件数量决定调用方式
+            if images["mask"] == "" and images["image"] != "":
+                # 只有目标图片，不使用模板
+                logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
+                result = client.images.edit(
+                        model=model,
+                        image=open(images["image"], 'rb'),
+                        prompt=prompt,
+                        response_format="url"
+                )
+            else:
+                # 同时使用目标图片和模板
+                logger.info(f"📝 [DEBUG] 使用模板模式")
+                logger.info(f"   - 目标图片 (image): {images["image"]}")
+                logger.info(f"   - 模板图片 (mask): {images["mask"]}")
+                logger.info(f"   - 提示词 (prompt): {prompt}")
+                result = client.images.edit(
+                        model=model,
+                        image=open(images["image"], 'rb'),
+                        mask=open(images["mask"], 'rb'),
+                        prompt=prompt,
+                        response_format="url"
+                )
 
             if result.data and len(result.data) > 0:
                 image_data = result.data[0]

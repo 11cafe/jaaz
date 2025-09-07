@@ -270,8 +270,13 @@ class TuziLLMService:
             
             logger.info(f"✅ 图片已保存到: {file_path}")
 
+            images = {
+                "image": file_path,
+                "mask": ""
+            }
+
             # 2. nano-banana模型，创建魔法任务
-            result = await analyser.generate_magic_image([file_path], magic_prompt)
+            result = await analyser.generate_magic_image(images, magic_prompt)
             if result:
                 logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:
