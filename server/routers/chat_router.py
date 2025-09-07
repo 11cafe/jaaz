@@ -84,8 +84,27 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
                 'email': current_user.email,
                 'nickname': current_user.nickname
             }
-        await handle_magic(data)
-        return {"status": "done"}
+        # 立即启动异步magic生成任务，不等待完成
+        # 这样前端可以立即得到响应，不会被阻塞
+        import asyncio
+        
+        # 添加错误处理包装，确保异步任务中的错误不会影响API响应
+        async def safe_handle_magic():
+            try:
+                await handle_magic(data)
+            except Exception as e:
+                logger.error(f"Async magic generation failed: {e}")
+                # 通过WebSocket通知前端错误
+                session_id = data.get('session_id', '')
+                if session_id:
+                    from services.websocket_service import send_to_websocket
+                    await send_to_websocket(session_id, {
+                        'type': 'error',
+                        'error': f'Magic generation failed: {str(e)}'
+                    })
+        
+        asyncio.create_task(safe_handle_magic())
+        return {"status": "started"}
         
     except Exception as e:
         logger.error(f"Magic generation error: {e}")

@@ -115,9 +115,18 @@ function TemplateUsePage() {
 
   // 导航到画布的辅助函数
   const navigateToCanvas = useCallback(
-    (canvasId: string, sessionId: string) => {
+    (canvasId: string, sessionId: string, userMessage: UserMessage) => {
       try {
         setInitCanvas(true)
+
+        // 将用户消息存储到localStorage，供canvas页面立即显示（和首页跳转逻辑一致）
+        const messageData = {
+          sessionId: sessionId,
+          message: userMessage,
+          timestamp: Date.now(),
+          canvasId: canvasId,
+        }
+        localStorage.setItem('initial_user_message', JSON.stringify(messageData))
 
         // 立即跳转到canvas页面，让用户实时看到生成过程
         navigate({
@@ -192,12 +201,13 @@ function TemplateUsePage() {
         })),
       ]
 
-      const magicMessages = [
-        {
-          role: 'user',
-          content: messageContent,
-        },
-      ]
+      // 构造完整的用户消息对象（用于显示和magic生成）
+      const fullUserMessage: UserMessage = {
+        role: 'user',
+        content: messageContent,
+      }
+
+      const magicMessages = [fullUserMessage]
 
       // 1. 先创建画布
       setGeneratingStep('正在创建画布...')
@@ -237,20 +247,22 @@ function TemplateUsePage() {
       })
 
       // 2. 立即跳转到canvas页面，让用户实时看到生成过程
-      navigateToCanvas(canvasResult.id, sessionId)
+      navigateToCanvas(canvasResult.id, sessionId, fullUserMessage)
 
       // 3. 在后台启动魔法生成（通过websocket向canvas页面推送进度）
-      sendMagicGenerate({
-        sessionId: sessionId,
-        canvasId: canvasId,
-        newMessages: magicMessages,
-        systemPrompt: systemPrompt,
-        templateId: parseInt(templateId),
-      }).catch((error) => {
-        console.error('❌ 魔法生成启动失败:', error)
-        // 这里不需要toast，因为用户已经在canvas页面了
-        // canvas页面会通过websocket接收到错误信息
-      })
+      // 使用setTimeout确保这个调用不会阻塞页面跳转
+      setTimeout(() => {
+        sendMagicGenerate({
+          sessionId: sessionId,
+          canvasId: canvasId,
+          newMessages: magicMessages,
+          systemPrompt: systemPrompt,
+          templateId: parseInt(templateId),
+        }).catch((error) => {
+          console.error('❌ 魔法生成启动失败:', error)
+          // 错误会通过websocket推送到canvas页面
+        })
+      }, 100)
     } catch (error) {
       console.error('❌ 生成失败:', error)
       toast.error(`生成失败: ${error instanceof Error ? error.message : '未知错误'}`)

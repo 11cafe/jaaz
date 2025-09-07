@@ -16,8 +16,9 @@ export default function TopMenu({
 
   return (
     <div
-      className="sticky top-0 z-50 flex w-full h-16 bg-background/95 backdrop-blur-md px-3 sm:px-6 justify-between items-center select-none border-b border-border/60 shadow-sm"
+      className="sticky top-0 z-50 flex w-full h-16 bg-background/95 backdrop-blur-md px-3 sm:px-6 items-center select-none border-b border-border/60 shadow-sm relative"
     >
+      {/* 左侧区域 */}
       <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
         <div
           className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-200 hover:scale-105 min-w-0"
@@ -50,8 +51,14 @@ export default function TopMenu({
         </nav>
       </div>
 
-      <div className="flex items-center gap-3">{middle}</div>
+      {/* 中间区域 - 绝对居中 */}
+      {middle && (
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          {middle}
+        </div>
+      )}
 
+      {/* 右侧区域 */}
       <div className="flex items-center gap-1 sm:gap-2">
         {right}
         {/* <AgentSettings /> */}

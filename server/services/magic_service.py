@@ -76,10 +76,11 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         )
 
     
-    # 如果是模版生成，先发送一张图片到前端
-    if template_id:
-        # 先推送用户上传的图片到前端显示
-        await _push_user_images_to_frontend(messages, session_id, template_id)
+    # 注释掉模版图片推送，因为前端现在通过localStorage立即显示用户消息
+    # 这样可以避免重复显示和提高响应速度
+    # if template_id:
+    #     # 先推送用户上传的图片到前端显示
+    #     await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
     # 从data中获取用户信息，如果有的话

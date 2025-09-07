@@ -1,6 +1,6 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage } from '@/api/upload'
+import { uploadImage, uploadImageFast, FastUploadResult } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent, TMaterialAddImagesToChatEvent } from '@/lib/event'
@@ -69,11 +69,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       file_id: string
       width: number
       height: number
+      localPreviewUrl?: string  // 本地预览URL，优先显示
+      serverUrl?: string        // 服务器URL，作为备用
+      uploadStatus?: 'uploading' | 'local_ready' | 'cloud_synced' | 'failed'
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('auto')
   const [quantity, setQuantity] = useState<number>(1)
+  const [isSubmitting, setIsSubmitting] = useState(false) // 本地提交状态，用于即时按钮反馈
   const MAX_QUANTITY = 30
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -106,20 +110,23 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   )
 
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file),
-    onSuccess: (data) => {
-      console.log('🦄uploadImageMutation onSuccess', data)
+    mutationFn: (file: File) => uploadImageFast(file),
+    onSuccess: (data: FastUploadResult) => {
+      console.log('⚡ uploadImageMutation onSuccess', data)
       setImages((prev) => [
         ...prev,
         {
           file_id: data.file_id,
           width: data.width,
           height: data.height,
+          localPreviewUrl: data.localPreviewUrl,
+          serverUrl: data.url,
+          uploadStatus: data.upload_status as 'local_ready',
         },
       ])
     },
     onError: (error) => {
-      console.error('🦄uploadImageMutation onError', error)
+      console.error('⚡ uploadImageMutation onError', error)
       toast.error('Failed to upload image', {
         description: <div>{error.toString()}</div>,
       })
@@ -148,11 +155,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
   // Send Prompt
   const handleSendPrompt = useCallback(async () => {
-    if (pending) return
+    if (pending || isSubmitting) return
+
+    // 立即设置本地提交状态，让按钮瞬间变成加载状态
+    setIsSubmitting(true)
 
     // 首先检查登录状态 - 如果未登录，强制跳转到Google登录
     if (!authStatus.is_logged_in) {
       setShowLoginDialog(true)
+      setIsSubmitting(false) // 重置状态
       return
     }
 
@@ -167,6 +178,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         description: <RechargeContent />,
         duration: 10000, // 10s，给用户更多时间操作
       })
+      setIsSubmitting(false) // 重置状态
       return
     }
 
@@ -179,12 +191,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       if (!authStatus.is_logged_in) {
         setShowLoginDialog(true)
       }
+      setIsSubmitting(false) // 重置状态
       return
     }
 
     let text_content: MessageContent[] | string = prompt
     if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
+      setIsSubmitting(false) // 重置状态
       return
     }
 
@@ -209,28 +223,70 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       text_content += `\n</input_images>`
     }
 
-    // Fetch images as base64
+    // Fetch images as base64 with error handling and retry
     const imagePromises = images.map(async (image) => {
-      const response = await fetch(`/api/file/${image.file_id}`)
-      const blob = await response.blob()
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
+      const maxRetries = 3
+      let lastError: Error | null = null
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`/api/file/${image.file_id}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+            },
+          })
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+          
+          const blob = await response.blob()
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = () => reject(new Error('Failed to read image as data URL'))
+            reader.readAsDataURL(blob)
+          })
+        } catch (error) {
+          lastError = error as Error
+          console.warn(`⚠️ 图片获取失败 (尝试 ${attempt}/${maxRetries}): ${image.file_id}`, error)
+          
+          if (attempt < maxRetries) {
+            // 指数退避重试
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+          }
+        }
+      }
+      
+      // 所有重试都失败，显示错误并移除该图片
+      console.error(`❌ 图片获取最终失败: ${image.file_id}`, lastError)
+      toast.error(`图片获取失败: ${image.file_id}`, {
+        description: `请检查网络连接或稍后重试`,
       })
+      
+      // 从images列表中移除失败的图片
+      setImages(prev => prev.filter(img => img.file_id !== image.file_id))
+      
+      // 返回空的base64，后续会被过滤掉
+      return ''
     })
 
     const base64Images = await Promise.all(imagePromises)
+    
+    // 过滤掉失败的图片和对应的base64数据
+    const validImages = images.filter((_, index) => base64Images[index] !== '')
+    const validBase64Images = base64Images.filter(base64 => base64 !== '')
 
     const final_content = [
       {
         type: 'text',
         text: text_content as string,
       },
-      ...images.map((image, index) => ({
+      ...validImages.map((image, index) => ({
         type: 'image_url',
         image_url: {
-          url: base64Images[index],
+          url: validBase64Images[index],
         },
       })),
     ] as MessageContent[]
@@ -242,11 +298,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       },
     ])
 
+    // 立即清空输入状态，提供即时反馈
     setImages([])
     setPrompt('')
 
     // 直接读取用户在模型选择器中选择的模型
-
     const currentSelectedModel = localStorage.getItem('current_selected_model')
 
     let modelName = ''
@@ -262,6 +318,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         localStorage.setItem('current_selected_model', modelName)
       }
     }
+    
+    // 调用消息发送，触发pending状态
     onSendMessages(newMessage, {
       textModel: textModel ? { ...textModel, type: 'text' as const } : null,
       toolList: selectedTools || [],
@@ -269,6 +327,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     })
   }, [
     pending,
+    isSubmitting,
     textModel,
     selectedTools,
     prompt,
@@ -323,6 +382,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 file_id: image.fileId,
                 width: image.width,
                 height: image.height,
+                serverUrl: `/api/file/${image.fileId}`,
+                uploadStatus: 'cloud_synced',
               })
             })
           )
@@ -362,6 +423,24 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
   }, [uploadImageMutation])
 
+  // 同步外部pending状态到本地isSubmitting状态
+  useEffect(() => {
+    if (!pending) {
+      setIsSubmitting(false) // 当外部pending结束时，重置本地状态
+    }
+  }, [pending])
+
+  // 清理本地预览URL
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理所有本地预览URL
+      images.forEach(image => {
+        if (image.localPreviewUrl) {
+          URL.revokeObjectURL(image.localPreviewUrl)
+        }
+      })
+    }
+  }, [images])
 
   return (
     <motion.div
@@ -417,18 +496,36 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
               >
                 <img
                   key={image.file_id}
-                  src={`/api/file/${image.file_id}`}
+                  src={image.localPreviewUrl || image.serverUrl || `/api/file/${image.file_id}`}
                   alt='Uploaded image'
-                  className='w-full h-full object-cover rounded-md'
+                  className={cn(
+                    'w-full h-full object-cover rounded-md',
+                    image.uploadStatus === 'local_ready' && 'ring-2 ring-blue-500 ring-opacity-50'
+                  )}
                   draggable={false}
+                  onError={(e) => {
+                    // 如果本地预览失败，尝试使用服务器URL
+                    const target = e.target as HTMLImageElement
+                    if (image.localPreviewUrl && target.src === image.localPreviewUrl) {
+                      target.src = image.serverUrl || `/api/file/${image.file_id}`
+                    }
+                  }}
                 />
+                {/* 上传状态指示器 */}
+                {image.uploadStatus === 'local_ready' && (
+                  <div className='absolute -bottom-1 -right-1 size-3 bg-blue-500 rounded-full animate-pulse' />
+                )}
                 <Button
                   variant='secondary'
                   size='icon'
                   className='absolute -top-1 -right-1 size-4'
-                  onClick={() =>
+                  onClick={() => {
+                    // 清理本地预览URL
+                    if (image.localPreviewUrl) {
+                      URL.revokeObjectURL(image.localPreviewUrl)
+                    }
                     setImages((prev) => prev.filter((i) => i.file_id !== image.file_id))
-                  }
+                  }}
                 >
                   <XIcon className='size-3' />
                 </Button>
@@ -566,7 +663,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           </DropdownMenu>
         </div>
 
-        {pending ? (
+        {(pending || isSubmitting) ? (
           <Button
             className='shrink-0 relative h-8 w-8 p-0 flex items-center justify-center'
             variant='default'
@@ -581,7 +678,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant='default'
             onClick={handleSendPrompt}
             disabled={
-              (!textModel && (!selectedTools || selectedTools.length === 0)) || prompt.length === 0
+              (!textModel && (!selectedTools || selectedTools.length === 0)) || 
+              prompt.length === 0 ||
+              pending ||
+              isSubmitting
             }
           >
             <ArrowUp className='size-4' />
