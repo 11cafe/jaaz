@@ -574,8 +574,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <ModelSelectorV3 />
           </div>
 
-          {/* Aspect Ratio Selector - Hidden */}
-          {/* <DropdownMenu>
+          {/* Aspect Ratio Selector */}
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant='outline' 
@@ -598,10 +598,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu> */}
+          </DropdownMenu>
 
-          {/* Quantity Selector */}
-          <DropdownMenu>
+          {/* Quantity Selector - Hidden */}
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant='outline' 
@@ -619,7 +619,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   <span className='text-sm text-primary font-medium bg-primary/10 px-2 py-1 rounded'>{quantity}</span>
                 </div>
                 
-                {/* Quick Selection Buttons */}
                 <div className='mb-4'>
                   <div className='text-xs text-muted-foreground mb-2'>Quick Select:</div>
                   <div className='grid grid-cols-6 gap-2'>
@@ -637,7 +636,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   </div>
                 </div>
 
-                {/* Slider */}
                 <div>
                   <div className='text-xs text-muted-foreground mb-2'>Custom Value:</div>
                   <div className='flex items-center gap-3'>
@@ -660,7 +658,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 </div>
               </div>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
 
         {(pending || isSubmitting) ? (
