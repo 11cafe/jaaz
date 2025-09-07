@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { formatSessionTitle } from '@/utils/formatDate'
 
 type SessionSelectorProps = {
   session: Session | null
@@ -34,14 +35,14 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         }}
       >
         <SelectTrigger className="flex-1 min-w-0 bg-background">
-          <SelectValue placeholder="Theme" />
+          <SelectValue placeholder={session ? formatSessionTitle(session) : "选择会话"} />
         </SelectTrigger>
         <SelectContent>
           {sessionList
             ?.filter((session) => session.id && session.id.trim() !== '') // Fix error of A ‹Select.Item /> must have a value prop that is not an empty string.
             ?.map((session) => (
               <SelectItem key={session.id} value={session.id}>
-                {session.title}
+                {formatSessionTitle(session)}
               </SelectItem>
             ))}
         </SelectContent>

@@ -21,6 +21,7 @@ import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 import ShareTemplateDialog from './ShareTemplateDialog'
+import { generateChatSessionTitle } from '@/utils/formatDate'
 
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
@@ -59,6 +60,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>()
   const hasDisplayedInitialMessageRef = useRef(false)
   const currentMessagesRef = useRef<Message[]>([])
+  const isNewSessionRef = useRef<boolean>(false) // 🔥 新增：标记是否为新建session
 
   const sessionId = session?.id ?? searchSessionId
 
@@ -731,19 +733,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     sessionIdRef.current = sessionId
 
+    // 🔥 优先检查：如果是新建session，直接保持空白状态
+    if (isNewSessionRef.current) {
+      console.log('[debug] 检测到新session，保持空白状态')
+      setMessages([])
+      setPending(false)
+      setHasDisplayedInitialMessage(false)
+      isNewSessionRef.current = false // 重置标志
+      return
+    }
+
     try {
       const resp = await fetch('/api/chat_session/' + sessionId)
       const data = await resp.json()
       const msgs = data?.length ? data : []
 
-      // 如果已经显示了初始用户消息，且历史消息为空或者历史消息不包含用户消息，则不覆盖
-      if (hasDisplayedInitialMessageRef.current && currentMessagesRef.current.length > 0) {
-        if (msgs.length === 0) {
-          return
-        }
+      console.log('[debug] initChat 获取到历史消息:', msgs.length, 'for session:', sessionId)
 
+      // 🔥 关键修复：每次切换session都要重置消息状态
+      // 如果后端无历史消息，设置为空白状态（而不是保持当前状态）
+      if (msgs.length === 0) {
+        console.log('[debug] session无历史消息，设置空白状态')
+        setMessages([])
+        setPending(false)
+        setHasDisplayedInitialMessage(false)
+        return
+      }
+
+      // 如果已经显示了初始用户消息，且历史消息不包含用户消息，则合并
+      if (hasDisplayedInitialMessageRef.current && currentMessagesRef.current.length > 0) {
         const hasUserInHistory = msgs.some((msg: Message) => msg.role === 'user')
         if (!hasUserInHistory) {
+          console.log('[debug] 合并当前消息和历史消息')
           const processedMessages = mergeToolCallResult(msgs)
           const mergedMessages = [...currentMessagesRef.current, ...processedMessages]
           setMessages(mergedMessages)
@@ -753,6 +774,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       // 正常情况：设置历史消息
+      console.log('[debug] 设置历史消息:', msgs.length)
       const processedMessages = mergeToolCallResult(msgs)
       setMessages(processedMessages)
 
@@ -763,6 +785,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     } catch (error) {
       console.error('[debug] 初始化聊天失败:', error)
+      // 🔥 出错时也要清空状态，防止显示错误的消息
+      setMessages([])
+      setPending(false)
+      setHasDisplayedInitialMessage(false)
     }
   }, [sessionId, forceScrollToBottom, setInitCanvas])
 
@@ -771,20 +797,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [sessionId, initChat])
 
   const onSelectSession = (sessionId: string) => {
+    console.log('[debug] 切换session:', sessionId)
+    
+    // 🔥 确保session切换时状态一致性
+    // 重置可能影响新session的状态
+    setPending(false)
+    setHasDisplayedInitialMessage(false)
+    
+    // 设置新session
     setSession(sessionList.find((s) => s.id === sessionId) || null)
     window.history.pushState({}, '', `/canvas/${canvasId}?sessionId=${sessionId}`)
   }
 
   const onClickNewChat = () => {
+    console.log('[debug] 点击New Chat')
+    
     const newSession: Session = {
       id: nanoid(),
-      title: t('chat:newChat'),
+      title: generateChatSessionTitle(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       model: session?.model || 'gpt-4o',
       provider: session?.provider || 'openai',
     }
 
+    // 🔥 关键修复：标记为新session，防止initChat加载历史消息
+    isNewSessionRef.current = true
+    
+    console.log('[debug] 创建新session:', newSession.id, '标记为新session')
+    
+    // 添加新session到列表并选择
     setSessionList((prev) => [...prev, newSession])
     onSelectSession(newSession.id)
   }
@@ -961,6 +1003,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               >
                 <ShinyText text='希望设计点什么呢?' />
               </motion.span>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className='mt-6 text-muted-foreground/70 text-sm max-w-md'
+              >
+                <p className='mb-2'>💡 这是一个新的聊天会话</p>
+                <p className='mb-1'>• 会话将在您发送第一条消息时自动保存</p>
+                <p className='mb-1'>• 关闭窗口时会话将保留，下次可继续使用</p>
+                <p>• 您可以随时创建新的会话来分类管理不同的设计任务</p>
+              </motion.div>
             </motion.div>
           )}
         </ScrollArea>
