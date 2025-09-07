@@ -1,0 +1,81 @@
+{
+  "title": "选择适合您的方案",
+  "subtitle": "无论您是个人用户还是企业团队，我们都有合适的定价方案满足您的需求",
+  "mostPopular": "最受欢迎",
+  "plans": {
+    "starter": {
+      "name": "入门版",
+      "price": "$0",
+      "period": "永久免费",
+      "description": "适合个人用户体验",
+      "features": [
+        "~125 张图片生成",
+        "~100 秒视频生成",
+        "使用所有模型",
+        "可商用"
+      ],
+      "buttonText": "立即开始"
+    },
+    "basic": {
+      "name": "基础版",
+      "price": "$9.9",
+      "period": "每月",
+      "description": "适合个人创作者和小团队",
+      "features": [
+        "~375 张图片生成",
+        "~300 秒视频生成",
+        "使用所有模型",
+        "可商用"
+      ],
+      "buttonText": "立即开始"
+    },
+    "pro": {
+      "name": "专业版",
+      "price": "$29.9",
+      "period": "每月",
+      "description": "适合专业创作者和企业",
+      "features": [
+        "~875 张图片生成",
+        "~700 秒视频生成",
+        "使用所有模型",
+        "可商用"
+      ],
+      "buttonText": "立即开始"
+    }
+  },
+  "faq": {
+    "title": "常见问题",
+    "questions": {
+      "cancel": {
+        "question": "可以随时取消订阅吗？",
+        "answer": "是的，您可以随时取消订阅，取消后将在当前计费周期结束时生效。"
+      },
+      "trial": {
+        "question": "是否支持免费试用？",
+        "answer": "免费版永久可用，专业版和企业版支持 7 天免费试用。"
+      },
+      "upgrade": {
+        "question": "如何升级或降级方案？",
+        "answer": "您可以在设置页面随时更改您的订阅方案，更改将立即生效。"
+      },
+      "enterprise": {
+        "question": "企业版是否支持定制？",
+        "answer": "是的，企业版支持根据您的具体需求进行定制开发和部署。"
+      }
+    }
+  },
+  "contact": {
+    "title": "还有疑问？",
+    "subtitle": "我们的团队随时为您提供帮助",
+    "customerService": "联系客服",
+    "documentation": "查看文档"
+  },
+  "buttons": {
+    "processing": "处理中...",
+    "getStarted": "立即开始"
+  },
+  "messages": {
+    "paymentError": "创建支付订单失败",
+    "paymentErrorRetry": "创建支付订单失败，请稍后重试"
+  }
+}

@@ -42,7 +42,9 @@
     "home": "Home",
     "canvas": "Canvas",
     "settings": "Settings",
-    "back": "Back"
+    "back": "Back",
+    "templates": "Templates",
+    "pricing": "Pricing"
   },
   "update": {
     "title": "🎉 New Version Available",

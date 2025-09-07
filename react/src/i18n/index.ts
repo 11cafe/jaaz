@@ -8,12 +8,16 @@ import homeEn from './locales/en/home.json'
 import canvasEn from './locales/en/canvas.json'
 import chatEn from './locales/en/chat.json'
 import settingsEn from './locales/en/settings.json'
+import pricingEn from './locales/en/pricing.json'
+import templatesEn from './locales/en/templates.json'
 
 import commonZh from './locales/zh-CN/common.json'
 import homeZh from './locales/zh-CN/home.json'
 import canvasZh from './locales/zh-CN/canvas.json'
 import chatZh from './locales/zh-CN/chat.json'
 import settingsZh from './locales/zh-CN/settings.json'
+import pricingZh from './locales/zh-CN/pricing.json'
+import templatesZh from './locales/zh-CN/templates.json'
 
 const resources = {
   en: {
@@ -22,6 +26,8 @@ const resources = {
     canvas: canvasEn,
     chat: chatEn,
     settings: settingsEn,
+    pricing: pricingEn,
+    templates: templatesEn,
   },
   'zh-CN': {
     common: commonZh,
@@ -29,6 +35,8 @@ const resources = {
     canvas: canvasZh,
     chat: chatZh,
     settings: settingsZh,
+    pricing: pricingZh,
+    templates: templatesZh,
   },
 }
 
@@ -39,7 +47,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'home', 'canvas', 'chat', 'settings'],
+    ns: ['common', 'home', 'canvas', 'chat', 'settings', 'pricing', 'templates'],
 
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

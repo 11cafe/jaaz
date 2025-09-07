@@ -1,0 +1,81 @@
+{
+  "title": "Choose the Right Plan for You",
+  "subtitle": "Whether you're an individual user or a business team, we have the right pricing plan to meet your needs",
+  "mostPopular": "Most Popular",
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "price": "$0",
+      "period": "Forever Free",
+      "description": "Perfect for individual users to experience",
+      "features": [
+        "~125 image generations",
+        "~100 seconds video generation",
+        "Access to all models",
+        "Commercial use allowed"
+      ],
+      "buttonText": "Get Started"
+    },
+    "basic": {
+      "name": "Basic",
+      "price": "$9.9",
+      "period": "per month",
+      "description": "Perfect for individual creators and small teams",
+      "features": [
+        "~375 image generations",
+        "~300 seconds video generation",
+        "Access to all models",
+        "Commercial use allowed"
+      ],
+      "buttonText": "Get Started"
+    },
+    "pro": {
+      "name": "Professional",
+      "price": "$29.9",
+      "period": "per month",
+      "description": "Perfect for professional creators and enterprises",
+      "features": [
+        "~875 image generations",
+        "~700 seconds video generation",
+        "Access to all models",
+        "Commercial use allowed"
+      ],
+      "buttonText": "Get Started"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "questions": {
+      "cancel": {
+        "question": "Can I cancel my subscription at any time?",
+        "answer": "Yes, you can cancel your subscription at any time. The cancellation will take effect at the end of the current billing cycle."
+      },
+      "trial": {
+        "question": "Do you offer a free trial?",
+        "answer": "The free version is permanently available. Professional and Enterprise versions support a 7-day free trial."
+      },
+      "upgrade": {
+        "question": "How can I upgrade or downgrade my plan?",
+        "answer": "You can change your subscription plan at any time in the settings page. Changes will take effect immediately."
+      },
+      "enterprise": {
+        "question": "Does the Enterprise version support customization?",
+        "answer": "Yes, the Enterprise version supports custom development and deployment according to your specific needs."
+      }
+    }
+  },
+  "contact": {
+    "title": "Still have questions?",
+    "subtitle": "Our team is here to help you",
+    "customerService": "Contact Support",
+    "documentation": "View Documentation"
+  },
+  "buttons": {
+    "processing": "Processing...",
+    "getStarted": "Get Started"
+  },
+  "messages": {
+    "paymentError": "Failed to create payment order",
+    "paymentErrorRetry": "Failed to create payment order, please try again later"
+  }
+}

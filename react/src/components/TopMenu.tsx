@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { LOGO_URL } from '@/constants'
 import LanguageSwitcher from './common/LanguageSwitcher'
@@ -13,6 +14,7 @@ export default function TopMenu({
   right?: React.ReactNode
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('common')
 
   return (
     <div
@@ -38,7 +40,7 @@ export default function TopMenu({
             className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/templates' })}
           >
-            模版
+            {t('navigation.templates')}
           </Button>
           <Button
             variant="ghost"
@@ -46,7 +48,7 @@ export default function TopMenu({
             className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/pricing' })}
           >
-            定价
+            {t('navigation.pricing')}
           </Button>
         </nav>
       </div>
