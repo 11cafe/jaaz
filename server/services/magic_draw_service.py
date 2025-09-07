@@ -272,8 +272,12 @@ class MagicDrawService:
             
             logger.info(f"✅ 图片已保存到: {file_path}")
 
+            imeages = {
+                "image": file_path,
+                "mask": ""
+            }
             # 2. nano-banana模型，创建魔法任务
-            result = await analyser.generate_magic_image([file_path], magic_prompt)
+            result = await analyser.generate_magic_image(imeages, magic_prompt)
             if result:
                 logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:
