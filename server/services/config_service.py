@@ -43,7 +43,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gpt-4o-mini': {'type': 'text'},
         },
         'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
+        'api_key': 'sk-xNyBtMDiP435GMO6e2opXYiSpkNbcVwMK93Vz8joVIPTXuzV',
         'max_tokens': 8192,
     },
     'google': {
@@ -51,7 +51,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gemini-2.5-flash-image': {'type': 'image'},
         },
         'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
+        'api_key': 'sk-CRJTvndo8xN0nmzTe5fyij77T0tmT7ZMcjLZwMzZ0RmvkOP0',
     },
 
 }

@@ -6,10 +6,14 @@ import os
 from nanoid import generate
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
-from services.config_service import FILES_DIR
+from services.config_service import get_user_files_dir
+from utils.cos_image_service import get_cos_image_service
 from common import DEFAULT_PORT, BASE_URL
 from ..magic_draw_service import MagicDrawService
 from routers.templates_router import TEMPLATES
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 async def create_local_magic_response(messages: List[Dict[str, Any]], 
@@ -107,6 +111,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
 
         # 初始化变量
         filename = ""
+        cos_url = None
         result_url = result['result_url']
         image_url = result_url
 
@@ -115,9 +120,14 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             try:
                 # 生成唯一文件名
                 file_id = generate(size=10)
-                file_path_without_extension = os.path.join(FILES_DIR, file_id)
+                
+                # 获取用户文件目录
+                user_email = user_info.get('email') if user_info else None
+                user_id = user_info.get('uuid') if user_info else None
+                user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+                file_path_without_extension = os.path.join(user_files_dir, file_id)
 
-                # 下载并保存图片
+                # 下载并保存图片到本地临时文件
                 mime_type, width, height, extension = await get_image_info_and_save(
                     image_url, file_path_without_extension, is_b64=False
                 )
@@ -125,8 +135,24 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
                 width = max(1, int(width / 2))
                 height = max(1, int(height / 2))
 
-                # 生成文件名
+                # 生成文件名（用作腾讯云key）
                 filename = f'{file_id}.{extension}'
+                local_file_path = f"{file_path_without_extension}.{extension}"
+                
+                # 尝试上传到腾讯云
+                cos_service = get_cos_image_service()
+                cos_url = await cos_service.upload_image_from_file(
+                    local_file_path=local_file_path,
+                    image_key=filename,
+                    content_type=mime_type,
+                    delete_local=cos_service.available  # 只有在腾讯云可用时才删除本地文件
+                )
+                
+                if cos_url:
+                    logger.info(f"✅ 图片已上传到腾讯云: {filename} -> {cos_url}")
+                else:
+                    logger.info(f"📁 腾讯云不可用，图片保存在本地: {filename}")
+                    cos_url = None  # 确保cos_url为None，后续逻辑会使用本地URL
 
                 # 保存图片到画布
                 image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height)
@@ -134,9 +160,12 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
 
+        # 使用腾讯云URL或者画布返回的URL
+        final_image_url = cos_url if cos_url else f"{BASE_URL}{image_url}"
+        
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({BASE_URL}{image_url})'
+            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({final_image_url})'
         }
         
 

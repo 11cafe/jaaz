@@ -4,6 +4,7 @@ Handles canvas operations, locking, and notifications
 """
 
 import asyncio
+import os
 import random
 import time
 import json
@@ -13,6 +14,8 @@ from nanoid import generate
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
 from services.websocket_service import send_to_websocket
+from utils.cos_image_service import get_cos_image_service
+from services.config_service import config_service, SERVER_DIR
 from utils.canvas import find_next_best_element_position
 from utils.cos_image_service import get_cos_image_service
 
@@ -110,16 +113,38 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
 
         file_id = generate_file_id()
         
-        # 获取腾讯云图片URL，如果失败则使用本地URL作为回退
+        # 先尝试上传到腾讯云，如果失败则使用本地URL作为回退
         cos_service = get_cos_image_service()
-        cos_url = cos_service.get_image_url(filename)
+        cos_url = None
         
+        # 构建本地文件路径
+        possible_paths = [
+            os.path.join(SERVER_DIR, 'user_data', 'files', filename),
+            os.path.join(SERVER_DIR, 'user_data', 'users', session_id, 'files', filename)
+        ]
+        
+        local_file_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                local_file_path = path
+                print(f"📁 找到本地文件: {path}")
+                break
+        
+        if local_file_path and cos_service.available:
+            # 尝试上传到腾讯云
+            cos_url = await cos_service.upload_image_from_file(
+                local_file_path=local_file_path,
+                image_key=filename,
+                content_type=mime_type,
+                delete_local=True  # 上传成功后删除本地文件
+            )
+            
         if cos_url:
             url = cos_url
-            print(f"✅ 使用腾讯云URL: {filename} -> {cos_url}")
+            print(f"✅ 图片已上传到腾讯云: {filename} -> {cos_url}")
         else:
             url = f'/api/file/{filename}'
-            print(f"⚠️ 腾讯云URL获取失败，使用本地URL: {filename} -> {url}")
+            print(f"⚠️ 腾讯云上传失败或不可用，使用本地URL: {filename} -> {url}")
 
         file_data: Dict[str, Any] = {
             'mimeType': mime_type,
@@ -143,7 +168,7 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
         elements_list.append(new_image_element)
         canvas_data['files'][file_id] = file_data
 
-        # 使用腾讯云URL或本地URL（与上面的逻辑保持一致）
+        # 使用腾讯云URL或本地URL
         image_url = url
 
         # Save the updated canvas data back to the database

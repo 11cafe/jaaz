@@ -1,11 +1,11 @@
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
-from common import DEFAULT_PORT, BASE_URL
+from common import BASE_URL
 from tools.utils.image_canvas_utils import generate_file_id
 from services.config_service import FILES_DIR, get_user_files_dir, get_legacy_files_dir
 from utils.auth_utils import get_current_user_optional, CurrentUser
 from utils.cos_image_service import get_cos_image_service
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from PIL import Image
 from io import BytesIO
@@ -191,7 +191,7 @@ def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
     return buffer.getvalue()
 
 
-# 文件下载接口 - 重定向到腾讯云
+# 文件下载接口 - 代理返回腾讯云或本地图片
 @router.get("/file/{file_id}")
 async def get_file(
     file_id: str,
@@ -203,9 +203,27 @@ async def get_file(
     
     if cos_url:
         logger.info(f'✅ 从腾讯云获取图片: {file_id} -> {cos_url}')
-        # 重定向到腾讯云URL
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=cos_url, status_code=302)
+        try:
+            # 代理模式：从腾讯云下载图片并返回给前端
+            timeout = httpx.Timeout(30.0)
+            async with HttpClient.create(timeout=timeout) as client:
+                response = await client.get(cos_url)
+                if response.status_code == 200:
+                    # 设置合适的Content-Type
+                    content_type = response.headers.get('content-type', 'image/jpeg')
+                    from fastapi.responses import Response
+                    return Response(
+                        content=response.content,
+                        media_type=content_type,
+                        headers={
+                            "Cache-Control": "public, max-age=3600",  # 缓存1小时
+                            "Access-Control-Allow-Origin": "*"  # 允许跨域访问
+                        }
+                    )
+                else:
+                    logger.warning(f'⚠️ 腾讯云返回错误状态码 {response.status_code}，回退到本地存储')
+        except Exception as e:
+            logger.warning(f'⚠️ 从腾讯云获取图片失败: {e}，回退到本地存储')
     
     # 向后兼容：如果腾讯云中没有，尝试从本地文件系统获取
     user_email = current_user.email if current_user else None
@@ -251,7 +269,7 @@ async def get_file(
 
 
 @router.post("/comfyui/object_info")
-async def get_object_info(data: dict):
+async def get_object_info(data: Dict[str, Any]):
     url = data.get('url', '')
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")

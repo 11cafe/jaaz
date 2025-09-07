@@ -5,7 +5,7 @@ import uuid
 import json
 import asyncio
 import aiohttp
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Literal
 from utils.http_client import HttpClient
 from services.config_service import config_service
 from utils.image_analyser import ImageAnalyser
@@ -510,19 +510,37 @@ class TuziLLMService:
         self,
         file_path: list[str],
         prompt: str,
-        model: str = "gemini-2.5-flash-image"
+        model: str = "gemini-2.5-flash-image",
+        response_format: Literal["url", "b64_json"] = "url"
     ) -> Optional[Dict[str, str]]:
         """
-        生成魔法图片
+        使用模板编辑图片
 
         Args:
-            prompt: 图片生成提示词
+            file_path: 图片文件路径列表
+                      - file_path[0]: 用户上传的目标图片（对应API的image参数）
+                      - file_path[1]: 模板图片（对应API的mask参数，可选）
+            prompt: 图片编辑提示词
             model: 使用的模型
+            response_format: 响应格式，支持 "url" 或 "b64_json"
 
         Returns:
-            Optional[Dict[str, str]]: 包含 base64 或 url 的字典，失败时返回None
+            Optional[Dict[str, str]]: 包含 result_url 或 image_base64 的字典，失败时返回None
         """
         try:
+            # 参数验证
+            if not file_path or len(file_path) == 0:
+                logger.error("❌ file_path 不能为空")
+                return None
+                
+            if not os.path.exists(file_path[0]):
+                logger.error(f"❌ 目标图片文件不存在: {file_path[0]}")
+                return None
+                
+            if len(file_path) > 1 and not os.path.exists(file_path[1]):
+                logger.error(f"❌ 模板图片文件不存在: {file_path[1]}")
+                return None
+
             # 创建 OpenAI 客户端
             client = AsyncOpenAI(
                 base_url=self.api_url,
@@ -536,98 +554,82 @@ class TuziLLMService:
             logger.info(f"   prompt: {prompt}")
             logger.info(f"   model: {model}")
             logger.info(f"   file_path: {file_path}")
+            logger.info(f"   response_format: {response_format}")
             logger.info(f"   base_url: {self.api_url}")
-            logger.info(f"   api_key: {self.api_token[:10]}***")
-            
-            # 生成图片
-            images: list[Any] = []
-            for f in file_path:
-                images.append(open(f, 'rb'))
-            
+            logger.info(f"   api_key: {self.api_token[:10]}***") 
             logger.info(f"🚀 [DEBUG] 调用 client.images.edit...")
-            logger.info(f"   images 数量: {len(images)}")
-            
-            result = await client.images.edit(
-                model=model,
-                image=images,
-                prompt=prompt
-            )
-            
-            # 打印完整的响应数据
-            logger.info(f"📥 [DEBUG] API 响应原始数据:")
-            logger.info(f"   result.data 长度: {len(result.data) if result.data else 0}")
-            if result.data:
-                for i, data in enumerate(result.data):
-                    logger.info(f"   data[{i}] 属性: {dir(data)}")
-                    logger.info(f"   data[{i}] 内容: {data}")
-                    if hasattr(data, '__dict__'):
-                        logger.info(f"   data[{i}] __dict__: {data.__dict__}")
-                    if hasattr(data, 'url'):
-                        logger.info(f"   data[{i}].url: {data.url}")
-                    if hasattr(data, 'b64_json'):
-                        logger.info(f"   data[{i}].b64_json: {'存在' if data.b64_json else '不存在'}")
-                    if hasattr(data, 'revised_prompt'):
-                        logger.info(f"   data[{i}].revised_prompt: {data.revised_prompt}")
-
-            if result.data and len(result.data) > 0:
-                image_data = result.data[0]
-                # 返回结果字典
-                response_data: Dict[str, str] = {}
-                
-                logger.info(f"🔍 [DEBUG] edit_image - 处理第一个图片数据:")
-                logger.info(f"   type(image_data): {type(image_data)}")
-                
-                # 检查是否有 base64 数据
-                if hasattr(image_data, 'b64_json'):
-                    logger.info(f"   b64_json 属性存在: {image_data.b64_json is not None}")
-                    if image_data.b64_json:
-                        response_data['image_base64'] = image_data.b64_json
-                        logger.info(f"✅ Image edited with base64 data")
-                else:
-                    logger.info(f"   无 b64_json 属性")
-                
-                # 检查是否有 URL
-                if hasattr(image_data, 'url'):
-                    logger.info(f"   url 属性存在: {image_data.url}")
-                    if image_data.url:
-                        response_data['result_url'] = image_data.url
-                        logger.info(f"✅ Image edited with URL: {image_data.url}")
-                else:
-                    logger.info(f"   无 url 属性")
-                
-                # 检查是否有文本回复（当没有图片生成时）
-                if "image_base64" not in response_data \
-                    and "result_url" not in response_data \
-                    and hasattr(image_data, 'revised_prompt'):
-                    logger.info(f"   revised_prompt 属性存在: {image_data.revised_prompt}")
-                    if image_data.revised_prompt and not response_data:
-                        # 如果没有图片数据但有文本回复，说明这是一个文本对话
-                        response_data['text_content'] = image_data.revised_prompt
-                        response_data['type'] = 'text'
-                        logger.info(f"✅ Gemini text response: {image_data.revised_prompt}")
-                else:
-                    logger.info(f"   无 revised_prompt 属性")
-                
-                # 尝试其他可能的属性
-                for attr in ['image', 'data', 'content', 'image_url', 'image_data']:
-                    if hasattr(image_data, attr):
-                        value = getattr(image_data, attr)
-                        logger.info(f"   发现额外属性 {attr}: {value}")
-                        if value and attr not in ['image', 'data']:  # 避免处理文件对象
-                            response_data[f'found_{attr}'] = str(value)
-                
-                logger.info(f"🎯 [DEBUG] edit_image - 最终 response_data: {response_data}")
-                
-                if response_data:
-                    return response_data
-                else:
-                    logger.error("❌ No image data returned")
-                    return None
+           
+            # 根据文件数量决定调用方式
+            if len(file_path) == 1:
+                # 只有目标图片，不使用模板
+                logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
+                with open(file_path[0], 'rb') as image_file:
+                    result = await client.images.edit(
+                        model=model,
+                        image=image_file,
+                        prompt=prompt,
+                        response_format=response_format
+                    )
             else:
-                logger.error("❌ No image data in response")
+                # 同时使用目标图片和模板
+                logger.info(f"📝 [DEBUG] 使用模板模式")
+                logger.info(f"   - 目标图片 (image): {file_path[0]}")
+                logger.info(f"   - 模板图片 (mask): {file_path[1]}")
+                with open(file_path[0], 'rb') as image_file, open(file_path[1], 'rb') as mask_file:
+                    result = await client.images.edit(
+                        model=model,
+                        image=image_file,
+                        mask=mask_file,
+                        prompt=prompt,
+                        response_format=response_format
+                    )
+            
+            logger.info(f"📥 [DEBUG] API 响应成功，处理结果...")
+            
+            # 处理响应数据
+            if not result.data or len(result.data) == 0:
+                logger.error("❌ API 响应中没有图片数据")
                 return None
+                
+            image_data = result.data[0]
+            response_data: Dict[str, str] = {}
+            
+            logger.info(f"🔍 [DEBUG] 处理响应数据，格式: {response_format}")
+            
+            # 根据响应格式处理数据
+            if response_format == "b64_json" and hasattr(image_data, 'b64_json') and image_data.b64_json:
+                response_data['image_base64'] = image_data.b64_json
+                logger.info("✅ 获取到 base64 格式图片数据")
+            elif response_format == "url" and hasattr(image_data, 'url') and image_data.url:
+                response_data['result_url'] = image_data.url
+                logger.info(f"✅ 获取到 URL 格式图片: {image_data.url}")
+            else:
+                # 尝试获取任何可用的图片数据
+                if hasattr(image_data, 'url') and image_data.url:
+                    response_data['result_url'] = image_data.url
+                    logger.info(f"✅ 备用方案：获取到 URL: {image_data.url}")
+                elif hasattr(image_data, 'b64_json') and image_data.b64_json:
+                    response_data['image_base64'] = image_data.b64_json
+                    logger.info("✅ 备用方案：获取到 base64 数据")
+                elif hasattr(image_data, 'revised_prompt') and image_data.revised_prompt:
+                    # 如果没有图片数据，可能是文本响应
+                    response_data['text_content'] = image_data.revised_prompt
+                    response_data['type'] = 'text'
+                    logger.info(f"✅ 获取到文本响应: {image_data.revised_prompt}")
+                else:
+                    logger.error("❌ 未能获取到任何图片数据或文本响应")
+                    return None
+            
+            logger.info(f"🎯 [DEBUG] 最终响应数据: {response_data}")
+            return response_data
+        except FileNotFoundError as e:
+            logger.error(f"❌ 文件不存在: {e}")
+            return None
+        except PermissionError as e:
+            logger.error(f"❌ 文件权限不足: {e}")
+            return None
         except Exception as e:
-            print(f"❌ Error generating image: {e}")
+            logger.error(f"❌ 图片编辑失败: {type(e).__name__}: {e}")
             return None
 
     async def gemini_generate_by_tuzi(

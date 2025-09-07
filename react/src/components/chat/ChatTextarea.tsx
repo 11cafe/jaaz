@@ -209,28 +209,70 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       text_content += `\n</input_images>`
     }
 
-    // Fetch images as base64
+    // Fetch images as base64 with error handling and retry
     const imagePromises = images.map(async (image) => {
-      const response = await fetch(`/api/file/${image.file_id}`)
-      const blob = await response.blob()
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
+      const maxRetries = 3
+      let lastError: Error | null = null
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`/api/file/${image.file_id}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+            },
+          })
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+          
+          const blob = await response.blob()
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = () => reject(new Error('Failed to read image as data URL'))
+            reader.readAsDataURL(blob)
+          })
+        } catch (error) {
+          lastError = error as Error
+          console.warn(`⚠️ 图片获取失败 (尝试 ${attempt}/${maxRetries}): ${image.file_id}`, error)
+          
+          if (attempt < maxRetries) {
+            // 指数退避重试
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+          }
+        }
+      }
+      
+      // 所有重试都失败，显示错误并移除该图片
+      console.error(`❌ 图片获取最终失败: ${image.file_id}`, lastError)
+      toast.error(`图片获取失败: ${image.file_id}`, {
+        description: `请检查网络连接或稍后重试`,
       })
+      
+      // 从images列表中移除失败的图片
+      setImages(prev => prev.filter(img => img.file_id !== image.file_id))
+      
+      // 返回空的base64，后续会被过滤掉
+      return ''
     })
 
     const base64Images = await Promise.all(imagePromises)
+    
+    // 过滤掉失败的图片和对应的base64数据
+    const validImages = images.filter((_, index) => base64Images[index] !== '')
+    const validBase64Images = base64Images.filter(base64 => base64 !== '')
 
     const final_content = [
       {
         type: 'text',
         text: text_content as string,
       },
-      ...images.map((image, index) => ({
+      ...validImages.map((image, index) => ({
         type: 'image_url',
         image_url: {
-          url: base64Images[index],
+          url: validBase64Images[index],
         },
       })),
     ] as MessageContent[]
