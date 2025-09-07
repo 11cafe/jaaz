@@ -120,6 +120,78 @@
   }
 }
 
+/* 背景动画效果 */
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.7;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-gentle {
+    animation: pulse-gentle 8s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  
+  .animate-float-up {
+    animation: float-up 6s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(circle at center, var(--tw-gradient-stops));
+  }
+  
+  /* 背景优化 */
+  .bg-glass {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  
+  .dark .bg-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* 性能优化 */
+  .performance-layer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* 深色模式优化 */
+  .dark .animate-pulse-gentle {
+    opacity: 0.3;
+  }
+  
+  .dark .bg-glass {
+    background: rgba(31, 41, 55, 0.4);
+    border: 1px solid rgba(107, 114, 128, 0.2);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
