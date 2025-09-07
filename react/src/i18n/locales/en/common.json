@@ -74,7 +74,11 @@
     "logoutSuccessMessage": "Successfully logged out",
     "notLoggedIn": "Not logged in",
     "balance": "Balance",
-    "recharge": "Recharge"
+    "recharge": "Recharge",
+    "currentPoints": "Credits",
+    "buyPoints": "Buy Points",
+    "upgrade": "Upgrade",
+    "left": "left"
   },
   "socket": {
     "connectionError": "Connection error ({{current}}/{{max}}): {{error}}",

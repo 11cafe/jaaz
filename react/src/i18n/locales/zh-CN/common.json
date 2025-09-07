@@ -80,7 +80,11 @@
     "logoutSuccessMessage": "已成功登出",
     "notLoggedIn": "未登录",
     "balance": "余额",
-    "recharge": "充值"
+    "recharge": "充值",
+    "currentPoints": "积分",
+    "buyPoints": "购买点数",
+    "upgrade": "升级",
+    "left": "剩余"
   },
   "socket": {
     "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",

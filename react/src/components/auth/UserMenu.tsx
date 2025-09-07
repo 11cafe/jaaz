@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConfigs } from '@/contexts/configs'
+import { useNavigate } from '@tanstack/react-router'
 import { BASE_API_URL } from '@/constants'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,13 +16,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
 import { useBalance } from '@/hooks/use-balance'
 import { useEffect } from 'react'
-import { Zap, ShoppingCart, LogOut } from 'lucide-react'
+import { Zap, LogOut, Crown } from 'lucide-react'
 
 export function UserMenu() {
   const { authStatus } = useAuth()
   const { setShowLoginDialog } = useConfigs()
   const { t } = useTranslation()
   const { balance, isLoading, error } = useBalance()
+  const navigate = useNavigate()
 
   // 计算积分显示
   const points = Math.max(0, Math.floor(parseFloat(balance) * 100))
@@ -64,48 +66,63 @@ export function UserMenu() {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>{t('common:auth.myAccount')}</DropdownMenuLabel>
-          <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-            {username}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          
-          {/* 当前积分显示 */}
-          <DropdownMenuItem disabled className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Zap className="w-4 h-4 mr-2" />
-              <span>当前积分</span>
+        <DropdownMenuContent align="end" className="w-64">
+          {/* User Profile Header */}
+          <div className="px-3 py-3 border-b">
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={image_url} alt={username} />
+                <AvatarFallback className="text-sm font-medium">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {username}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {authStatus.user_info.email || 'No email provided'}
+                </p>
+              </div>
             </div>
-            <span className="font-semibold">
-              {isLoading ? '...' : error ? '--' : points}
-            </span>
-          </DropdownMenuItem>
+          </div>
           
-          <DropdownMenuSeparator />
+          {/* Upgrade Button */}
+          <div className="px-3 py-3 border-b">
+            <Button
+              onClick={() => navigate({ to: '/pricing' })}
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-0 shadow-sm"
+              size="sm"
+            >
+              <Crown className="w-4 h-4 mr-2" />
+              {t('common:auth.upgrade')}
+            </Button>
+          </div>
           
-          {/* 购买点数 */}
-          <DropdownMenuItem
-            onClick={() => {
-              const billingUrl = `${BASE_API_URL}/billing`
-              if (window.electronAPI?.openBrowserUrl) {
-                window.electronAPI.openBrowserUrl(billingUrl)
-              } else {
-                window.open(billingUrl, '_blank')
-              }
-            }}
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            <span>购买点数</span>
-          </DropdownMenuItem>
+          {/* Credits 显示 */}
+          <div className="px-3 py-3 border-b">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{t('common:auth.currentPoints')}</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-sm font-semibold">
+                  {isLoading ? '...' : error ? '--' : points}
+                </span>
+                <span className="text-xs text-muted-foreground">{t('common:auth.left')}</span>
+              </div>
+            </div>
+          </div>
           
-          <DropdownMenuSeparator />
-          
-          {/* 退出 */}
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            <span>退出</span>
-          </DropdownMenuItem>
+          {/* Menu Items */}
+          <div className="py-1">
+            {/* 退出 */}
+            <DropdownMenuItem 
+              onClick={handleLogout} 
+              className="px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-red-600 hover:text-red-700"
+            >
+              <div className="flex items-center space-x-3">
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">{t('common:auth.logout')}</span>
+              </div>
+            </DropdownMenuItem>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     )
