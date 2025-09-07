@@ -350,7 +350,7 @@ function TemplateUsePage() {
             <div className='h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden relative'>
               {template.image ? (
                 <img
-                  src={`${BASE_API_URL}${template.image}`}
+                  src={template.image.startsWith('http') ? template.image : `${BASE_API_URL}${template.image}`}
                   alt={template.title}
                   className='w-full h-full object-cover'
                   onError={(e) => {

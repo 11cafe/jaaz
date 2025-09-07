@@ -14,16 +14,15 @@ export const Route = createFileRoute('/templates')({
 
 function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [page, setPage] = useState(1)
   const navigate = useNavigate()
   
   const searchParams: TemplateSearchParams = useMemo(() => ({
     search: searchTerm || undefined,
-    page,
-    limit: 12,
+    page: 1,
+    limit: 50, // 使用后端允许的最大值来获取所有模版
     sort_by: 'downloads',
     sort_order: 'desc'
-  }), [searchTerm, page])
+  }), [searchTerm])
 
   const { data: templatesData, isLoading, error } = useQuery({
     queryKey: ['templates', searchParams],
@@ -58,14 +57,13 @@ function TemplatesPage() {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
-                setPage(1) // Reset to first page when searching
               }}
             />
           </div>
         </div>
 
         {/* Loading State */}
-        {isLoading && page === 1 && (
+        {isLoading && (
           <div className="flex items-center justify-center min-h-[400px]">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
@@ -141,26 +139,6 @@ function TemplatesPage() {
           </div>
         )}
 
-        {/* Load More */}
-        {!isLoading && !error && templates.length > 0 && templatesData && templatesData.total > templates.length && (
-          <div className="text-center mt-12">
-            <Button 
-              variant="outline" 
-              size="lg"
-              onClick={() => setPage(prev => prev + 1)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  加载中...
-                </>
-              ) : (
-                '加载更多模板'
-              )}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )
