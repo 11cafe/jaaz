@@ -136,7 +136,7 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
                 local_file_path=local_file_path,
                 image_key=filename,
                 content_type=mime_type,
-                delete_local=True  # 上传成功后删除本地文件
+                delete_local=False  # 保留本地文件，供后续图生图使用
             )
             
         if cos_url:

@@ -558,6 +558,11 @@ class TuziLLMService:
             logger.info(f"   base_url: {self.api_url}")
             logger.info(f"   api_key: {self.api_token[:10]}***") 
             logger.info(f"🚀 [DEBUG] 调用 client.images.edit...")
+
+            prompt = f"""
+According to user needs, read the image content and complete the new image output
+User needs: {prompt}
+"""
            
             # 根据文件数量决定调用方式
             if len(file_path) == 1:
