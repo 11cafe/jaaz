@@ -1,0 +1,17 @@
+{
+  "title": "Templates",
+  "subtitle": "Curated high-quality templates to help you create excellent works quickly",
+  "search": {
+    "placeholder": "Search templates..."
+  },
+  "buttons": {
+    "use": "Use",
+    "reload": "Reload"
+  },
+  "messages": {
+    "loading": "Loading templates...",
+    "error": "An error occurred while loading templates, please try again later",
+    "noResults": "No matching templates found",
+    "empty": "No templates available"
+  }
+}

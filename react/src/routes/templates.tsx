@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import TopMenu from '@/components/TopMenu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/templates')({
 function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const navigate = useNavigate()
+  const { t } = useTranslation('templates')
   
   const searchParams: TemplateSearchParams = useMemo(() => ({
     search: searchTerm || undefined,
@@ -41,9 +43,9 @@ function TemplatesPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">模板</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
           <p className="text-muted-foreground">
-            精选优质模板，助您快速创作出色作品
+            {t('subtitle')}
           </p>
         </div>
 
@@ -52,7 +54,7 @@ function TemplatesPage() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input 
-              placeholder="搜索模板..." 
+              placeholder={t('search.placeholder')} 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => {
@@ -73,13 +75,13 @@ function TemplatesPage() {
         {error && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">
-              加载模板时出现错误，请稍后重试
+              {t('messages.error')}
             </p>
             <Button 
               variant="outline" 
               onClick={() => window.location.reload()}
             >
-              重新加载
+              {t('buttons.reload')}
             </Button>
           </div>
         )}
@@ -113,7 +115,7 @@ function TemplatesPage() {
                     onClick={() => navigate({ to: `/template-use/${template.id}` })}
                   >
                     <Play className="h-4 w-4 mr-1" />
-                    使用
+                    {t('buttons.use')}
                   </Button>
                 </div>
               </div>
@@ -134,7 +136,7 @@ function TemplatesPage() {
         {!isLoading && !error && templates.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
-              {searchTerm ? '没有找到匹配的模板' : '暂无模板'}
+              {searchTerm ? t('messages.noResults') : t('messages.empty')}
             </p>
           </div>
         )}

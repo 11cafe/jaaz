@@ -42,7 +42,9 @@
     "home": "首页",
     "canvas": "画布",
     "settings": "设置",
-    "back": "返回"
+    "back": "返回",
+    "templates": "模版",
+    "pricing": "定价"
   },
   "dialog": {
     "confirmTitle": "确认操作",
