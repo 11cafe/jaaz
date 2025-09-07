@@ -19,7 +19,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { getTemplate } from '@/api/templates'
 import { BASE_API_URL } from '@/constants'
-import { uploadImage } from '@/api/upload'
+import { uploadImageFast, FastUploadResult } from '@/api/upload'
 import { createCanvas } from '@/api/canvas'
 import { sendMagicGenerate } from '@/api/magic'
 import { AnimatePresence, motion } from 'motion/react'
@@ -52,6 +52,9 @@ function TemplateUsePage() {
       file_id: string
       width: number
       height: number
+      localPreviewUrl?: string // 本地预览URL，优先显示
+      serverUrl?: string // 服务器URL，作为备用
+      uploadStatus?: 'uploading' | 'local_ready' | 'cloud_synced' | 'failed'
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
@@ -77,20 +80,25 @@ function TemplateUsePage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // 图片上传
+  // 图片上传 - 使用快速上传API
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file),
-    onSuccess: (data) => {
+    mutationFn: (file: File) => uploadImageFast(file),
+    onSuccess: (data: FastUploadResult) => {
+      console.log('⚡ 模板页面快速上传成功', data)
       setImages((prev) => [
         ...prev,
         {
           file_id: data.file_id,
           width: data.width,
           height: data.height,
+          localPreviewUrl: data.localPreviewUrl,
+          serverUrl: data.url,
+          uploadStatus: data.upload_status as 'local_ready',
         },
       ])
     },
     onError: (error) => {
+      console.error('⚡ 模板页面上传失败', error)
       toast.error('图片上传失败', {
         description: error.message,
       })
@@ -173,9 +181,17 @@ function TemplateUsePage() {
         imagesCount: images.length,
       })
 
-      // 获取图片的base64数据
+      // 优化图片处理 - 优先使用本地预览，避免重复网络请求
       setGeneratingStep('正在处理图片...')
       const imagePromises = images.map(async (image) => {
+        // 如果有本地预览URL，直接使用（已经是base64格式）
+        if (image.localPreviewUrl && image.localPreviewUrl.startsWith('data:')) {
+          console.log('⚡ 使用本地预览URL，避免网络请求:', image.file_id)
+          return image.localPreviewUrl
+        }
+        
+        // 如果没有本地预览，才从服务器获取
+        console.log('⚡ 从服务器获取图片:', image.file_id)
         const response = await fetch(`/api/file/${image.file_id}`)
         const blob = await response.blob()
         return new Promise<string>((resolve) => {
@@ -299,6 +315,18 @@ function TemplateUsePage() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showQuantitySlider])
+
+  // 清理本地预览URL
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理所有本地预览URL
+      images.forEach((image) => {
+        if (image.localPreviewUrl) {
+          URL.revokeObjectURL(image.localPreviewUrl)
+        }
+      })
+    }
+  }, [images])
 
   // 加载状态
   if (isLoading) {
@@ -440,18 +468,33 @@ function TemplateUsePage() {
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
                         >
                           <img
-                            src={`/api/file/${image.file_id}`}
+                            src={image.localPreviewUrl || image.serverUrl || `/api/file/${image.file_id}`}
                             alt='Uploaded image'
                             className='w-full h-full object-cover rounded-md'
                             draggable={false}
+                            onError={(e) => {
+                              // 如果本地预览失败，尝试使用服务器URL
+                              const target = e.target as HTMLImageElement
+                              if (image.localPreviewUrl && target.src === image.localPreviewUrl) {
+                                target.src = image.serverUrl || `/api/file/${image.file_id}`
+                              }
+                            }}
                           />
+                          {/* 上传状态指示器 */}
+                          {image.uploadStatus === 'local_ready' && (
+                            <div className='absolute -bottom-1 -right-1 size-3 bg-blue-500 rounded-full animate-pulse' />
+                          )}
                           <Button
                             variant='secondary'
                             size='icon'
                             className='absolute -top-1 -right-1 size-4'
-                            onClick={() =>
+                            onClick={() => {
+                              // 清理本地预览URL
+                              if (image.localPreviewUrl) {
+                                URL.revokeObjectURL(image.localPreviewUrl)
+                              }
                               setImages((prev) => prev.filter((i) => i.file_id !== image.file_id))
-                            }
+                            }}
                           >
                             <XIcon className='size-3' />
                           </Button>
