@@ -42,11 +42,14 @@ type ChatTextareaProps = {
   className?: string
   messages: Message[]
   sessionId?: string
-  onSendMessages: (data: Message[], configs: {
-    textModel: ModelInfo | null
-    toolList: ToolInfo[]
-    modelName: string
-  }) => void
+  onSendMessages: (
+    data: Message[],
+    configs: {
+      textModel: ModelInfo | null
+      toolList: ToolInfo[]
+      modelName: string
+    }
+  ) => void
   onCancelChat?: () => void
 }
 
@@ -69,8 +72,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       file_id: string
       width: number
       height: number
-      localPreviewUrl?: string  // 本地预览URL，优先显示
-      serverUrl?: string        // 服务器URL，作为备用
+      localPreviewUrl?: string // 本地预览URL，优先显示
+      serverUrl?: string // 服务器URL，作为备用
       uploadStatus?: 'uploading' | 'local_ready' | 'cloud_synced' | 'failed'
     }[]
   >([])
@@ -203,44 +206,44 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
 
     // Add aspect ratio and quantity information if not default values
-    let additionalInfo = ''
-    if (selectedAspectRatio !== 'auto') {
-      additionalInfo += `<aspect_ratio>${selectedAspectRatio}</aspect_ratio>\n`
-    }
-    if (quantity !== 1) {
-      additionalInfo += `<quantity>${quantity}</quantity>\n`
-    }
+    // let additionalInfo = ''
+    // if (selectedAspectRatio !== 'auto') {
+    //   additionalInfo += `<aspect_ratio>${selectedAspectRatio}</aspect_ratio>\n`
+    // }
+    // if (quantity !== 1) {
+    //   additionalInfo += `<quantity>${quantity}</quantity>\n`
+    // }
 
-    if (additionalInfo) {
-      text_content = text_content + '\n\n' + additionalInfo
-    }
+    // if (additionalInfo) {
+    //   text_content = text_content + '\n\n' + additionalInfo
+    // }
 
-    if (images.length > 0) {
-      text_content += `\n\n<input_images count="${images.length}">`
-      images.forEach((image, index) => {
-        text_content += `\n<image index="${index + 1}" file_id="${image.file_id}" width="${image.width}" height="${image.height}" />`
-      })
-      text_content += `\n</input_images>`
-    }
+    // if (images.length > 0) {
+    //   text_content += `\n\n<input_images count="${images.length}">`
+    //   images.forEach((image, index) => {
+    //     text_content += `\n<image index="${index + 1}" file_id="${image.file_id}" width="${image.width}" height="${image.height}" />`
+    //   })
+    //   text_content += `\n</input_images>`
+    // }
 
     // Fetch images as base64 with error handling and retry
     const imagePromises = images.map(async (image) => {
       const maxRetries = 3
       let lastError: Error | null = null
-      
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           const response = await fetch(`/api/file/${image.file_id}`, {
             method: 'GET',
             headers: {
-              'Accept': 'image/*',
+              Accept: 'image/*',
             },
           })
-          
+
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
-          
+
           const blob = await response.blob()
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader()
@@ -251,32 +254,32 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         } catch (error) {
           lastError = error as Error
           console.warn(`⚠️ 图片获取失败 (尝试 ${attempt}/${maxRetries}): ${image.file_id}`, error)
-          
+
           if (attempt < maxRetries) {
             // 指数退避重试
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000))
           }
         }
       }
-      
+
       // 所有重试都失败，显示错误并移除该图片
       console.error(`❌ 图片获取最终失败: ${image.file_id}`, lastError)
       toast.error(`图片获取失败: ${image.file_id}`, {
         description: `请检查网络连接或稍后重试`,
       })
-      
+
       // 从images列表中移除失败的图片
-      setImages(prev => prev.filter(img => img.file_id !== image.file_id))
-      
+      setImages((prev) => prev.filter((img) => img.file_id !== image.file_id))
+
       // 返回空的base64，后续会被过滤掉
       return ''
     })
 
     const base64Images = await Promise.all(imagePromises)
-    
+
     // 过滤掉失败的图片和对应的base64数据
     const validImages = images.filter((_, index) => base64Images[index] !== '')
-    const validBase64Images = base64Images.filter(base64 => base64 !== '')
+    const validBase64Images = base64Images.filter((base64) => base64 !== '')
 
     const final_content = [
       {
@@ -318,12 +321,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         localStorage.setItem('current_selected_model', modelName)
       }
     }
-    
+
     // 调用消息发送，触发pending状态
     onSendMessages(newMessage, {
       textModel: textModel ? { ...textModel, type: 'text' as const } : null,
       toolList: selectedTools || [],
-      modelName
+      modelName,
     })
   }, [
     pending,
@@ -434,7 +437,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   useEffect(() => {
     return () => {
       // 组件卸载时清理所有本地预览URL
-      images.forEach(image => {
+      images.forEach((image) => {
         if (image.localPreviewUrl) {
           URL.revokeObjectURL(image.localPreviewUrl)
         }
@@ -562,9 +565,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             onChange={handleImagesUpload}
             hidden
           />
-          <Button 
-            variant='outline' 
-            onClick={() => imageInputRef.current?.click()} 
+          <Button
+            variant='outline'
+            onClick={() => imageInputRef.current?.click()}
             className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
           >
             <PlusIcon className='size-4' />
@@ -577,8 +580,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           {/* Aspect Ratio Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant='outline' 
+              <Button
+                variant='outline'
                 className='shrink-0 h-8 w-8 p-0 flex items-center justify-center'
               >
                 <RectangleVertical className='size-4' />
@@ -661,7 +664,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           </DropdownMenu> */}
         </div>
 
-        {(pending || isSubmitting) ? (
+        {pending || isSubmitting ? (
           <Button
             className='shrink-0 relative h-8 w-8 p-0 flex items-center justify-center'
             variant='default'
@@ -676,7 +679,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant='default'
             onClick={handleSendPrompt}
             disabled={
-              (!textModel && (!selectedTools || selectedTools.length === 0)) || 
+              (!textModel && (!selectedTools || selectedTools.length === 0)) ||
               prompt.length === 0 ||
               pending ||
               isSubmitting

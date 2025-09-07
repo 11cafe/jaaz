@@ -45,7 +45,10 @@ class OpenAIImageProvider(ImageProviderBase):
                 # Image editing mode
                 input_image_path = input_images[0]
                 # For OpenAI, input_image should be the file path
-                full_path = os.path.join(FILES_DIR, input_image_path)
+                from ..utils.image_utils import _find_image_file
+                full_path = _find_image_file(input_image_path)
+                if not full_path:
+                    raise Exception(f"Image file not found: {input_image_path}")
                 print(f"full_path: {full_path}")
                 with open(full_path, 'rb') as image_file:
                     result = self.client.images.edit(

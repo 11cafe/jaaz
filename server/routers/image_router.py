@@ -115,12 +115,13 @@ async def upload_image(
         local_file_path=file_path,
         image_key=filename_with_ext,
         content_type=content_type,
-        delete_local=cos_service.available  # 只有在腾讯云可用时才删除本地文件
+        delete_local=False  # 保留本地文件，供图生图等功能使用
     )
     
     if cos_url:
         # 腾讯云上传成功
         logger.info(f'✅ 图片上传到腾讯云成功: {filename_with_ext} -> {cos_url}')
+        logger.info(f'📁 本地文件保留，供图生图等功能使用: {file_path}')
         return {
             'file_id': filename_with_ext,
             'url': cos_url,  # 返回腾讯云URL
@@ -205,11 +206,12 @@ def upload_to_cloud_background(file_path: str, filename_with_ext: str, content_t
             local_file_path=file_path,
             image_key=filename_with_ext,
             content_type=content_type,
-            delete_local=True  # 上传成功后删除本地文件
+            delete_local=False  # 保留本地文件，供图生图等功能使用
         ))
         
         if cos_url:
             logger.info(f'✅ 后台上传到腾讯云成功: {filename_with_ext} -> {cos_url}')
+            logger.info(f'📁 本地文件保留，供图生图等功能使用: {file_path}')
         else:
             logger.warning(f'⚠️ 后台上传到腾讯云失败: {filename_with_ext}')
             
