@@ -247,7 +247,6 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         # 将新用户消息添加到历史消息列表中
         complete_messages = parsed_history + [user_message]
         logger.info(f"[DEBUG] 立即发送用户消息到前端，总消息数: {len(complete_messages)}")
-        logger.info(f"[DEBUG] 新用户消息: {user_message.get('content', '')[:50]}...")
         
         try:
             await send_to_websocket(session_id, {

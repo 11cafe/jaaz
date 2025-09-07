@@ -10,8 +10,9 @@ from typing import Optional, Dict, Any
 from PIL import Image
 from io import BytesIO
 import os
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks
 import httpx
+import asyncio
 from mimetypes import guess_type
 from utils.http_client import HttpClient
 from log import get_logger
@@ -189,6 +190,154 @@ def compress_image(img: Image.Image, max_size_mb: float) -> bytes:
     buffer = BytesIO()
     resized_img.save(buffer, format='JPEG', quality=30, optimize=True)
     return buffer.getvalue()
+
+
+def upload_to_cloud_background(file_path: str, filename_with_ext: str, content_type: str):
+    """后台任务：同步上传图片到腾讯云"""
+    try:
+        cos_service = get_cos_image_service()
+        if not cos_service.available:
+            logger.info(f'⚠️ 腾讯云服务不可用，跳过后台上传: {filename_with_ext}')
+            return
+            
+        # 在同步函数中运行异步操作
+        cos_url = asyncio.run(cos_service.upload_image_from_file(
+            local_file_path=file_path,
+            image_key=filename_with_ext,
+            content_type=content_type,
+            delete_local=True  # 上传成功后删除本地文件
+        ))
+        
+        if cos_url:
+            logger.info(f'✅ 后台上传到腾讯云成功: {filename_with_ext} -> {cos_url}')
+        else:
+            logger.warning(f'⚠️ 后台上传到腾讯云失败: {filename_with_ext}')
+            
+    except Exception as e:
+        logger.error(f'❌ 后台上传到腾讯云异常: {filename_with_ext}, error: {e}')
+
+
+# 快速图片上传接口 - 立即返回本地文件，后台异步上传到云端
+@router.post("/upload_image_fast")
+async def upload_image_fast(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...), 
+    max_size_mb: float = 50.0,
+    current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
+):
+    """快速图片上传：立即保存到本地并返回，后台异步上传到腾讯云"""
+    try:
+        logger.info(f'⚡ upload_image_fast started, file: {file.filename}')
+        logger.info(f'⚡ max_size_mb: {max_size_mb}')
+        logger.info(f'⚡ file.content_type: {file.content_type}')
+        logger.info(f'⚡ file.size: {file.size if hasattr(file, "size") else "unknown"}')
+        
+        user_email = current_user.email if current_user else None
+        user_id = str(current_user.id) if current_user else None
+        logger.info(f'⚡ upload_image_fast user_email: {user_email}, user_id: {user_id}')
+        
+        user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)  # type: ignore
+        
+        # 确保用户文件目录存在
+        os.makedirs(user_files_dir, exist_ok=True)
+        logger.info(f'⚡ 用户文件目录: {user_files_dir}')
+        
+        file_id = generate_file_id()
+        filename = file.filename or ''
+
+        # Read the file content
+        content = await file.read()
+        original_size_mb = len(content) / (1024 * 1024)
+        logger.info(f'⚡ 文件大小: {original_size_mb:.2f}MB')
+
+        # 预先声明变量避免作用域问题
+        extension = 'jpg'  # 默认扩展名
+        file_path = ''
+        width = 0
+        height = 0
+        
+        # Open the image from bytes to get its dimensions and process if needed
+        with Image.open(BytesIO(content)) as img:
+            width, height = img.size
+            
+            # Check if compression is needed
+            if original_size_mb > max_size_mb:
+                logger.info(f'⚡ Image size ({original_size_mb:.2f}MB) exceeds limit ({max_size_mb}MB), compressing...')
+                
+                # Convert to RGB if necessary (for JPEG compression)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    # Create a white background for transparent images
+                    white_background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    white_background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = white_background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Compress the image
+                compressed_content = compress_image(img, max_size_mb)
+                
+                # Save compressed image using Image.save
+                extension = 'jpg'  # Force JPEG for compressed images
+                file_path = os.path.join(user_files_dir, f'{file_id}.{extension}')
+                
+                # Create new image from compressed content and save
+                with Image.open(BytesIO(compressed_content)) as compressed_img:
+                    width, height = compressed_img.size
+                    await run_in_threadpool(compressed_img.save, file_path, format='JPEG', quality=95, optimize=True)
+                
+                final_size_mb = len(compressed_content) / (1024 * 1024)
+                logger.info(f'⚡ Compressed from {original_size_mb:.2f}MB to {final_size_mb:.2f}MB')
+            else:
+                # Determine the file extension from original file
+                mime_type, _ = guess_type(filename)
+                if mime_type and mime_type.startswith('image/'):
+                    extension = mime_type.split('/')[-1]
+                    # Handle common image format mappings
+                    if extension == 'jpeg':
+                        extension = 'jpg'
+                else:
+                    extension = 'jpg'  # Default to jpg for unknown types
+                
+                # Save original image using Image.save
+                file_path = os.path.join(user_files_dir, f'{file_id}.{extension}')
+                
+                # Determine save format based on extension
+                save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
+                if save_format == 'JPEG':
+                    img = img.convert('RGB')
+                
+                await run_in_threadpool(img.save, file_path, format=save_format)
+
+        # 立即返回本地文件信息，不等待云端上传
+        filename_with_ext = f'{file_id}.{extension}'
+        content_type = f'image/{extension}' if extension == 'png' else 'image/jpeg'
+        local_url = f'{BASE_URL}/api/file/{filename_with_ext}'
+        
+        # 添加后台任务异步上传到腾讯云
+        background_tasks.add_task(
+            upload_to_cloud_background,
+            file_path,
+            filename_with_ext,
+            content_type
+        )
+        
+        logger.info(f'⚡ 快速上传完成，返回本地URL: {filename_with_ext} -> {local_url}')
+        return {
+            'file_id': filename_with_ext,
+            'url': local_url,  # 返回本地URL，用户可以立即使用
+            'width': width,
+            'height': height,
+            'user_email': user_email,
+            'user_id': user_id,
+            'storage_type': 'local_with_cloud_sync',  # 标记为本地存储且会同步到云端
+            'upload_status': 'local_ready',  # 本地已就绪，云端正在上传
+        }
+        
+    except Exception as e:
+        logger.error(f'⚡ upload_image_fast 整体异常: {e}', exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error during fast upload: {str(e)}")
 
 
 # 文件下载接口 - 代理返回腾讯云或本地图片
