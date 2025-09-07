@@ -173,6 +173,10 @@ class ImageAnalyser:
                         "role": "user",
                         "content": [
                             {
+                                "type": "system",
+                                "text": system_prompt
+                            },
+                            {
                                 "type": "text",
                                 "text": prompt
                             },
