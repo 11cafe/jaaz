@@ -205,6 +205,20 @@ Hyper-realistic carved wooden figurine of [用户图片中的角色], chibi prop
         "use_mask": 0, # 是否需要蒙版功能
         "prompt":"给图里的人生成工作室拍摄肖像照片,黑色背景,黑色T恤,采用侧光和半身像的构图"
     },
+    {
+        "id": 14,
+        "title": "一键九宫格大头帖",
+        "description": "一键生成九宫格大头帖，多种姿势表情组合",
+        "image": "https://magicart-template-1301698982.cos.ap-hongkong.myqcloud.com/9gonge.png",
+        "tags": ["nano-banana"],
+        "downloads": 1200,
+        "rating": 4.8,
+        "category": "nano-banana",
+        "created_at": "2025-09-07T10:30:00Z",
+        "updated_at": "2025-09-07T10:30:00Z",
+        "use_mask": 0, # 是否需要蒙版功能
+        "prompt":"用这张照片，做一个3*3的photo booth grid，每张要用不同的姿势和表情不许重复"
+    },
 ]
 
 @router.get("")
