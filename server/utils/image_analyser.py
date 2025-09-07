@@ -1,10 +1,14 @@
-from argparse import FileType
 import base64
+from venv import logger
 import aiohttp
 import sys
 import os
 from typing import Any, Optional, Dict
 from openai import OpenAI   
+
+from log import get_logger
+
+logger = get_logger(__name__)
 
 # 添加父目录到路径以便导入 services 模块
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,9 +52,8 @@ class ImageAnalyser:
 你是一个专业的图像处理专家，擅长分析图片，解析图片内容，并根据用户在图片中的标注进行意图理解，最终生成一段nana-banana模型使用的图片处理提示词
 
 # 图片处理约定
-1. 分析图片中的主体，并保留主体要素
-2. 分析图片中的标记，比如红色圆圈，文字等
-3. 理解用户意图，意图一般是文字和线条组成
+1. 分析图片中的主体, 比如角色1，角色2，角色3等
+2. 分析图片中的文字部分，提取文字内容,并输出
 
 # 输出约定
 返回json格式，比如:
@@ -115,17 +118,18 @@ class ImageAnalyser:
                         choices = response_data.get('choices', [])
                         if choices and len(choices) > 0:
                             content = choices[0].get('message', {}).get('content', '')
+                            logger.info(f"✅ Image analysis response data: {content}")
                             return content
                         else:
-                            print("❌ No choices in response")
+                            logger.error("❌ No choices in response")
                             return None
                     else:
                         error_text = await response.text()
-                        print(f"❌ Failed to analyze image: {response.status} - {error_text}")
+                        logger.error(f"❌ Failed to analyze image: {response.status} - {error_text}")
                         return None
 
         except Exception as e:
-            print(f"❌ Error analyzing image: {e}")
+            logger.error(f"❌ Error analyzing image: {e}")
             return None
 
     async def analyze_image_base64(
@@ -137,8 +141,7 @@ class ImageAnalyser:
 
 # 图片处理约定
 1. 分析图片中的主体, 比如角色1，角色2，角色3等
-2. 分析图片中的文字部分，原意提取文字内容
-3. 根据文字内容，主体，完成新提示词输出, 记住图片风格要和用户的意图需求保持一致
+2. 分析图片中的文字部分，提取文字内容,并输出
 
 # 输出约定
 返回json格式，比如:
@@ -170,15 +173,6 @@ class ImageAnalyser:
                         "role": "user",
                         "content": [
                             {
-                                "type": "system",
-                                "text": system_prompt
-                            }
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
                                 "type": "text",
                                 "text": prompt
                             },
@@ -203,24 +197,22 @@ class ImageAnalyser:
                     timeout=aiohttp.ClientTimeout(total=60.0)
                 ) as response:
                     if response.status == 200:
-                        response_data = await response.json()
-
-                        print(f"✅ Image analysis response data: {response_data}")
-                        
+                        response_data = await response.json()  
                         # 提取文本内容
                         choices = response_data.get('choices', [])
                         if choices and len(choices) > 0:
                             content = choices[0].get('message', {}).get('content', '')
+                            logger.info(f"✅ Image analysis response data: {content}")
                             return content
                         else:
-                            print("❌ No choices in response")
+                            logger.error("❌ No choices in response")
                             return None
                     else:
                         error_text = await response.text()
-                        print(f"❌ Failed to analyze image: {response.status} - {error_text}")
+                        logger.error(f"❌ Failed to analyze image: {response.status} - {error_text}")
                         return None
         except Exception as e:
-            print(f"❌ Error analyzing image: {e}")
+            logger.error(f"❌ Error analyzing image: {e}")
             return None
         
     async def generate_magic_image(
@@ -261,17 +253,17 @@ class ImageAnalyser:
                 response_data: Dict[str, str] = {}    
                 if hasattr(image_data, 'url') and image_data.url:
                     response_data['result_url'] = image_data.url
-                    print(f"✅ Image generated with URL: {image_data.url}")
+                    logger.info(f"✅ Image generated with URL: {image_data.url}")
                 if response_data:
                     return response_data
                 else:
-                    print("❌ No image data returned")
+                    logger.error("❌ No image data returned")
                     return None
             else:
-                print("❌ No image data in response")
+                logger.error("❌ No image data in response")
                 return None
         except Exception as e:
-            print(f"❌ Error generating image: {e}")
+            logger.error(f"❌ Error generating image: {e}")
             return None
 
 if __name__ == "__main__":
