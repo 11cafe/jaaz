@@ -337,7 +337,7 @@ class TuziLLMService:
                 else:
                     logger.error("❌ Failed to generate magic image")
                     return {"error": "Failed to generate magic image"}
-            elif model_name == "gpt-4o":
+            elif model_name in ["gpt-4o", "gemini-2.5-pro"]:
                 # GPT-4o 文本对话模式
                 logger.info(f"🔍 [DEBUG] 使用 gpt-4o 进行文本对话")
                 try:
