@@ -16,7 +16,7 @@ export default function TopMenu({
 
   return (
     <div
-      className="sticky top-0 z-50 flex w-full h-16 bg-background/95 backdrop-blur-md px-3 sm:px-6 items-center select-none border-b border-border/60 shadow-sm relative"
+      className="sticky top-0 z-50 flex w-full h-16 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md px-3 sm:px-6 items-center select-none border-b border-gray-200/30 dark:border-gray-700/30 shadow-sm relative"
     >
       {/* 左侧区域 */}
       <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
