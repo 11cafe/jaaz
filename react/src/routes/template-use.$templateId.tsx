@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import TopMenu from '@/components/TopMenu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,6 +46,7 @@ export const Route = createFileRoute('/template-use/$templateId')({
 function TemplateUsePage() {
   const { templateId } = Route.useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation('template-use')
   const { textModel, selectedTools, setInitCanvas } = useConfigs()
   const [characterName, setCharacterName] = useState('')
   const [images, setImages] = useState<
@@ -144,7 +146,7 @@ function TemplateUsePage() {
         })
       } catch (error) {
         console.error('❌ 跳转失败:', error)
-        toast.error('跳转失败，请手动前往画布页面')
+        toast.error(t('messages.jumpFailed'))
       }
     },
     [navigate, setInitCanvas]
@@ -155,17 +157,17 @@ function TemplateUsePage() {
     if (isGenerating || isCanvasCreating) return
 
     if (!characterName.trim()) {
-      toast.error('请输入角色名称')
+      toast.error(t('messages.enterCharacterName'))
       return
     }
 
     if (images.length === 0) {
-      toast.error('请上传图片')
+      toast.error(t('messages.uploadImage'))
       return
     }
 
     setIsGenerating(true)
-    setGeneratingStep('正在准备数据...')
+    setGeneratingStep(t('steps.preparingData'))
 
     try {
       const textContent = characterName.trim()
@@ -182,7 +184,7 @@ function TemplateUsePage() {
       })
 
       // 优化图片处理 - 优先使用本地预览，避免重复网络请求
-      setGeneratingStep('正在处理图片...')
+      setGeneratingStep(t('steps.processingImages'))
       const imagePromises = images.map(async (image) => {
         // 如果有本地预览URL，直接使用（已经是base64格式）
         if (image.localPreviewUrl && image.localPreviewUrl.startsWith('data:')) {
@@ -226,7 +228,7 @@ function TemplateUsePage() {
       const magicMessages = [fullUserMessage]
 
       // 1. 先创建画布
-      setGeneratingStep('正在创建画布...')
+      setGeneratingStep(t('steps.creatingCanvas'))
       // 获取当前选择的模型名称
       const currentSelectedModel = localStorage.getItem('current_selected_model')
       let modelName = ''
@@ -281,7 +283,7 @@ function TemplateUsePage() {
       }, 100)
     } catch (error) {
       console.error('❌ 生成失败:', error)
-      toast.error(`生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      toast.error(`${t('messages.generateFailed')}: ${error instanceof Error ? error.message : t('messages.unknownError')}`)
       setGeneratingStep('')
     } finally {
       setIsGenerating(false)
@@ -348,10 +350,10 @@ function TemplateUsePage() {
         <div className='container mx-auto px-4 py-8'>
           <div className='text-center py-12'>
             <p className='text-muted-foreground mb-4'>
-              {error ? '加载模板时出现错误' : '模板不存在'}
+              {error ? t('messages.error') : t('messages.templateNotFound')}
             </p>
             <Button variant='outline' onClick={() => navigate({ to: '/templates' })}>
-              返回模板库
+              {t('messages.backToTemplates')}
             </Button>
           </div>
         </div>
@@ -367,7 +369,7 @@ function TemplateUsePage() {
       <div className='container mx-auto px-4 py-4'>
         <Button variant='ghost' size='sm' onClick={() => navigate({ to: '/templates' })}>
           <ArrowLeft className='h-4 w-4 mr-2' />
-          返回
+          {t('navigation.back')}
         </Button>
       </div>
 
@@ -392,7 +394,7 @@ function TemplateUsePage() {
               >
                 <div className='text-center'>
                   <Wand2 className='h-12 w-12 mx-auto mb-2' />
-                  <p>模板预览</p>
+                  <p>{t('template.preview')}</p>
                 </div>
               </div>
 
@@ -412,14 +414,14 @@ function TemplateUsePage() {
             <div className='mb-6'>
               <h2 className='text-2xl font-bold mb-2'>{template.title}</h2>
               <p className='text-muted-foreground'>
-                Simply enter the character name and create a realistic figurine!
+                {t('form.subtitle')}
               </p>
             </div>
 
             {/* Template usage info */}
             <div className='mb-4'>
               <div className='flex items-center gap-2 mb-3'>
-                <span className='text-sm text-muted-foreground'>使用模板:</span>
+                <span className='text-sm text-muted-foreground'>{t('template.using')}</span>
                 <Badge variant='outline' className='flex items-center gap-1'>
                   <Wand2 className='h-3 w-3' />
                   {template.title}
@@ -427,7 +429,7 @@ function TemplateUsePage() {
               </div>
 
               <p className='text-sm text-muted-foreground'>
-                Just input the character name directly, for example: Sasuke from Naruto.
+                {t('form.characterName.description')}
               </p>
             </div>
 
@@ -509,7 +511,7 @@ function TemplateUsePage() {
                   <Textarea
                     ref={textareaRef}
                     className='w-full h-full border-none outline-none resize-none min-h-[100px]'
-                    placeholder='输入角色名称...'
+                    placeholder={t('form.characterName.placeholder')}
                     value={characterName}
                     onChange={(e) => setCharacterName(e.target.value)}
                     onFocus={() => setIsFocused(true)}
@@ -596,7 +598,7 @@ function TemplateUsePage() {
                           >
                             <div className='flex flex-col gap-3'>
                               <div className='flex items-center justify-between'>
-                                <span className='text-sm font-medium'>生成数量</span>
+                                <span className='text-sm font-medium'>{t('form.quantity')}</span>
                                 <span className='text-sm text-muted-foreground'>{quantity}</span>
                               </div>
                               <div className='flex items-center gap-3'>

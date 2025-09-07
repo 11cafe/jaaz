@@ -90,39 +90,47 @@ function TemplatesPage() {
         {!isLoading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {templates.map((template) => (
-            <Card key={template.id} className="group hover:shadow-lg transition-shadow overflow-hidden p-0">
+            <Card key={template.id} className="group hover:shadow-lg hover:shadow-purple-100/40 dark:hover:shadow-purple-900/20 transition-all duration-300 overflow-hidden p-0 border-slate-200/40 dark:border-slate-700/40 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm">
               <div className="relative overflow-hidden">
-                <div className="aspect-[3/2] bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900">
+                <div className="aspect-[3/2] bg-gradient-to-br from-gray-50/70 via-purple-50/60 to-indigo-50/60 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 relative overflow-hidden">
+                  {/* 添加微妙的光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
+                  
                   {template.image ? (
                     <img 
                       src={template.image} 
                       alt={template.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-all duration-500 ease-out"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         e.currentTarget.nextElementSibling?.classList.remove('hidden')
                       }}
                     />
                   ) : null}
-                  <div className={`absolute inset-0 flex items-center justify-center text-muted-foreground ${template.image ? 'hidden' : ''}`}>
-                    <Eye className="h-8 w-8" />
+                  
+                  {/* 优化的占位符 */}
+                  <div className={`absolute inset-0 flex items-center justify-center ${template.image ? 'hidden' : ''}`}>
+                    <div className="flex flex-col items-center space-y-2 text-slate-400 dark:text-slate-500">
+                      <Eye className="h-8 w-8 opacity-50" />
+                      <span className="text-xs font-medium opacity-75">{t('messages.preview')}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                   <Button 
                     size="sm" 
-                    variant="secondary"
+                    className="bg-white/90 hover:bg-white text-slate-800 border-0 shadow-lg backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
                     onClick={() => navigate({ to: `/template-use/${template.id}` })}
                   >
-                    <Play className="h-4 w-4 mr-1" />
+                    <Play className="h-4 w-4 mr-1 text-purple-600" />
                     {t('buttons.use')}
                   </Button>
                 </div>
               </div>
               
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-lg">{template.title}</CardTitle>
-                <CardDescription className="text-sm">
+              <CardHeader className="pb-3 pt-4 px-4 bg-gradient-to-b from-transparent to-slate-50/20 dark:to-slate-800/20">
+                <CardTitle className="text-lg font-semibold text-slate-800 dark:text-slate-100">{template.title}</CardTitle>
+                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
                   {template.description}
                 </CardDescription>
               </CardHeader>

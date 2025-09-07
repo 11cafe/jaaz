@@ -12,6 +12,7 @@
     "loading": "Loading templates...",
     "error": "An error occurred while loading templates, please try again later",
     "noResults": "No matching templates found",
-    "empty": "No templates available"
+    "empty": "No templates available",
+    "preview": "Preview"
   }
 }

@@ -1,0 +1,43 @@
+{
+  "navigation": {
+    "back": "返回"
+  },
+  "template": {
+    "preview": "模板预览",
+    "using": "使用模板:"
+  },
+  "form": {
+    "characterName": {
+      "placeholder": "输入角色名称...",
+      "description": "Just input the character name directly, for example: Sasuke from Naruto."
+    },
+    "subtitle": "Simply enter the character name and create a realistic figurine!",
+    "quantity": "生成数量",
+    "generate": "生成"
+  },
+  "controls": {
+    "addImage": "添加图片",
+    "aspectRatio": "宽高比",
+    "quantity": "数量"
+  },
+  "messages": {
+    "loading": "正在加载模板...",
+    "error": "加载模板时出现错误",
+    "templateNotFound": "模板不存在",
+    "backToTemplates": "返回模板库",
+    "enterCharacterName": "请输入角色名称",
+    "uploadImage": "请上传图片",
+    "uploadImageFailed": "图片上传失败",
+    "preparingData": "正在准备数据...",
+    "processingImages": "正在处理图片...",
+    "creatingCanvas": "正在创建画布...",
+    "generateFailed": "生成失败",
+    "unknownError": "未知错误",
+    "jumpFailed": "跳转失败，请手动前往画布页面"
+  },
+  "steps": {
+    "preparingData": "正在准备数据...",
+    "processingImages": "正在处理图片...",
+    "creatingCanvas": "正在创建画布..."
+  }
+}

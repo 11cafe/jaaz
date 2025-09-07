@@ -1,0 +1,43 @@
+{
+  "navigation": {
+    "back": "Back"
+  },
+  "template": {
+    "preview": "Template Preview",
+    "using": "Using Template:"
+  },
+  "form": {
+    "characterName": {
+      "placeholder": "Enter character name...",
+      "description": "Just input the character name directly, for example: Sasuke from Naruto."
+    },
+    "subtitle": "Simply enter the character name and create a realistic figurine!",
+    "quantity": "Quantity",
+    "generate": "Generate"
+  },
+  "controls": {
+    "addImage": "Add Image",
+    "aspectRatio": "Aspect Ratio",
+    "quantity": "Quantity"
+  },
+  "messages": {
+    "loading": "Loading template...",
+    "error": "Error loading template",
+    "templateNotFound": "Template not found",
+    "backToTemplates": "Back to Templates",
+    "enterCharacterName": "Please enter character name",
+    "uploadImage": "Please upload image",
+    "uploadImageFailed": "Image upload failed",
+    "preparingData": "Preparing data...",
+    "processingImages": "Processing images...",
+    "creatingCanvas": "Creating canvas...",
+    "generateFailed": "Generation failed",
+    "unknownError": "Unknown error",
+    "jumpFailed": "Jump failed, please go to canvas page manually"
+  },
+  "steps": {
+    "preparingData": "Preparing data...",
+    "processingImages": "Processing images...",
+    "creatingCanvas": "Creating canvas..."
+  }
+}
