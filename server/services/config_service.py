@@ -49,7 +49,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
     'google': {
         'models': {
             'gemini-2.5-flash-image': {'type': 'image'},
-            'gemini-2.5-pro': {'type': 'text'},
+            'gemini-2.5-pro-all': {'type': 'text'},
         },
         'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-CRJTvndo8xN0nmzTe5fyij77T0tmT7ZMcjLZwMzZ0RmvkOP0',

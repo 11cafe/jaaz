@@ -61,7 +61,7 @@ class ImageAnalyser:
   "prompt": "this is ...."
 }        
 """,
-        model: str = "gemini-2.5-pro",
+        model: str = "gemini-2.5-pro-all",
         max_tokens: int = 3000
     ) -> Optional[str]:
         """
