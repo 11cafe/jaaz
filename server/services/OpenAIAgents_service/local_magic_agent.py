@@ -92,7 +92,7 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             
             # 使用模板的prompt或用户的prompt，确保是字符串类型
             final_prompt = str(template_prompt if template_prompt else user_prompt)
-            result = await magic_draw_service.generate_template_image(final_prompt, image_content, template_image, user_info, use_mask, is_image)
+            result = await magic_draw_service.generate_template_image(final_prompt, image_content, template_image, user_info, use_mask, is_image, session_id)
         if not result:
             return {
                 'role': 'assistant',

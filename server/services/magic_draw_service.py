@@ -291,7 +291,8 @@ class MagicDrawService:
                              template_image: str, 
                              user_info: Optional[Dict[str, Any]] = None,
                              use_mask: int = 0,
-                             is_image: int = 0) -> Optional[Dict[str, Any]]:
+                             is_image: int = 0,
+                             session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         生成魔法图像的完整流程
 
@@ -363,7 +364,7 @@ class MagicDrawService:
             else:
                 images["image"] = file_path
 
-            result = await analyser.generate_magic_image(images, magic_prompt)
+            result = await analyser.generate_magic_image(images, magic_prompt, session_id=session_id)
             if result:
                 logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
             else:

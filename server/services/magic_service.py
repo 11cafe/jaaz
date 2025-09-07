@@ -192,10 +192,42 @@ async def _process_magic_generation(
         session_id: Session ID
         canvas_id: Canvas ID
     """
-
-    # 原来是基于云端生成
-    # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
-    ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id, user_info=user_info)
+    try:
+        # 🔥 发送开始生成通知
+        await send_to_websocket(session_id, {
+            'type': 'generation_progress',
+            'status': 'starting',
+            'message': '🎨 正在生成魔法图片...'
+        })
+        
+        # 🔥 发送图像处理通知
+        await send_to_websocket(session_id, {
+            'type': 'generation_progress', 
+            'status': 'processing',
+            'message': '📝 正在分析和处理图像...'
+        })
+        
+        # 原来是基于云端生成
+        # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
+        ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id, user_info=user_info)
+        
+        # 🔥 发送完成通知
+        await send_to_websocket(session_id, {
+            'type': 'generation_progress',
+            'status': 'completed', 
+            'message': '✨ 魔法生成完成！'
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ 魔法生成失败: {e}")
+        # 🔥 发送错误通知 
+        await send_to_websocket(session_id, {
+            'type': 'generation_progress',
+            'status': 'error',
+            'message': f'❌ 生成失败: {str(e)}'
+        })
+        # 重新抛出异常以保持原有错误处理逻辑
+        raise
 
     # Save AI response to database
     await db_service.create_message(session_id, 'assistant', json.dumps(ai_response), user_uuid)

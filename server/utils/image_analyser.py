@@ -3,7 +3,7 @@ import aiohttp
 import sys
 import os
 from typing import Any, Optional, Dict
-from openai import OpenAI   
+from openai import AsyncOpenAI   
 
 from log import get_logger
 
@@ -224,7 +224,8 @@ class ImageAnalyser:
         self,
         images: Dict[str, str],
         prompt: str,
-        model: str = "gemini-2.5-flash-image"
+        model: str = "gemini-2.5-flash-image",
+        session_id: Optional[str] = None
     ) -> Optional[Dict[str, str]]:
         """
         生成魔法图片
@@ -232,39 +233,57 @@ class ImageAnalyser:
         Args:
             prompt: 图片生成提示词
             model: 使用的模型
+            session_id: 会话 ID，用于 WebSocket 进度通知
 
         Returns:
             Optional[Dict[str, str]]: 包含 base64 或 url 的字典，失败时返回None
         """
         try:
-            # 创建 OpenAI 客户端
-            client = OpenAI(
+            # 发送开始生成通知
+            if session_id:
+                try:
+                    from services.websocket_service import send_to_websocket
+                    await send_to_websocket(session_id, {
+                        'type': 'generation_progress',
+                        'status': 'ai_processing',
+                        'message': '🤖 AI 正在生成图像...'
+                    })
+                except Exception as e:
+                    logger.warning(f"⚠️ WebSocket 通知失败: {e}")
+            
+            # 创建异步 OpenAI 客户端
+            client = AsyncOpenAI(
                 base_url=self.api_url,
                 api_key=self.api_token
             )
+            
             # 根据文件数量决定调用方式
             if images["mask"] == "" and images["image"] != "":
                 # 只有目标图片，不使用模板
                 logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
-                result = client.images.edit(
+                # 异步读取文件
+                with open(images["image"], 'rb') as image_file:
+                    result = await client.images.edit(
                         model=model,
-                        image=open(images["image"], 'rb'),
+                        image=image_file,
                         prompt=prompt,
                         response_format="url"
-                )
+                    )
             else:
                 # 同时使用目标图片和模板
                 logger.info(f"📝 [DEBUG] 使用模板模式")
                 logger.info(f"   - 目标图片 (image): {images["image"]}")
                 logger.info(f"   - 模板图片 (mask): {images["mask"]}")
                 logger.info(f"   - 提示词 (prompt): {prompt}")
-                result = client.images.edit(
+                # 异步读取文件
+                with open(images["image"], 'rb') as image_file, open(images["mask"], 'rb') as mask_file:
+                    result = await client.images.edit(
                         model=model,
-                        image=open(images["image"], 'rb'),
-                        mask=open(images["mask"], 'rb'),
+                        image=image_file,
+                        mask=mask_file,
                         prompt=prompt,
                         response_format="url"
-                )
+                    )
 
             if result.data and len(result.data) > 0:
                 image_data = result.data[0]
