@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as AssetsRouteImport } from './routes/assets'
@@ -18,9 +20,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TemplateUseTemplateIdRouteImport } from './routes/template-use.$templateId'
 import { Route as CanvasIdRouteImport } from './routes/canvas.$id'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -65,7 +77,9 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -75,7 +89,9 @@ export interface FileRoutesByTo {
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -86,7 +102,9 @@ export interface FileRoutesById {
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -98,7 +116,9 @@ export interface FileRouteTypes {
     | '/assets'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   fileRoutesByTo: FileRoutesByTo
@@ -108,7 +128,9 @@ export interface FileRouteTypes {
     | '/assets'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   id:
@@ -118,7 +140,9 @@ export interface FileRouteTypes {
     | '/assets'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   fileRoutesById: FileRoutesById
@@ -129,18 +153,34 @@ export interface RootRouteChildren {
   AssetsRoute: typeof AssetsRoute
   KnowledgeRoute: typeof KnowledgeRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   TemplatesRoute: typeof TemplatesRoute
+  TermsRoute: typeof TermsRoute
   CanvasIdRoute: typeof CanvasIdRoute
   TemplateUseTemplateIdRoute: typeof TemplateUseTemplateIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/templates': {
       id: '/templates'
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -201,7 +241,9 @@ const rootRouteChildren: RootRouteChildren = {
   AssetsRoute: AssetsRoute,
   KnowledgeRoute: KnowledgeRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   TemplatesRoute: TemplatesRoute,
+  TermsRoute: TermsRoute,
   CanvasIdRoute: CanvasIdRoute,
   TemplateUseTemplateIdRoute: TemplateUseTemplateIdRoute,
 }
