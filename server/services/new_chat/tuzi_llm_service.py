@@ -337,7 +337,7 @@ class TuziLLMService:
                 else:
                     logger.error("❌ Failed to generate magic image")
                     return {"error": "Failed to generate magic image"}
-            elif model_name in ["gpt-4o", "gemini-2.5-pro"]:
+            elif model_name in ["gpt-4o", "gemini-2.5-pro-all"]:
                 # GPT-4o 文本对话模式
                 logger.info(f"🔍 [DEBUG] 使用 gpt-4o 进行文本对话")
                 try:
@@ -381,8 +381,46 @@ class TuziLLMService:
             logger.info(f"   model: {model}")
             logger.info(f"   base_url: {self.api_url}")     
             # 检查是否需要进行图片生成 - 使用简单的关键词检测，避免额外的API调用
-            image_keywords = ["画", "绘", "生成图片", "制作图片", "创建图片", "draw", "paint", "generate image", "create image", "make image", "图"]
-            needs_image_generation = any(keyword in prompt.lower() for keyword in image_keywords)
+
+            # 使用大模型进行画图意图理解
+            intent_prompt = f"""
+请判断以下用户输入是否是想要生成图片/画图的意图。
+只需要回答 YES 或 NO。
+
+用户输入: {prompt}
+
+判断标准:
+- 如果用户明确要求画图、生成图片、制作图像等，回答 YES
+- 如果用户只是普通对话、提问、文本交流等，回答 NO
+- 如果用户描述场景但没有明确要求生成图片，回答 NO
+
+回答:"""
+
+            logger.info(f"🤖 [DEBUG] 使用大模型进行意图理解...")
+            intent_client = AsyncOpenAI(
+                api_key=self.api_token,
+                base_url=self.api_url,
+                timeout=30.0
+            )
+            
+            intent_completion = await intent_client.chat.completions.create(
+                model="gpt-4o-mini",  # 使用更快的模型进行意图理解
+                messages=[
+                    {
+                        "role": "user",
+                        "content": intent_prompt
+                    }
+                ]
+            )
+            
+            intent_response = ""
+            if intent_completion.choices and len(intent_completion.choices) > 0:
+                intent_response = intent_completion.choices[0].message.content.strip().upper()
+                logger.info(f"🎯 [DEBUG] 意图理解结果: {intent_response}")
+            
+            needs_image_generation = intent_response == "YES"
+            # image_keywords = ["画", "绘", "生成图片", "制作图片", "创建图片", "draw", "paint", "generate image", "create image", "make image", "图"]
+            # needs_image_generation = any(keyword in prompt.lower() for keyword in image_keywords)
             
             logger.info(f"🤖 [DEBUG] 关键词检测结果: 需要图片生成: {needs_image_generation}")
             logger.info(f"🔍 [DEBUG] 用户输入: {prompt}")
