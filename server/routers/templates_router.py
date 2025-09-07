@@ -31,7 +31,7 @@ TEMPLATES = [
         "created_at": "2025-09-07T10:30:00Z",
         "updated_at": "2025-09-07T10:30:00Z",
         "prompt":"""
-一张特写、构图专业的照片，展示一个手工钩织的毛线玩偶被双手轻柔地托着。玩偶造型圆润，【用户上传的第一个图片】人物得可爱Q版形象，色彩对比鲜明，细节丰富。持玩偶的双手自然、温柔，手指姿态清晰可见，皮肤质感与光影过渡自然，展现出温暖且真实的触感。背景轻微虚化，表现为室内环境，有温暖的木质桌面和从窗户洒入的自然光，营造出舒适、亲密的氛围。整体画面传达出精湛的工艺感与被珍视的温馨情绪。
+一张特写、构图专业的照片，展示一个手工钩织的毛线玩偶被双手轻柔地托着。玩偶造型圆润，[用户上传的第一个图片]人物得可爱Q版形象，色彩对比鲜明，细节丰富。持玩偶的双手自然、温柔，手指姿态清晰可见，皮肤质感与光影过渡自然，展现出温暖且真实的触感。背景轻微虚化，表现为室内环境，有温暖的木质桌面和从窗户洒入的自然光，营造出舒适、亲密的氛围。整体画面传达出精湛的工艺感与被珍视的温馨情绪。
 """
     },
     {
@@ -77,6 +77,21 @@ TEMPLATES = [
         "updated_at": "2025-09-07T10:30:00Z",
         "prompt":"""
 以吉卜力风格重绘图片[用户输入的第一张图]
+"""
+    },
+    {
+        "id": 6,
+        "title": "Q版木雕人偶",
+        "description": "Q版木雕人偶风格，精致可爱的木质纹理效果",
+        "image": "/static/template_images/jibuli.png",
+        "tags": ["nano-banana"],
+        "downloads": 1200,
+        "rating": 4.8,
+        "category": "nano-banana",
+        "created_at": "2025-09-07T10:30:00Z",
+        "updated_at": "2025-09-07T10:30:00Z",
+        "prompt":"""
+Hyper-realistic carved wooden figurine of [用户图片中的角色], chibi proportions (big head, short body), standing on a plain wood block. Keep key face traits and iconic [OUTFIT/PROP]. Visible wood grain and chisel marks, matte finish. Warm studio light, soft shadow, seamless beige background. Centered full-body, slight 3/4 angle, shallow depth of field (85mm look). Ultra-detailed, photoreal, warm sepia grading. Aspect ratio [3:4].
 """
     }
 ]
