@@ -78,7 +78,20 @@
     "currentPoints": "Credits",
     "buyPoints": "Buy Points",
     "upgrade": "Upgrade",
-    "left": "left"
+    "left": "left",
+    "inviteCode": "Invite Code"
+  },
+  "invite": {
+    "title": "Invite Friends",
+    "description": "Get 50 free credits for every friend who signs up",
+    "totalInvites": "Total invites",
+    "yourInvitationUrl": "Your invitation URL",
+    "copyThisUrl": "Copy this URL and send it to your friends",
+    "invitationUrl": "INVITATION URL",
+    "copyUrl": "Copy URL",
+    "copySuccess": "Invite URL copied! Send it to your friends.",
+    "copyFailed": "Failed to copy",
+    "failedToLoad": "Failed to load invite URL"
   },
   "socket": {
     "connectionError": "Connection error ({{current}}/{{max}}): {{error}}",
