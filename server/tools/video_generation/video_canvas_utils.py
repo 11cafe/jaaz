@@ -73,7 +73,8 @@ async def save_video_to_canvas(
 
         # Create file data
         file_id = generate_video_file_id()
-        file_url = f"/api/file/{filename}"
+        # 使用重定向URL，通过重定向机制尝试获取腾讯云文件
+        file_url = f"/api/file/{filename}?redirect=true"
 
         file_data: Dict[str, Any] = {
             "mimeType": mime_type,
@@ -152,7 +153,7 @@ async def send_video_error_notification(session_id: str, error_message: str) -> 
 
 def format_video_success_message(filename: str) -> str:
     """Format success message for video generation"""
-    return f"video generated successfully ![video_id: {filename}]({BASE_URL}/api/file/{filename})"
+    return f"video generated successfully ![video_id: {filename}]({BASE_URL}/api/file/{filename}?redirect=true)"
 
 
 async def process_video_result(

@@ -12,6 +12,71 @@ import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+// 检测是否是图片文件
+function isImageUrl(url: string): boolean {
+  const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.bmp']
+  const lowerUrl = url.toLowerCase()
+  return imageExtensions.some(ext => lowerUrl.includes(ext))
+}
+
+// 检测是否是腾讯云COS URL
+function isTencentCosUrl(url: string): boolean {
+  return url.includes('.cos.') && url.includes('.myqcloud.com')
+}
+
+// 为腾讯云图片URL添加压缩参数
+function addCompressionParams(url: string): string {
+  // 检查是否已经包含 imageMogr2 参数
+  if (url.includes('imageMogr2')) {
+    return url
+  }
+  
+  // 检查URL中是否已有参数
+  const hasParams = url.includes('?')
+  const compressionParam = 'imageMogr2/thumbnail/avif'
+  
+  if (hasParams) {
+    // 已有参数，使用 & 连接
+    return `${url}&${compressionParam}`
+  } else {
+    // 没有参数，使用 ? 连接
+    return `${url}?${compressionParam}`
+  }
+}
+
+// 将旧格式的图片URL转换为优化格式，支持重定向URL和腾讯云压缩参数
+function convertLegacyImageUrls(canvasData: any) {
+  if (canvasData?.data?.files) {
+    const files = canvasData.data.files
+    Object.keys(files).forEach(fileId => {
+      const file = files[fileId]
+      if (file?.dataURL && typeof file.dataURL === 'string') {
+        let originalUrl = file.dataURL
+        let convertedUrl = originalUrl
+        
+        // 处理本地 API 格式的 URL
+        if (originalUrl.startsWith('/api/file/') && !originalUrl.includes('?redirect=true')) {
+          convertedUrl = `${originalUrl}?redirect=true`
+          console.log(`🔄 转换本地API URL: ${fileId} -> ${convertedUrl}`)
+        }
+        // 处理腾讯云COS直链URL
+        else if (isTencentCosUrl(originalUrl) && isImageUrl(originalUrl)) {
+          convertedUrl = addCompressionParams(originalUrl)
+          if (convertedUrl !== originalUrl) {
+            console.log(`🗜️ 添加腾讯云压缩参数: ${fileId} -> ${convertedUrl}`)
+          }
+        }
+        
+        // 更新URL
+        if (convertedUrl !== originalUrl) {
+          file.dataURL = convertedUrl
+        }
+      }
+    })
+  }
+  return canvasData
+}
+
 export const Route = createFileRoute('/canvas/$id')({
   component: Canvas,
 })
@@ -38,9 +103,12 @@ function Canvas() {
         setError(null)
         const data = await getCanvas(id)
         const endTime = performance.now()
+        
+        // 转换旧格式的图片URL为重定向格式
+        const convertedData = convertLegacyImageUrls(data)
 
         if (mounted) {
-          setCanvas(data)
+          setCanvas(convertedData)
           setCanvasName(data.name)
           setSessionList(data.sessions)
           // Video elements now handled by native Excalidraw embeddable elements

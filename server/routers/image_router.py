@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from PIL import Image
 from io import BytesIO
 import os
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks, Query
 import httpx
 import asyncio
 from mimetypes import guess_type
@@ -124,7 +124,10 @@ async def upload_image(
         logger.info(f'📁 本地文件保留，供图生图等功能使用: {file_path}')
         return {
             'file_id': filename_with_ext,
-            'url': cos_url,  # 返回腾讯云URL
+            'url': cos_url,  # 返回腾讯云URL（向后兼容）
+            'direct_url': cos_url,  # 腾讯云直链URL
+            'proxy_url': f'{BASE_URL}/api/file/{filename_with_ext}',  # 代理URL
+            'redirect_url': f'{BASE_URL}/api/file/{filename_with_ext}?redirect=true',  # 重定向URL
             'width': width,
             'height': height,
             'user_email': user_email,
@@ -137,7 +140,10 @@ async def upload_image(
         local_url = f'{BASE_URL}/api/file/{filename_with_ext}'
         return {
             'file_id': filename_with_ext,
-            'url': local_url,  # 返回本地URL
+            'url': local_url,  # 返回本地URL（向后兼容）
+            'direct_url': None,  # 无腾讯云直链
+            'proxy_url': local_url,  # 代理URL（本地文件）
+            'redirect_url': local_url,  # 重定向URL（本地文件，无法重定向）
             'width': width,
             'height': height,
             'user_email': user_email,
@@ -328,7 +334,10 @@ async def upload_image_fast(
         logger.info(f'⚡ 快速上传完成，返回本地URL: {filename_with_ext} -> {local_url}')
         return {
             'file_id': filename_with_ext,
-            'url': local_url,  # 返回本地URL，用户可以立即使用
+            'url': local_url,  # 返回本地URL，用户可以立即使用（向后兼容）
+            'direct_url': None,  # 云端上传中，暂无直链
+            'proxy_url': local_url,  # 代理URL（本地文件）
+            'redirect_url': f'{BASE_URL}/api/file/{filename_with_ext}?redirect=true',  # 重定向URL（后续会重定向到云端）
             'width': width,
             'height': height,
             'user_email': user_email,
@@ -342,10 +351,11 @@ async def upload_image_fast(
         raise HTTPException(status_code=500, detail=f"Internal server error during fast upload: {str(e)}")
 
 
-# 文件下载接口 - 代理返回腾讯云或本地图片
+# 文件下载接口 - 支持重定向模式或代理返回腾讯云或本地图片
 @router.get("/file/{file_id}")
 async def get_file(
     file_id: str,
+    # redirect: bool = Query(False, description="是否重定向到腾讯云直链"),
     current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
 ):
     # 首先尝试从腾讯云获取图片URL
@@ -353,28 +363,35 @@ async def get_file(
     cos_url = cos_service.get_image_url(file_id)
     
     if cos_url:
-        logger.info(f'✅ 从腾讯云获取图片: {file_id} -> {cos_url}')
-        try:
-            # 代理模式：从腾讯云下载图片并返回给前端
-            timeout = httpx.Timeout(30.0)
-            async with HttpClient.create(timeout=timeout) as client:
-                response = await client.get(cos_url)
-                if response.status_code == 200:
-                    # 设置合适的Content-Type
-                    content_type = response.headers.get('content-type', 'image/jpeg')
-                    from fastapi.responses import Response
-                    return Response(
-                        content=response.content,
-                        media_type=content_type,
-                        headers={
-                            "Cache-Control": "public, max-age=3600",  # 缓存1小时
-                            "Access-Control-Allow-Origin": "*"  # 允许跨域访问
-                        }
-                    )
-                else:
-                    logger.warning(f'⚠️ 腾讯云返回错误状态码 {response.status_code}，回退到本地存储')
-        except Exception as e:
-            logger.warning(f'⚠️ 从腾讯云获取图片失败: {e}，回退到本地存储')
+        # 如果请求重定向模式，直接重定向到腾讯云URL
+        # if redirect:
+        logger.info(f'🔀 重定向到腾讯云: {file_id} -> {cos_url}')
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=cos_url, status_code=302)
+        
+        # 否则使用代理模式
+        # logger.info(f'✅ 从腾讯云获取图片: {file_id} -> {cos_url}')
+        # try:
+        #     # 代理模式：从腾讯云下载图片并返回给前端
+        #     timeout = httpx.Timeout(30.0)
+        #     async with HttpClient.create(timeout=timeout) as client:
+        #         response = await client.get(cos_url)
+        #         if response.status_code == 200:
+        #             # 设置合适的Content-Type
+        #             content_type = response.headers.get('content-type', 'image/jpeg')
+        #             from fastapi.responses import Response
+        #             return Response(
+        #                 content=response.content,
+        #                 media_type=content_type,
+        #                 headers={
+        #                     "Cache-Control": "public, max-age=3600",  # 缓存1小时
+        #                     "Access-Control-Allow-Origin": "*"  # 允许跨域访问
+        #                 }
+        #             )
+        #         else:
+        #             logger.warning(f'⚠️ 腾讯云返回错误状态码 {response.status_code}，回退到本地存储')
+        # except Exception as e:
+            # logger.warning(f'⚠️ 从腾讯云获取图片失败: {e}，回退到本地存储')
     
     # 向后兼容：如果腾讯云中没有，尝试从本地文件系统获取
     user_email = current_user.email if current_user else None

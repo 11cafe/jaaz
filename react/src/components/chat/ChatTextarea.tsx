@@ -1,6 +1,6 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage, uploadImageFast, FastUploadResult } from '@/api/upload'
+import { uploadImage, uploadImageFast, FastUploadResult, getBestImageUrl, getDisplayImageUrl } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent, TMaterialAddImagesToChatEvent } from '@/lib/event'
@@ -73,7 +73,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       width: number
       height: number
       localPreviewUrl?: string // 本地预览URL，优先显示
-      serverUrl?: string // 服务器URL，作为备用
+      serverUrl?: string // 服务器URL，作为备用（向后兼容）
+      directUrl?: string | null // 腾讯云直链URL（最佳性能）
+      redirectUrl?: string // 重定向URL
+      proxyUrl?: string // 代理URL
       uploadStatus?: 'uploading' | 'local_ready' | 'cloud_synced' | 'failed'
     }[]
   >([])
@@ -123,7 +126,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           width: data.width,
           height: data.height,
           localPreviewUrl: data.localPreviewUrl,
-          serverUrl: data.url,
+          serverUrl: data.url, // 向后兼容
+          directUrl: data.direct_url, // 腾讯云直链URL
+          redirectUrl: data.redirect_url, // 重定向URL
+          proxyUrl: data.proxy_url, // 代理URL
           uploadStatus: data.upload_status as 'local_ready',
         },
       ])
@@ -386,6 +392,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 width: image.width,
                 height: image.height,
                 serverUrl: `/api/file/${image.fileId}`,
+                redirectUrl: `/api/file/${image.fileId}?redirect=true`,
                 uploadStatus: 'cloud_synced',
               })
             })
@@ -499,7 +506,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
               >
                 <img
                   key={image.file_id}
-                  src={image.localPreviewUrl || image.serverUrl || `/api/file/${image.file_id}`}
+                  src={
+                    image.localPreviewUrl || 
+                    image.directUrl || 
+                    image.redirectUrl || 
+                    image.serverUrl || 
+                    `/api/file/${image.file_id}`
+                  }
                   alt='Uploaded image'
                   className={cn(
                     'w-full h-full object-cover rounded-md',
@@ -507,9 +520,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   )}
                   draggable={false}
                   onError={(e) => {
-                    // 如果本地预览失败，尝试使用服务器URL
+                    // 降级处理：本地预览 -> 直链 -> 重定向 -> 代理
                     const target = e.target as HTMLImageElement
                     if (image.localPreviewUrl && target.src === image.localPreviewUrl) {
+                      target.src = image.directUrl || image.redirectUrl || image.serverUrl || `/api/file/${image.file_id}`
+                    } else if (image.directUrl && target.src === image.directUrl) {
+                      target.src = image.redirectUrl || image.serverUrl || `/api/file/${image.file_id}`
+                    } else if (image.redirectUrl && target.src === image.redirectUrl) {
                       target.src = image.serverUrl || `/api/file/${image.file_id}`
                     }
                   }}

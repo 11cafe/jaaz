@@ -18,6 +18,7 @@ from utils.cos_image_service import get_cos_image_service
 from services.config_service import config_service, SERVER_DIR
 from utils.canvas import find_next_best_element_position
 from utils.cos_image_service import get_cos_image_service
+from common import BASE_URL
 
 def generate_file_id() -> str:
     """Generate unique file ID"""
@@ -143,8 +144,9 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
             url = cos_url
             print(f"✅ 图片已上传到腾讯云: {filename} -> {cos_url}")
         else:
-            url = f'/api/file/{filename}'
-            print(f"⚠️ 腾讯云上传失败或不可用，使用本地URL: {filename} -> {url}")
+            # 使用重定向URL，即使当前腾讯云不可用，后续访问时仍可通过重定向机制获取腾讯云图片
+            url = f'{BASE_URL}/api/file/{filename}?redirect=true'
+            print(f"⚠️ 腾讯云上传失败或不可用，使用重定向URL: {filename} -> {url}")
 
         file_data: Dict[str, Any] = {
             'mimeType': mime_type,

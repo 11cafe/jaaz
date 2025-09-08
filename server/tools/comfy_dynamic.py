@@ -216,7 +216,8 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                 mime_type, width, height, filename = output
                 file_id = generate_file_id()
 
-                url = f"/api/file/{filename}"
+                # 使用重定向URL，通过重定向机制尝试获取腾讯云图片
+                url = f"/api/file/{filename}?redirect=true"
 
                 file_data = {
                     "mimeType": mime_type,
@@ -250,7 +251,8 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                 canvas_data["data"]["elements"].append(new_element)
                 canvas_data["data"]["files"][file_id] = file_data
 
-                image_url = f"{BASE_URL}/api/file/{filename}"
+                # 使用重定向URL，通过重定向机制尝试获取腾讯云图片
+                image_url = f"{BASE_URL}/api/file/{filename}?redirect=true"
 
                 generated_files_info.append(
                     {

@@ -194,7 +194,7 @@ function TemplateUsePage() {
         
         // 如果没有本地预览，才从服务器获取
         console.log('⚡ 从服务器获取图片:', image.file_id)
-        const response = await fetch(`/api/file/${image.file_id}`)
+        const response = await fetch(`/api/file/${image.file_id}?redirect=true`)
         const blob = await response.blob()
         return new Promise<string>((resolve) => {
           const reader = new FileReader()
@@ -470,7 +470,7 @@ function TemplateUsePage() {
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
                         >
                           <img
-                            src={image.localPreviewUrl || image.serverUrl || `/api/file/${image.file_id}`}
+                            src={image.localPreviewUrl || image.serverUrl || `/api/file/${image.file_id}?redirect=true`}
                             alt='Uploaded image'
                             className='w-full h-full object-cover rounded-md'
                             draggable={false}
@@ -478,7 +478,7 @@ function TemplateUsePage() {
                               // 如果本地预览失败，尝试使用服务器URL
                               const target = e.target as HTMLImageElement
                               if (image.localPreviewUrl && target.src === image.localPreviewUrl) {
-                                target.src = image.serverUrl || `/api/file/${image.file_id}`
+                                target.src = image.serverUrl || `/api/file/${image.file_id}?redirect=true`
                               }
                             }}
                           />

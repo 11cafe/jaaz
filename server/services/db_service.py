@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 import aiosqlite
 from .config_service import USER_DATA_DIR
 from .migrations.manager import MigrationManager, CURRENT_VERSION
+from utils.cos_image_service import get_cos_image_service
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -62,6 +63,39 @@ class DatabaseService:
             """, (id, name, user_uuid, email))
             await db.commit()
 
+    def _convert_thumbnail_to_cos_url(self, thumbnail: str) -> str:
+        """
+        将 /api/file/ 格式的thumbnail转换为腾讯云直链URL
+        如果已经是腾讯云URL或转换失败，返回原URL
+        """
+        if not thumbnail or not isinstance(thumbnail, str):
+            return thumbnail
+            
+        # 检查是否是本地API格式
+        if not thumbnail.startswith('/api/file/'):
+            return thumbnail
+            
+        try:
+            # 提取文件名
+            filename = thumbnail.replace('/api/file/', '')
+            if not filename:
+                return thumbnail
+                
+            # 获取腾讯云URL
+            cos_service = get_cos_image_service()
+            cos_url = cos_service.get_image_url(filename)
+            
+            if cos_url:
+                logger.info(f"✨ 转换thumbnail URL: {thumbnail} -> {cos_url}")
+                return cos_url
+            else:
+                logger.warning(f"⚠️ 无法获取腾讯云URL，保持原格式: {thumbnail}")
+                return thumbnail
+                
+        except Exception as e:
+            logger.error(f"❌ 转换thumbnail URL失败: {thumbnail}, error: {e}")
+            return thumbnail
+
     async def list_canvases(self, user_uuid: str = None, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get canvases filtered by user email (preferred) or UUID (fallback)"""
         async with aiosqlite.connect(self.db_path) as db:
@@ -77,7 +111,14 @@ class DatabaseService:
                     ORDER BY updated_at DESC
                 """, (user_email,))
                 rows = await cursor.fetchall()
-                return [dict(row) for row in rows]
+                # 转换thumbnail URL为腾讯云直链
+                canvases = []
+                for row in rows:
+                    canvas = dict(row)
+                    if canvas.get('thumbnail'):
+                        canvas['thumbnail'] = self._convert_thumbnail_to_cos_url(canvas['thumbnail'])
+                    canvases.append(canvas)
+                return canvases
             
             # 如果没有提供user_uuid，使用匿名用户的UUID
             if user_uuid is None:
@@ -92,7 +133,14 @@ class DatabaseService:
                 ORDER BY updated_at DESC
             """, (user_uuid,))
             rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
+            # 转换thumbnail URL为腾讯云直链
+            canvases = []
+            for row in rows:
+                canvas = dict(row)
+                if canvas.get('thumbnail'):
+                    canvas['thumbnail'] = self._convert_thumbnail_to_cos_url(canvas['thumbnail'])
+                canvases.append(canvas)
+            return canvases
 
     async def create_chat_session(self, id: str, model: str, provider: str, canvas_id: str, user_uuid: Optional[str] = None, title: Optional[str] = None):
         """Save a new chat session"""

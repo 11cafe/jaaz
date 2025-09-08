@@ -6,9 +6,12 @@ export interface FastUploadResult {
   file_id: string
   width: number
   height: number
-  url: string
+  url: string  // 向后兼容
+  direct_url?: string | null  // 腾讯云直链URL
+  proxy_url: string  // 代理URL
+  redirect_url: string  // 重定向URL
   user_id?: string
-  storage_type: 'local_with_cloud_sync'
+  storage_type: 'local_with_cloud_sync' | 'tencent_cloud' | 'local'
   upload_status: 'local_ready'
   localPreviewUrl?: string // 本地预览URL
 }
@@ -55,10 +58,23 @@ export async function uploadImageFast(
   }
 }
 
+// 传统上传类型定义
+export interface UploadResult {
+  file_id: string
+  width: number
+  height: number
+  url: string  // 向后兼容
+  direct_url?: string | null  // 腾讯云直链URL
+  proxy_url: string  // 代理URL
+  redirect_url: string  // 重定向URL
+  user_id?: string
+  storage_type: 'tencent_cloud' | 'local'
+}
+
 // 传统上传函数 - 保持向后兼容
 export async function uploadImage(
   file: File
-): Promise<{ file_id: string; width: number; height: number; url: string; user_id?: string }> {
+): Promise<UploadResult> {
   // Compress image before upload
   const compressedFile = await compressImageFile(file)
 
@@ -87,6 +103,33 @@ export async function uploadImage(
 }
 
 export async function getFileUrl(fileId: string): Promise<string> {
-  // 文件获取也需要认证信息以确保用户只能访问自己的文件
-  return `/api/file/${fileId}`
+  // 使用重定向URL，通过重定向机制尝试获取腾讯云文件，同时保证用户权限控制
+  return `/api/file/${fileId}?redirect=true`
+}
+
+// 获取最佳图片URL - 优先使用直链，降级使用重定向或代理
+export function getBestImageUrl(uploadResult: UploadResult | FastUploadResult): string {
+  // 1. 优先使用腾讯云直链（最佳性能）
+  if (uploadResult.direct_url) {
+    return uploadResult.direct_url
+  }
+  
+  // 2. 使用重定向URL（服务器会重定向到腾讯云）
+  if (uploadResult.redirect_url) {
+    return uploadResult.redirect_url
+  }
+  
+  // 3. 降级使用代理URL
+  if (uploadResult.proxy_url) {
+    return uploadResult.proxy_url
+  }
+  
+  // 4. 最后降级使用原始URL（向后兼容）
+  return uploadResult.url
+}
+
+// 获取展示用图片URL - 专门为前端展示优化
+export function getDisplayImageUrl(uploadResult: UploadResult | FastUploadResult): string {
+  // 对于图片展示，优先使用直链，然后是重定向
+  return getBestImageUrl(uploadResult)
 }
