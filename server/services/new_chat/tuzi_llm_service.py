@@ -361,7 +361,7 @@ class TuziLLMService:
             logger.info(f"✅ 图片已保存到: {file_path}")
             
             # 使用gemini进行图片编辑
-            result = await self.gemini_edit_image_by_tuzi([file_path], user_prompt)
+            result = await self.gemini_edit_image_by_tuzi([file_path], user_prompt, model=model_name)
             
             if result:
                 logger.info(f"✅ 图片编辑成功: {result.get('result_url')}")

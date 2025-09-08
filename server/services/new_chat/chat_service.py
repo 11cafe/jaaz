@@ -13,7 +13,14 @@ from services.db_service import db_service
 from services.config_service import USER_DATA_DIR, DEFAULT_PROVIDERS_CONFIG
 # from services.OpenAIAgents_service import create_jaaz_response
 from services.new_chat import create_local_response
-from services.websocket_service import send_to_websocket  # type: ignore
+from services.websocket_service import (
+    send_to_websocket, 
+    send_user_message_confirmation,
+    send_ai_thinking_status,
+    send_image_generation_status,
+    send_image_upload_status,
+    send_generation_complete
+)  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from log import get_logger
 from models.config_model import ModelInfo
@@ -256,6 +263,13 @@ async def handle_chat(data: Dict[str, Any]) -> None:
                 'messages': complete_messages  # 发送完整历史 + 新用户消息
             })
             logger.info(f"[DEBUG] ✅ 用户消息发送成功")
+            
+            # 发送用户消息确认和开始处理状态
+            await send_user_message_confirmation(
+                session_id=session_id,
+                canvas_id=canvas_id,
+                message=user_message
+            )
         except Exception as e:
             logger.error(f"[ERROR] ❌ 用户消息发送失败: {e}")
             # 即使 WebSocket 发送失败，也要继续处理
@@ -376,9 +390,40 @@ async def _process_generation(
         canvas_id: Canvas ID
     """
 
-    # 原来是基于云端生成
-    # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
-    ai_response = await create_local_response(messages, session_id, canvas_id, model_name, user_info)
+    # 初始化变量
+    has_image = False
+    ai_response = {}
+    
+    try:
+        # 1. 发送AI思考状态
+        await send_ai_thinking_status(session_id=session_id, canvas_id=canvas_id)
+        
+        # 2. 发送图片生成状态
+        await send_image_generation_status(session_id=session_id, canvas_id=canvas_id)
+        
+        # 3. 执行AI生成
+        # 原来是基于云端生成
+        # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
+        ai_response = await create_local_response(messages, session_id, canvas_id, model_name, user_info)
+        
+        # 4. 检查生成结果是否包含图片
+        if isinstance(ai_response.get('content'), str) and '![image_id:' in ai_response.get('content', ''):
+            has_image = True
+            # 发送图片上传状态
+            await send_image_upload_status(session_id=session_id, canvas_id=canvas_id)
+        
+    except Exception as e:
+        logger.error(f"[ERROR] 生成过程出错: {e}")
+        # 发送错误状态
+        from services.websocket_service import send_generation_status
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='error',
+            message=f'生成失败: {str(e)}',
+            progress=0.0
+        )
+        raise
 
     # 为AI响应添加唯一时间戳和消息ID
     ai_response_with_id = ai_response.copy()  # 创建副本
@@ -392,7 +437,7 @@ async def _process_generation(
     # 重新获取完整历史，包括刚保存的AI响应（get_chat_history返回已解析的消息列表）
     final_parsed_history = []
     try:
-        updated_chat_history = await db_service.get_chat_history(session_id, user_uuid)
+        updated_chat_history = await db_service.get_chat_history(session_id, user_uuid or '')
         logger.info(f"[DEBUG] AI响应后获取到历史消息数量: {len(updated_chat_history)}")
         
         # get_chat_history已经返回解析后的消息列表，直接使用
@@ -426,3 +471,14 @@ async def _process_generation(
         'type': 'all_messages', 
         'messages': final_parsed_history
     })
+    
+    # 发送生成完成状态
+    await send_generation_complete(
+        session_id=session_id,
+        canvas_id=canvas_id,
+        result_data={
+            'message_count': len(final_parsed_history),
+            'has_image': has_image,
+            'ai_response': ai_response_with_id
+        }
+    )

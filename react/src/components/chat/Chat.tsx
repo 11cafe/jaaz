@@ -22,6 +22,7 @@ import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 import ShareTemplateDialog from './ShareTemplateDialog'
 import { generateChatSessionTitle } from '@/utils/formatDate'
+import GenerationStatus from './GenerationStatus'
 
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
@@ -56,8 +57,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [pending, setPending] = useState<PendingType>(false) // 不再基于initCanvas设置初始状态
   const [hasDisplayedInitialMessage, setHasDisplayedInitialMessage] = useState(false)
+  
+  // 生成状态相关state
+  const [generationStatus, setGenerationStatus] = useState({
+    isVisible: false,
+    message: '',
+    progress: 0,
+    isComplete: false,
+    isError: false,
+    timestamp: 0
+  })
   const mergedToolCallIds = useRef<string[]>([])
-  const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>()
+  const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const hasDisplayedInitialMessageRef = useRef(false)
   const currentMessagesRef = useRef<Message[]>([])
   const isNewSessionRef = useRef<boolean>(false) // 🔥 新增：标记是否为新建session
@@ -668,6 +679,51 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     })
   }, [])
 
+  // 生成状态处理函数
+  const handleGenerationStarted = useCallback((data: any) => {
+    if (data.session_id && data.session_id !== sessionId) return
+    
+    setGenerationStatus({
+      isVisible: true,
+      message: data.message || '开始生成...',
+      progress: data.progress || 0.1,
+      isComplete: false,
+      isError: false,
+      timestamp: data.timestamp || Date.now()
+    })
+    setPending('text')
+  }, [sessionId])
+
+  const handleGenerationProgress = useCallback((data: any) => {
+    if (data.session_id && data.session_id !== sessionId) return
+    
+    setGenerationStatus(prev => ({
+      ...prev,
+      message: data.message || prev.message,
+      progress: data.progress || prev.progress,
+      timestamp: data.timestamp || Date.now()
+    }))
+  }, [sessionId])
+
+  const handleGenerationComplete = useCallback((data: any) => {
+    if (data.session_id && data.session_id !== sessionId) return
+    
+    setGenerationStatus(prev => ({
+      ...prev,
+      message: data.message || '✨ 生成完成！',
+      progress: 1.0,
+      isComplete: true,
+      timestamp: data.timestamp || Date.now()
+    }))
+    
+    // 3秒后隐藏状态显示
+    setTimeout(() => {
+      setGenerationStatus(prev => ({ ...prev, isVisible: false }))
+    }, 3000)
+    
+    setPending(false)
+  }, [sessionId])
+
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout
 
@@ -703,6 +759,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
     eventBus.on('Socket::Session::Info', handleInfo)
+    // 生成状态事件监听
+    eventBus.on('Socket::Session::GenerationStarted', handleGenerationStarted)
+    eventBus.on('Socket::Session::GenerationProgress', handleGenerationProgress)
+    eventBus.on('Socket::Session::GenerationComplete', handleGenerationComplete)
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
       clearTimeout(scrollTimeout)
@@ -723,6 +783,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
       eventBus.off('Socket::Session::Info', handleInfo)
+      // 清理生成状态事件监听
+      eventBus.off('Socket::Session::GenerationStarted', handleGenerationStarted)
+      eventBus.off('Socket::Session::GenerationProgress', handleGenerationProgress)
+      eventBus.off('Socket::Session::GenerationComplete', handleGenerationComplete)
     }
   })
 
@@ -1019,6 +1083,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </ScrollArea>
 
         <div className='p-2 gap-2 sticky bottom-0'>
+          {/* 生成状态显示 */}
+          <GenerationStatus
+            isVisible={generationStatus.isVisible}
+            message={generationStatus.message}
+            progress={generationStatus.progress}
+            isComplete={generationStatus.isComplete}
+            isError={generationStatus.isError}
+            timestamp={generationStatus.timestamp}
+          />
+          
           <ChatTextarea
             sessionId={sessionId!}
             pending={!!pending}

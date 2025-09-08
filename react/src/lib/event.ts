@@ -55,6 +55,10 @@ export type TEvents = {
   'Socket::Session::ToolCallConfirmed': ISocket.SessionToolCallConfirmedEvent
   'Socket::Session::ToolCallCancelled': ISocket.SessionToolCallCancelledEvent
   'Socket::Session::UserImages': TUserImagesEvent
+  // 生成状态事件
+  'Socket::Session::GenerationStarted': ISocket.SessionGenerationStartedEvent
+  'Socket::Session::GenerationProgress': ISocket.SessionGenerationProgressEvent
+  'Socket::Session::GenerationComplete': ISocket.SessionGenerationCompleteEvent
   // ********** Socket events - End **********
 
   // ********** Canvas events - Start **********

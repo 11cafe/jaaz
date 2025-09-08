@@ -18,6 +18,10 @@ export enum SessionEventType {
   ToolCallConfirmed = 'tool_call_confirmed',
   ToolCallCancelled = 'tool_call_cancelled',
   UserImages = 'user_images',
+  // 新增生成状态类型
+  GenerationStarted = 'generation_started',
+  GenerationProgress = 'generation_progress',
+  GenerationComplete = 'generation_complete',
 }
 
 export interface SessionBaseEvent {
@@ -111,6 +115,33 @@ export interface SessionUserImagesEvent extends SessionBaseEvent {
   }
 }
 
+export interface SessionGenerationStartedEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationStarted
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
+export interface SessionGenerationProgressEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationProgress
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
+export interface SessionGenerationCompleteEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationComplete
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
 export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
@@ -127,3 +158,6 @@ export type SessionUpdateEvent =
   | SessionToolCallConfirmedEvent
   | SessionToolCallCancelledEvent
   | SessionUserImagesEvent
+  | SessionGenerationStartedEvent
+  | SessionGenerationProgressEvent
+  | SessionGenerationCompleteEvent
