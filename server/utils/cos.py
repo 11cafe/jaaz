@@ -37,7 +37,7 @@ class CosUtils:
                               StorageClass='STANDARD',
                               ContentType=f'image/{file_type}'  # 根据图片类型设置
                             )
-            url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{key}"
+            url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{key}?imageMogr2/thumbnail/avif"
             return url
         except Exception as e:
             sys.stderr.write(f"上传文件失败: {e}\n")
@@ -59,7 +59,7 @@ class CosUtils:
                 Key=cos_file_path,
                 ContentType=content_type
             )
-            url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{cos_file_path}"
+            url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{cos_file_path}?imageMogr2/thumbnail/avif"
             return url
         except Exception as e:
             sys.stderr.write(f"上传失败: {e}\n")
@@ -69,7 +69,7 @@ class CosUtils:
         """
         获取文件URL
         """
-        url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{key}"
+        url = f"https://{self.bucket_name}.cos.{self.region}.myqcloud.com/{key}?imageMogr2/thumbnail/avif"
         return url
         
 if __name__  == "__main__":
