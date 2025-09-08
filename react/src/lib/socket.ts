@@ -140,6 +140,16 @@ export class SocketIOManager {
       case ISocket.SessionEventType.UserImages:
         eventBus.emit('Socket::Session::UserImages', data)
         break
+      // 生成状态事件处理
+      case ISocket.SessionEventType.GenerationStarted:
+        eventBus.emit('Socket::Session::GenerationStarted', data)
+        break
+      case ISocket.SessionEventType.GenerationProgress:
+        eventBus.emit('Socket::Session::GenerationProgress', data)
+        break
+      case ISocket.SessionEventType.GenerationComplete:
+        eventBus.emit('Socket::Session::GenerationComplete', data)
+        break
       default:
         console.log('⚠️ Unknown session update type:', type)
     }
