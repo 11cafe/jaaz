@@ -293,101 +293,96 @@ class TuziLLMService:
         生成魔法图像的完整流程
 
         Args:
-            image_content: 图片内容（base64 或 URL）
+            model_name: 用户选择的模型名称
+            user_prompt: 用户输入的文本
+            image_content: 图片内容（base64 或 URL），可能为空
+            user_info: 用户信息
 
         Returns:
             Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
         """
         try:
-            if model_name == "gemini-2.5-flash-image":
-                if image_content:
-                    from services.config_service import get_user_files_dir
-                    
-                    # 生成唯一文件名
-                    file_id = str(uuid.uuid4())
-                    
-                    # 获取用户文件目录
-                    user_email = user_info.get('email') if user_info else None
-                    user_id = user_info.get('uuid') if user_info else None
-                    user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+            # 步骤1: 判断用户是否有图片上传，如果有肯定是画图
+            has_image = bool(image_content and image_content.strip() and image_content.startswith('data:image/'))
             
-                    if image_content and image_content.startswith('data:image/'):
-                        # 从data URL中提取格式和数据
-                        header, encoded = image_content.split(',', 1)
-                        image_format = header.split(';')[0].split('/')[1]  # 获取图片格式(jpeg, png等)
-                        image_data = base64.b64decode(encoded)
-                        file_path = os.path.join(user_files_dir, f"{file_id}.{image_format}")
-                    else:
-                        # 假设是其他格式，默认保存为jpg
-                        image_data = image_content.encode()
-                        file_path = os.path.join(user_files_dir, f"{file_id}.jpg")
+            if has_image:
+                logger.info("🖼️ 检测到图片上传，执行图片编辑流程")
+                # 如果不能画图, 也设置成系统默认的
+                image_model = self._get_image_generation_model(model_name)
+                return await self._handle_image_editing(image_model, user_prompt, image_content, user_info)
             
-                    # 写入文件
-                    with open(file_path, 'wb') as f:
-                        f.write(image_data)
+            # 步骤2: 没有图片上传，进行画图语义理解
+            logger.info("📝 无图片上传，进行语义理解...")
+            is_image_generation = await self._detect_image_generation_intent(user_prompt)
             
-                    logger.info(f"✅ 图片已保存到: {file_path}")
-                    result = await self.gemini_edit_image_by_tuzi([file_path], user_prompt)
-                else:
-                    result = await self.gemini_generate_by_tuzi(user_prompt)
+            if is_image_generation:
+                logger.info("🎨 检测到画图意图，执行图片生成流程")
+                # 步骤4: 检查用户设置的model是否是画图模型，如果不是默认使用gemini-2.5-flash-image
+                image_model = self._get_image_generation_model(model_name)
+                return await self._handle_image_generation(image_model, user_prompt, user_info)
+            else:
+                logger.info("💬 检测到文本对话意图，执行文本对话流程")
+                # 步骤3: 不是画图，直接走用户设定的大模型调用
+                return await self._handle_text_conversation(model_name, user_prompt, user_info)
                 
-                if result:
-                    logger.info(f"✅ Magic image generated successfully: {result.get('result_url')}")
-                    return result
-                else:
-                    logger.error("❌ Failed to generate magic image")
-                    return {"error": "Failed to generate magic image"}
-            elif model_name in ["gpt-4o", "gemini-2.5-pro-all"]:
-                # GPT-4o 文本对话模式
-                logger.info(f"🔍 [DEBUG] 使用 gpt-4o 进行文本对话")
-                try:
-                    text_response = await self.gpt_by_tuzi(user_prompt, model_name, user_info)
-                    if text_response:
-                        # 返回文本响应，格式化为与图像生成一致的结构
-                        logger.info(f"✅ GPT-4o 文本对话成功")
-                        return text_response
-                    else:
-                        logger.error("❌ GPT-4o 文本对话失败")
-                        return {"error": "GPT-4o text conversation failed"}
-                except Exception as e:
-                    logger.error(f"❌ GPT-4o 处理出错: {e}")
-                    return {"error": f"GPT-4o error: {str(e)}"}
-            
         except Exception as e:
-            error_msg = f"Error in magic image generation: {str(e)}"
-            print(f"❌ {error_msg}")
+            error_msg = f"Error in generate: {str(e)}"
+            logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def gpt_by_tuzi(
-        self,
-        prompt: str,
-        model: str = "gpt-4o",
-        user_info: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
-        """
-        使用 GPT 模型进行文本对话或图片生成
-        
-        Args:
-            prompt: 用户输入的文本
-            model: 使用的模型名称
-            user_info: 用户信息，用于保存图片到正确目录
-            
-        Returns:
-            文本响应内容或包含图片URL的响应
-        """
+    async def _handle_image_editing(self, model_name: str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """处理图片编辑流程"""
         try:
-            logger.info(f"🔍 [DEBUG] gpt_by_tuzi 参数:")
-            logger.info(f"   prompt: {prompt}")
-            logger.info(f"   model: {model}")
-            logger.info(f"   base_url: {self.api_url}")     
-            # 检查是否需要进行图片生成 - 使用简单的关键词检测，避免额外的API调用
+            from services.config_service import get_user_files_dir
+            
+            # 生成唯一文件名
+            file_id = str(uuid.uuid4())
+            
+            # 获取用户文件目录
+            user_email = user_info.get('email') if user_info else None
+            user_id = user_info.get('uuid') if user_info else None
+            user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
+    
+            if image_content.startswith('data:image/'):
+                # 从data URL中提取格式和数据
+                header, encoded = image_content.split(',', 1)
+                image_format = header.split(';')[0].split('/')[1]  # 获取图片格式(jpeg, png等)
+                image_data = base64.b64decode(encoded)
+                file_path = os.path.join(user_files_dir, f"{file_id}.{image_format}")
+            else:
+                # 假设是其他格式，默认保存为jpg
+                image_data = image_content.encode() if isinstance(image_content, str) else image_content
+                file_path = os.path.join(user_files_dir, f"{file_id}.jpg")
+    
+            # 写入文件
+            with open(file_path, 'wb') as f:
+                f.write(image_data)
+    
+            logger.info(f"✅ 图片已保存到: {file_path}")
+            
+            # 使用gemini进行图片编辑
+            result = await self.gemini_edit_image_by_tuzi([file_path], user_prompt)
+            
+            if result:
+                logger.info(f"✅ 图片编辑成功: {result.get('result_url')}")
+                return result
+            else:
+                logger.error("❌ 图片编辑失败")
+                return {"error": "Failed to edit image"}
+                
+        except Exception as e:
+            error_msg = f"Error in image editing: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"error": error_msg}
 
-            # 使用大模型进行画图意图理解
+    async def _detect_image_generation_intent(self, user_prompt: str) -> bool:
+        """使用大模型检测用户是否有画图意图"""
+        try:
             intent_prompt = f"""
 请判断以下用户输入是否是想要生成图片/画图的意图。
 只需要回答 YES 或 NO。
 
-用户输入: {prompt}
+用户输入: {user_prompt}
 
 判断标准:
 - 如果用户明确要求画图、生成图片、制作图像等，回答 YES
@@ -396,54 +391,86 @@ class TuziLLMService:
 
 回答:"""
 
-            logger.info(f"🤖 [DEBUG] 使用大模型进行意图理解...")
+            logger.info(f"🤖 使用大模型进行意图理解...")
             intent_client = AsyncOpenAI(
                 api_key=self.api_token,
                 base_url=self.api_url,
-                timeout=30.0
+                timeout=30.0,
+                max_retries=0
             )
             
             intent_completion = await intent_client.chat.completions.create(
-                model="gpt-4o-mini",  # 使用更快的模型进行意图理解
-                messages=[
-                    {
-                        "role": "user",
-                        "content": intent_prompt
-                    }
-                ]
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": intent_prompt}],
+                max_tokens=10,
+                temperature=0
             )
             
-            intent_response = ""
-            if intent_completion.choices and len(intent_completion.choices) > 0:
-                intent_response = intent_completion.choices[0].message.content.strip().upper()
-                logger.info(f"🎯 [DEBUG] 意图理解结果: {intent_response}")
+            intent_result = intent_completion.choices[0].message.content.strip().upper()
+            logger.info(f"🤖 意图理解结果: {intent_result}")
             
-            needs_image_generation = intent_response == "YES"
-            # image_keywords = ["画", "绘", "生成图片", "制作图片", "创建图片", "draw", "paint", "generate image", "create image", "make image", "图"]
-            # needs_image_generation = any(keyword in prompt.lower() for keyword in image_keywords)
-            
-            logger.info(f"🤖 [DEBUG] 关键词检测结果: 需要图片生成: {needs_image_generation}")
-            logger.info(f"🔍 [DEBUG] 用户输入: {prompt}")
-
-            if needs_image_generation:
-                logger.info(f"🎨 [DEBUG] 使用图片生成模式")
-                return await self._generate_image_with_gpt(prompt, model, user_info)
-            else:
-                logger.info(f"💬 [DEBUG] 使用文本对话模式")
-                return await self._chat_with_gpt(prompt, model)
+            return intent_result == "YES"
             
         except Exception as e:
-            logger.error(f"❌ GPT 调用失败: {e}")
-            return None
+            logger.error(f"❌ 意图理解失败: {e}")
+            # 默认返回False，走文本对话流程
+            return False
 
-    async def _chat_with_gpt(self, prompt: str, model: str) -> Optional[Dict[str, Any]]:
+    def _get_image_generation_model(self, user_model: str) -> str:
+        """获取图片生成模型，如果用户选择的不是画图模型则使用默认模型"""
+        image_models = ["gemini-2.5-flash-image", "gpt-4o"]
+        
+        if user_model in image_models:
+            logger.info(f"✅ 用户选择的模型 {user_model} 支持图片生成")
+            return user_model
+        else:
+            logger.info(f"⚠️ 用户选择的模型 {user_model} 不支持图片生成，使用默认模型 gemini-2.5-flash-image")
+            return "gemini-2.5-flash-image"
+
+    async def _handle_image_generation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """处理图片生成流程"""
+        try:
+            result = await self.gemini_generate_by_tuzi(user_prompt, model_name)
+            if result:
+                logger.info(f"✅ 图片生成成功: {result.get('result_url')}")
+                return result
+            else:
+                logger.error("❌ 图片生成失败")
+                return {"error": "Failed to generate image"}
+        except Exception as e:
+            error_msg = f"Error in image generation: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"error": error_msg}
+
+    async def _handle_text_conversation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]] | str:
+        """处理文本对话流程"""
+        try:
+            text_response = await self._chat_with_tuzi(user_prompt, model_name) 
+            if text_response:
+                logger.info(f"✅ 文本对话成功")
+                return text_response
+            else:
+                logger.error("❌ 文本对话失败")
+                return {"error": "Text conversation failed"}
+        except Exception as e:
+            error_msg = f"Error in text conversation: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"error": error_msg}
+
+    async def _chat_with_tuzi(self, prompt: str, model: str) -> Optional[Dict[str, Any]]:
         """GPT 文本对话"""
+        logger.info(f"🔍 [DEBUG] gpt_by_tuzi 参数:")
+        logger.info(f"   prompt: {prompt}")
+        logger.info(f"   model: {model}")
+        logger.info(f"   base_url: {self.api_url}")     
+        logger.info(f"💬 [DEBUG] 使用文本对话模式")
         logger.info(f"🚀 [DEBUG] 调用 client.chat.completions.create...")
 
         client = AsyncOpenAI(
                 api_key=self.api_token,
                 base_url=self.api_url,
-                timeout=60.0  # 设置60秒超时
+                timeout=60.0,  # 设置60秒超时
+                max_retries=0   # 禁用重试，避免重复调用
             )
         
         completion = await client.chat.completions.create(
@@ -469,84 +496,6 @@ class TuziLLMService:
                 return None
         else:
             logger.error("❌ GPT 响应没有choices")
-            return None
-
-    async def _generate_image_with_gpt(self, prompt: str, model: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]] | str:
-        """GPT 图片生成并保存到用户目录""" 
-        logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
-        logger.info(f"🔍 [DEBUG] 使用模型: {model}")
-        logger.info(f"🔍 [DEBUG] 提示词: {prompt}")
-        logger.info(f"🔍 [DEBUG] API地址: {self.api_url}")
-
-        try:
-            client = AsyncOpenAI(
-                api_key=self.api_token,
-                base_url=self.api_url,
-                timeout=30.0,  # 增加到3分钟，确保足够的时间生成图片
-                max_retries=0   # 禁用重试，避免重复调用和额外日志
-            )
-            
-            logger.info(f"🚀 [DEBUG] AsyncOpenAI 客户端创建成功，开始调用...")
-            
-            result = await client.images.generate(
-                model=model,
-                prompt=prompt
-            )
-            
-            logger.info(f"✅ [DEBUG] 图片生成API调用成功")
-            
-        except Exception as e:
-            logger.error(f"❌ [ERROR] 图片生成API调用失败: {e}")
-            # 导入错误消息工具
-            from utils.error_messages import get_user_friendly_error
-            friendly_message = get_user_friendly_error(str(e))
-            logger.info(f"🔄 [DEBUG] 返回用户友好错误消息: {friendly_message}")
-            return friendly_message
-        
-        response_data: Dict[str, Any] = {}
-        if result.data and len(result.data) > 0:
-            image_data = result.data[0]
-            
-            # 获取图片URL
-            if hasattr(image_data, 'url') and image_data.url:
-                image_url = image_data.url
-                logger.info(f"✅ [DEBUG] GPT 图片生成成功: {image_url}")
-                
-                # 保存图片到用户目录
-                try:
-                    # 获取用户文件目录
-                    # user_email = user_info.get('email') if user_info else None
-                    # user_id = user_info.get('uuid') if user_info else None
-                    # user_files_dir = get_user_files_dir(user_email=user_email, user_id=user_id)
-                    
-                    # # 生成唯一文件名
-                    # file_id = generate(size=10)
-                    # file_path_without_extension = os.path.join(user_files_dir, file_id)
-                    
-                    # # 下载并保存图片
-                    # mime_type, width, height, extension = await get_image_info_and_save(
-                    #     image_url, file_path_without_extension, is_b64=False
-                    # )
-                    
-                    # filename = f'{file_id}.{extension}'
-                    # logger.info(f"✅ GPT 图片已保存到用户目录: {filename}")
-                    
-                    # # 返回本地文件链接格式
-                    # from common import DEFAULT_PORT
-                    # local_image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
-                    response_data['result_url'] = image_url
-                    response_data['type'] = 'image'
-                    return response_data
-                    # return f"✨ GPT Image Generated Successfully\n\n![image_id: {filename}]({local_image_url})"
-                    
-                except Exception as e:
-                    logger.error(f"❌ 保存 GPT 图片失败: {e}")
-                    return None
-            else:
-                logger.error("❌ GPT 图片响应无URL")
-                return None
-        else:
-            logger.error("❌ GPT 图片生成失败")
             return None
 
     async def gemini_edit_image_by_tuzi(
@@ -683,7 +632,7 @@ User needs: {prompt}
     async def gemini_generate_by_tuzi(
         self,
         prompt: str,
-        model: str = "gemini-2.5-flash-image"
+        model: str = "gemini-2.5-flash-image",
     ) -> Optional[Dict[str, str]]:
         """
         生成魔法图片
