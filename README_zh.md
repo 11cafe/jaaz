@@ -2,8 +2,8 @@
   <a href="https://jaaz.app" target="_blank"> Jaaz.app</a>
   <p align="center">世界上首个开源人工智能设计代理</p>
   <p align="center">本地版Canva + Manus</p>
+</h1>
 
-</h2>
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
 世界上首个开源多模态创意代理，这是一款注重隐私、本地使用和易用性的创意工具， Lovart、Manus 和 Figma 的结合产品。

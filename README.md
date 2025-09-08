@@ -6,9 +6,9 @@
   <a href="https://jaaz.app">
     <img src="https://github.com/user-attachments/assets/e0cffb94-8c6f-4867-800a-c144aceb6d54" alt="Jaaz Logo" />
   </a>
-</p>
+ </p>
+</h1>
 
-</h2>
 <p align="center">The world's first open-source multimodal creative assistant</p>
 <p align="center">This is a substitute for Canva and Manus that prioritizes privacy and is usable locally.</p>
 <br><br>
