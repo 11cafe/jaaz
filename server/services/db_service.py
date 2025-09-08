@@ -530,6 +530,219 @@ class DatabaseService:
                 "is_new": True,
                 "message": f"Welcome to the platform, {username}! You've received 100 bonus points."
             }
+    
+    # =================== 邀请系统相关方法 ===================
+    
+    async def create_invite_code(self, user_id: int, user_uuid: str, code: str) -> bool:
+        """为用户创建邀请码"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    INSERT INTO tb_invite_codes (user_id, user_uuid, code)
+                    VALUES (?, ?, ?)
+                """, (user_id, user_uuid, code))
+                await db.commit()
+                logger.info(f"Created invite code {code} for user {user_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error creating invite code for user {user_id}: {e}")
+            return False
+    
+    async def get_invite_code_by_user(self, user_uuid: str) -> Optional[Dict[str, Any]]:
+        """获取用户的邀请码信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, code, used_count, max_uses, is_active, created_at, updated_at
+                    FROM tb_invite_codes
+                    WHERE user_uuid = ? AND is_active = 1
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (user_uuid,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting invite code for user {user_uuid}: {e}")
+            return None
+    
+    async def get_invite_code_by_code(self, code: str) -> Optional[Dict[str, Any]]:
+        """根据邀请码获取邀请码信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT ic.id, ic.user_id, ic.user_uuid, ic.code, ic.used_count, 
+                           ic.max_uses, ic.is_active, ic.created_at, ic.updated_at,
+                           u.email as inviter_email, u.nickname as inviter_nickname
+                    FROM tb_invite_codes ic
+                    LEFT JOIN tb_user u ON ic.user_uuid = u.uuid
+                    WHERE ic.code = ? AND ic.is_active = 1
+                """, (code,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting invite code {code}: {e}")
+            return None
+    
+    async def update_invite_code_usage(self, code: str) -> bool:
+        """更新邀请码使用次数"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_invite_codes 
+                    SET used_count = used_count + 1,
+                        updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE code = ?
+                """, (code,))
+                await db.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error updating invite code usage {code}: {e}")
+            return False
+    
+    async def create_invitation_record(self, inviter_id: int, inviter_uuid: str, 
+                                     invite_code: str, invitee_email: str,
+                                     registration_ip: str = None, 
+                                     registration_user_agent: str = None,
+                                     device_fingerprint: str = None) -> int:
+        """创建邀请记录"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute("""
+                    INSERT INTO tb_invitations 
+                    (inviter_id, inviter_uuid, invite_code, invitee_email, 
+                     registration_ip, registration_user_agent, device_fingerprint, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                """, (inviter_id, inviter_uuid, invite_code, invitee_email,
+                      registration_ip, registration_user_agent, device_fingerprint))
+                await db.commit()
+                invitation_id = cursor.lastrowid
+                logger.info(f"Created invitation record {invitation_id} for {invitee_email}")
+                return invitation_id
+        except Exception as e:
+            logger.error(f"Error creating invitation record: {e}")
+            return 0
+    
+    async def complete_invitation(self, invitation_id: int, invitee_id: int, 
+                                invitee_uuid: str, inviter_points: int, 
+                                invitee_points: int) -> bool:
+        """完成邀请，更新邀请记录状态和积分"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_invitations 
+                    SET invitee_id = ?, invitee_uuid = ?, status = 'completed',
+                        inviter_points_awarded = ?, invitee_points_awarded = ?,
+                        completed_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE id = ?
+                """, (invitee_id, invitee_uuid, inviter_points, invitee_points, invitation_id))
+                await db.commit()
+                logger.info(f"Completed invitation {invitation_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error completing invitation {invitation_id}: {e}")
+            return False
+    
+    async def get_invitation_stats(self, user_uuid: str) -> Dict[str, Any]:
+        """获取用户邀请统计信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                
+                # 获取邀请统计
+                cursor = await db.execute("""
+                    SELECT 
+                        COUNT(*) as total_invitations,
+                        COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_invitations,
+                        SUM(CASE WHEN status = 'completed' THEN inviter_points_awarded ELSE 0 END) as total_points_earned,
+                        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_invitations
+                    FROM tb_invitations
+                    WHERE inviter_uuid = ?
+                """, (user_uuid,))
+                
+                stats_row = await cursor.fetchone()
+                stats = dict(stats_row) if stats_row else {}
+                
+                # 获取邀请码信息
+                invite_code_info = await self.get_invite_code_by_user(user_uuid)
+                
+                return {
+                    'invite_code': invite_code_info['code'] if invite_code_info else None,
+                    'used_count': invite_code_info['used_count'] if invite_code_info else 0,
+                    'max_uses': invite_code_info['max_uses'] if invite_code_info else 500,
+                    'remaining_uses': (invite_code_info['max_uses'] - invite_code_info['used_count']) if invite_code_info else 500,
+                    'total_invitations': stats.get('total_invitations', 0),
+                    'successful_invitations': stats.get('successful_invitations', 0),
+                    'total_points_earned': stats.get('total_points_earned', 0),
+                    'pending_invitations': stats.get('pending_invitations', 0)
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting invitation stats for user {user_uuid}: {e}")
+            return {}
+    
+    async def get_invitation_history(self, user_uuid: str, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
+        """获取用户邀请历史记录"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT i.id, i.invitee_email, i.status, i.inviter_points_awarded,
+                           i.created_at, i.completed_at, u.nickname as invitee_nickname
+                    FROM tb_invitations i
+                    LEFT JOIN tb_user u ON i.invitee_uuid = u.uuid
+                    WHERE i.inviter_uuid = ?
+                    ORDER BY i.created_at DESC
+                    LIMIT ? OFFSET ?
+                """, (user_uuid, limit, offset))
+                
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error getting invitation history for user {user_uuid}: {e}")
+            return []
+    
+    async def check_anti_spam_limits(self, registration_ip: str, device_fingerprint: str) -> Dict[str, Any]:
+        """检查防刷限制"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                # 检查同一IP在24小时内的注册次数
+                cursor = await db.execute("""
+                    SELECT COUNT(*) as ip_count
+                    FROM tb_invitations
+                    WHERE registration_ip = ? 
+                    AND created_at > datetime('now', '-24 hours')
+                """, (registration_ip,))
+                
+                ip_count = (await cursor.fetchone())[0]
+                
+                # 检查同一设备指纹的注册次数
+                cursor = await db.execute("""
+                    SELECT COUNT(*) as device_count
+                    FROM tb_invitations
+                    WHERE device_fingerprint = ? 
+                    AND device_fingerprint IS NOT NULL
+                    AND device_fingerprint != ''
+                """, (device_fingerprint,))
+                
+                device_count = (await cursor.fetchone())[0]
+                
+                return {
+                    'ip_count_24h': ip_count,
+                    'device_count_total': device_count,
+                    'ip_limit_exceeded': ip_count >= 3,  # 同一IP 24小时内最多3次
+                    'device_limit_exceeded': device_count >= 1 and device_fingerprint  # 同一设备最多1次
+                }
+                
+        except Exception as e:
+            logger.error(f"Error checking anti-spam limits: {e}")
+            return {
+                'ip_count_24h': 0,
+                'device_count_total': 0,
+                'ip_limit_exceeded': False,
+                'device_limit_exceeded': False
+            }
 
 # Create a singleton instance
 db_service = DatabaseService()

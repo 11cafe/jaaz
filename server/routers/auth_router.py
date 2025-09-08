@@ -12,6 +12,7 @@ import jwt
 import asyncio
 from log import get_logger
 from services.db_service import db_service
+from services.invite_service import invite_service
 
 logger = get_logger(__name__)
 
@@ -367,6 +368,37 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
             
             logger.info(f"Device OAuth user processing completed: user_id={db_user['id']}, is_new={is_new_user}")
             
+            # 处理邀请码奖励（仅对新用户）
+            invitation_result = None
+            if is_new_user:
+                # 从URL参数中获取邀请码
+                invite_code = request.query_params.get('invite_code', '').strip()
+                if invite_code:
+                    logger.info(f"Processing invite code {invite_code} for new user {db_user['email']} (device OAuth)")
+                    
+                    # 获取用户IP和设备信息
+                    client_ip = request.client.host if request.client else None
+                    user_agent = request.headers.get('user-agent', '')
+                    device_fingerprint = request.headers.get('x-device-fingerprint', '')
+                    
+                    # 处理邀请注册
+                    invitation_result = await invite_service.process_invitation_registration(
+                        invite_code=invite_code,
+                        invitee_email=db_user['email'],
+                        invitee_id=db_user['id'],
+                        invitee_uuid=db_user['uuid'],
+                        registration_ip=client_ip,
+                        registration_user_agent=user_agent,
+                        device_fingerprint=device_fingerprint
+                    )
+                    
+                    if invitation_result and invitation_result.get('success'):
+                        logger.info(f"Successfully processed invitation for {db_user['email']} (device OAuth): {invitation_result}")
+                        # 更新欢迎消息
+                        welcome_message = f"Welcome! You've received {invitation_result['invitee_points_awarded']} bonus points from {invitation_result['inviter_nickname']}'s invitation."
+                    else:
+                        logger.warning(f"Failed to process invitation for {db_user['email']} (device OAuth): {invitation_result}")
+            
             # 构建包含数据库用户信息的用户信息
             user_info = {
                 "id": db_user["id"],  # 使用数据库中的用户ID
@@ -619,6 +651,45 @@ async def direct_oauth_callback(request: Request, code: str = Query(...), state:
             welcome_message = user_result["message"]
             
             logger.info(f"User processing completed: user_id={db_user['id']}, is_new={is_new_user}")
+            
+            # 处理邀请码奖励（仅对新用户）
+            invitation_result = None
+            if is_new_user:
+                # 优先从state参数中获取邀请码（格式：invite_CODE），如果没有则从URL参数获取
+                invite_code = ''
+                if state and state.startswith('invite_'):
+                    invite_code = state[7:]  # 去掉 'invite_' 前缀
+                    logger.info(f"Extracted invite code from state: {invite_code}")
+                else:
+                    invite_code = request.query_params.get('invite_code', '').strip()
+                    if invite_code:
+                        logger.info(f"Found invite code in URL params: {invite_code}")
+                
+                if invite_code:
+                    logger.info(f"Processing invite code {invite_code} for new user {db_user['email']} (direct callback)")
+                    
+                    # 获取用户IP和设备信息
+                    client_ip = request.client.host if request.client else None
+                    user_agent = request.headers.get('user-agent', '')
+                    device_fingerprint = request.headers.get('x-device-fingerprint', '')
+                    
+                    # 处理邀请注册
+                    invitation_result = await invite_service.process_invitation_registration(
+                        invite_code=invite_code,
+                        invitee_email=db_user['email'],
+                        invitee_id=db_user['id'],
+                        invitee_uuid=db_user['uuid'],
+                        registration_ip=client_ip,
+                        registration_user_agent=user_agent,
+                        device_fingerprint=device_fingerprint
+                    )
+                    
+                    if invitation_result and invitation_result.get('success'):
+                        logger.info(f"Successfully processed invitation for {db_user['email']}: {invitation_result}")
+                        # 更新欢迎消息
+                        welcome_message = f"Welcome! You've received {invitation_result['invitee_points_awarded']} bonus points from {invitation_result['inviter_nickname']}'s invitation."
+                    else:
+                        logger.warning(f"Failed to process invitation for {db_user['email']}: {invitation_result}")
             
             # 构建包含数据库用户信息的用户信息
             user_info = {

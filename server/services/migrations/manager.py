@@ -7,13 +7,14 @@ from services.migrations.v4_add_user_email import V4AddUserEmail
 from services.migrations.v5_add_multi_user import V5AddMultiUser
 from services.migrations.v6_add_user_uuid import V6AddUserUuid
 from services.migrations.v7_rename_user_id_to_uuid import V7RenameUserIdToUuid
+from services.migrations.v8_add_invite_system import V8AddInviteSystem
 from . import Migration
 from log import get_logger
 
 logger = get_logger(__name__)
 
 # Database version
-CURRENT_VERSION = 7
+CURRENT_VERSION = 8
 
 ALL_MIGRATIONS = [
     {
@@ -43,6 +44,10 @@ ALL_MIGRATIONS = [
     {
         'version': 7,
         'migration': V7RenameUserIdToUuid,
+    },
+    {
+        'version': 8,
+        'migration': V8AddInviteSystem,
     },
 ]
 class MigrationManager:

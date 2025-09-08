@@ -84,7 +84,20 @@
     "currentPoints": "积分",
     "buyPoints": "购买点数",
     "upgrade": "升级",
-    "left": "剩余"
+    "left": "剩余",
+    "inviteCode": "邀请码"
+  },
+  "invite": {
+    "title": "邀请好友",
+    "description": "每成功邀请一位好友注册，即可获得 50 免费积分",
+    "totalInvites": "总邀请数",
+    "yourInvitationUrl": "您的邀请链接",
+    "copyThisUrl": "复制此链接并发送给您的朋友",
+    "invitationUrl": "邀请链接",
+    "copyUrl": "复制链接",
+    "copySuccess": "邀请链接已复制！发送给您的朋友吧。",
+    "copyFailed": "复制失败",
+    "failedToLoad": "加载邀请链接失败"
   },
   "socket": {
     "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",
