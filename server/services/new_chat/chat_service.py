@@ -21,6 +21,7 @@ from models.config_model import ModelInfo
 
 logger = get_logger(__name__)
 
+
 def find_model_config(provider: str, model_name: str) -> ModelInfo:
     """
     根据 provider 和 model 名称从 DEFAULT_PROVIDERS_CONFIG 中查找完整的模型配置
@@ -123,6 +124,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     logger.info(f"🔍 [DEBUG] 前端传入的完整请求数据 keys: {list(data.keys())}")
     logger.info(f"🔍 [DEBUG] 前端传入的 model_name: '{model_name}'")
     logger.info(f"🔍 [DEBUG] 前端传入的 text_model: {text_model_data}")
+    
     
     # 类型安全检查：确保 model_name 是字符串
     if isinstance(model_name, dict):
@@ -279,6 +281,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         remove_stream_task(session_id)
         # Notify frontend WebSocket that magic generation is done
         await send_to_websocket(session_id, {'type': 'done'})
+        
 
     print('✨ magic_service 处理完成')
 

@@ -96,7 +96,7 @@ async def generate_new_image_element(
     }
 
 
-async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, mime_type: str, width: int, height: int) -> str:
+async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, mime_type: str, width: int, height: int, cos_url: Optional[str] = None) -> str:
     """Save image to canvas with proper locking and positioning"""
     # Use lock to ensure atomicity of the save process
     async with canvas_lock_manager.lock_canvas(canvas_id):
@@ -114,39 +114,44 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
 
         file_id = generate_file_id()
         
-        # 先尝试上传到腾讯云，如果失败则使用本地URL作为回退
-        cos_service = get_cos_image_service()
-        cos_url = None
-        
-        # 构建本地文件路径
-        possible_paths = [
-            os.path.join(SERVER_DIR, 'user_data', 'files', filename),
-            os.path.join(SERVER_DIR, 'user_data', 'users', session_id, 'files', filename)
-        ]
-        
-        local_file_path = None
-        for path in possible_paths:
-            if os.path.exists(path):
-                local_file_path = path
-                print(f"📁 找到本地文件: {path}")
-                break
-        
-        if local_file_path and cos_service.available:
-            # 尝试上传到腾讯云
-            cos_url = await cos_service.upload_image_from_file(
-                local_file_path=local_file_path,
-                image_key=filename,
-                content_type=mime_type,
-                delete_local=False  # 保留本地文件，供后续图生图使用
-            )
-            
+        # 如果已经提供了腾讯云URL，直接使用，避免重复上传
         if cos_url:
             url = cos_url
-            print(f"✅ 图片已上传到腾讯云: {filename} -> {cos_url}")
+            print(f"✅ 使用已提供的腾讯云URL: {filename} -> {cos_url}")
         else:
-            # 使用重定向URL，即使当前腾讯云不可用，后续访问时仍可通过重定向机制获取腾讯云图片
-            url = f'{BASE_URL}/api/file/{filename}?redirect=true'
-            print(f"⚠️ 腾讯云上传失败或不可用，使用重定向URL: {filename} -> {url}")
+            # 先尝试上传到腾讯云，如果失败则使用本地URL作为回退
+            cos_service = get_cos_image_service()
+            uploaded_cos_url = None
+            
+            # 构建本地文件路径
+            possible_paths = [
+                os.path.join(SERVER_DIR, 'user_data', 'files', filename),
+                os.path.join(SERVER_DIR, 'user_data', 'users', session_id, 'files', filename)
+            ]
+            
+            local_file_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    local_file_path = path
+                    print(f"📁 找到本地文件: {path}")
+                    break
+            
+            if local_file_path and cos_service.available:
+                # 尝试上传到腾讯云
+                uploaded_cos_url = await cos_service.upload_image_from_file(
+                    local_file_path=local_file_path,
+                    image_key=filename,
+                    content_type=mime_type,
+                    delete_local=False  # 保留本地文件，供后续图生图使用
+                )
+                
+            if uploaded_cos_url:
+                url = uploaded_cos_url
+                print(f"✅ 图片已上传到腾讯云: {filename} -> {uploaded_cos_url}")
+            else:
+                # 使用重定向URL，即使当前腾讯云不可用，后续访问时仍可通过重定向机制获取腾讯云图片
+                url = f'{BASE_URL}/api/file/{filename}?redirect=true'
+                print(f"⚠️ 腾讯云上传失败或不可用，使用重定向URL: {filename} -> {url}")
 
         file_data: Dict[str, Any] = {
             'mimeType': mime_type,

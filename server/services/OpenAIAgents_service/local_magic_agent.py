@@ -161,8 +161,8 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
                     logger.info(f"📁 腾讯云不可用，图片保存在本地: {filename}")
                     cos_url = None  # 确保cos_url为None，后续逻辑会使用本地URL
 
-                # 保存图片到画布
-                image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height)
+                # 保存图片到画布，传递已有的腾讯云URL避免重复上传
+                image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height, cos_url)
                 print(f"✨ 图片已保存到画布: {filename}")
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
