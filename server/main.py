@@ -144,7 +144,7 @@ if os.path.exists(react_build_dir):
 @app.get("/{filename:path}")
 async def serve_static_files(filename: str):
     # Check if file exists in react build directory and is a static file
-    if filename.endswith(('.png', '.svg', '.ico', '.jpg', '.jpeg', '.gif', '.webp')):
+    if filename.endswith(('.png', '.svg', '.ico', '.jpg', '.jpeg', '.gif', '.webp', '.html')):
         file_path = os.path.join(react_build_dir, filename)
         if os.path.exists(file_path):
             return FileResponse(file_path)
