@@ -286,6 +286,6 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
             print(
                 f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}"
             )
-            print(traceback.print_stack())
+            traceback.print_exc()
 
     return dynamic_comfy_tools

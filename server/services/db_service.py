@@ -419,7 +419,7 @@ class DatabaseService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, email, nickname, points, ctime, mtime, uuid
+                SELECT id, email, nickname, points, ctime, mtime, uuid, level
                 FROM tb_user
                 WHERE email = ?
             """, (email,))
@@ -431,7 +431,7 @@ class DatabaseService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, email, nickname, points, ctime, mtime, uuid
+                SELECT id, email, nickname, points, ctime, mtime, uuid, level
                 FROM tb_user
                 WHERE id = ?
             """, (user_id,))
@@ -443,7 +443,7 @@ class DatabaseService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, email, nickname, points, ctime, mtime, uuid
+                SELECT id, email, nickname, points, ctime, mtime, uuid, level
                 FROM tb_user
                 WHERE uuid = ?
             """, (user_uuid,))
@@ -481,6 +481,16 @@ class DatabaseService:
                     SET email = ?, mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
                     WHERE id = ?
                 """, (email, user_id))
+            await db.commit()
+
+    async def update_user_level(self, user_id: int, level: str):
+        """Update user subscription level"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                UPDATE tb_user 
+                SET level = ?, mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                WHERE id = ?
+            """, (level, user_id))
             await db.commit()
 
     async def get_or_create_user(self, email: str, username: str, provider: str = "google", 

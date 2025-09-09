@@ -31,6 +31,7 @@ export interface UserInfo {
   provider?: string
   created_at?: string
   updated_at?: string
+  level?: string
 }
 
 export interface DeviceAuthResponse {

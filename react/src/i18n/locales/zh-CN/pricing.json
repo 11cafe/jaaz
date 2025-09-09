@@ -1,46 +1,76 @@
 {
-  "title": "选择适合您的方案",
-  "subtitle": "无论您是个人用户还是企业团队，我们都有合适的定价方案满足您的需求",
-  "mostPopular": "最受欢迎",
+  "title": "Choose the Right Plan for You",
+  "subtitle": "Whether you're an individual user or a business team, we have the right pricing plan to meet your needs",
+  "mostPopular": "Most Popular",
+  "currentPlan": "当前计划",
+  "monthlyYearly": {
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
   "plans": {
-    "starter": {
-      "name": "入门版",
-      "price": "$0",
-      "period": "永久免费",
-      "description": "适合个人用户体验",
+    "current": "当前计划",
+    "free": {
+      "name": "Free",
+      "pricing": {
+        "monthly": { "price": "0", "period": "Forever Free" },
+        "yearly": { "price": "0", "period": "Forever Free" }
+      },
+      "description": "Perfect for individual users to experience",
       "features": [
-        "~125 张图片生成",
-        "~100 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "Credits: 20",
+        "Images: 10",
+        "Basic features",
+        "Community support"
       ],
-      "buttonText": "立即开始"
+      "buttonText": "Get Started"
     },
-    "basic": {
-      "name": "基础版",
-      "price": "$9.9",
-      "period": "每月",
-      "description": "适合个人创作者和小团队",
+    "base": {
+      "name": "Base",
+      "pricing": {
+        "monthly": { "price": "$5.9", "period": "/Monthly" },
+        "yearly": { "price": "$59", "period": "/Yearly", "originalPrice": "$70.8" }
+      },
+      "description": "Perfect for individual creators",
       "features": [
-        "~375 张图片生成",
-        "~300 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "Credits: 300",
+        "Images: 150",
+        "All basic features",
+        "Email support"
       ],
-      "buttonText": "立即开始"
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "Get Base"
     },
     "pro": {
-      "name": "专业版",
-      "price": "$29.9",
-      "period": "每月",
-      "description": "适合专业创作者和企业",
+      "name": "Pro",
+      "pricing": {
+        "monthly": { "price": "$9.9", "period": "/Monthly" },
+        "yearly": { "price": "$99", "period": "/Yearly", "originalPrice": "$118.8" }
+      },
+      "description": "Perfect for professional creators",
       "features": [
-        "~875 张图片生成",
-        "~700 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "Credits: 1000",
+        "Images: 500",
+        "All advanced features",
+        "Priority support"
       ],
-      "buttonText": "立即开始"
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "Get Pro"
+    },
+    "max": {
+      "name": "Max",
+      "pricing": {
+        "monthly": { "price": "$29.9", "period": "/Monthly" },
+        "yearly": { "price": "$299", "period": "/Yearly", "originalPrice": "$358.8" }
+      },
+      "description": "Perfect for enterprises and teams",
+      "features": [
+        "Credits: 3000",
+        "Images: 1500",
+        "All enterprise features",
+        "Dedicated support"
+      ],
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "Get Max"
     }
   },
   "faq": {

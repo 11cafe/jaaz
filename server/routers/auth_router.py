@@ -409,6 +409,7 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
                 "image_url": user_data.get("picture"),
                 "provider": "google",
                 "points": db_user["points"],
+                "level": db_user["level"],  # 用户等级
                 "is_new": is_new_user,
                 "welcome_message": welcome_message,
                 "created_at": db_user["ctime"],
@@ -701,6 +702,7 @@ async def direct_oauth_callback(request: Request, code: str = Query(...), state:
                 "image_url": user_data.get("picture"),
                 "provider": "google",
                 "points": db_user["points"],
+                "level": db_user["level"],  # 用户等级
                 "is_new": is_new_user,
                 "welcome_message": welcome_message,
                 "created_at": db_user["ctime"],
