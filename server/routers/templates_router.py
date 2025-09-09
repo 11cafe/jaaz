@@ -219,6 +219,48 @@ Hyper-realistic carved wooden figurine of [用户图片中的角色], chibi prop
         "use_mask": 0, # 是否需要蒙版功能
         "prompt":"用这张照片，做一个3*3的photo booth grid，每张要用不同的姿势和表情不许重复"
     },
+    {
+        "id": 15,
+        "title": "更换多种发型",
+        "description": "以九宫格的方式生成这个人不同发型的头像，展示多种发型风格变化",
+        "image": "https://magicart-template-1301698982.cos.accelerate.myqcloud.com/faxing.png?imageMogr2/thumbnail/avif",
+        "tags": ["nano-banana"],
+        "downloads": 1200,
+        "rating": 4.8,
+        "category": "nano-banana",
+        "created_at": "2025-09-07T10:30:00Z",
+        "updated_at": "2025-09-07T10:30:00Z",
+        "use_mask": 0, # 是否需要蒙版功能
+        "prompt":"以九宫格的方式生成这个人不同发型的头像"
+    },
+    {
+        "id": 16,
+        "title": "老照片上色",
+        "description": "修复并为老照片上色，让黑白照片重现生动色彩，恢复历史记忆的温度",
+        "image": "https://magicart-template-1301698982.cos.accelerate.myqcloud.com/shangse.png?imageMogr2/thumbnail/avif",
+        "tags": ["nano-banana"],
+        "downloads": 1200,
+        "rating": 4.8,
+        "category": "nano-banana",
+        "created_at": "2025-09-07T10:30:00Z",
+        "updated_at": "2025-09-07T10:30:00Z",
+        "use_mask": 0, # 是否需要蒙版功能
+        "prompt":"修复并为这张照片上色"
+    },
+    {
+        "id": 17,
+        "title": "虚拟试妆",
+        "description": "虚拟试妆功能，上传两张图片, 第一张为人物，第二张为妆容",
+        "image": "https://magicart-template-1301698982.cos.accelerate.myqcloud.com/shizhuang.png?imageMogr2/thumbnail/avif",
+        "tags": ["nano-banana"],
+        "downloads": 1200,
+        "rating": 4.8,
+        "category": "nano-banana",
+        "created_at": "2025-09-07T10:30:00Z",
+        "updated_at": "2025-09-07T10:30:00Z",
+        "use_mask": 0, # 是否需要蒙版功能
+        "prompt":"为图一人物化上图二的妆，还保持图一的姿势"
+    }
 ]
 
 @router.get("")
