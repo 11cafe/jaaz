@@ -37,14 +37,23 @@ class ProductListResponse(BaseModel):
     products: List[Product]
 
 def get_current_user(request: Request) -> Optional[dict]:
-    """从请求头中获取当前用户信息"""
+    """从请求头或Cookie中获取当前用户信息"""
+    # 🔧 首先尝试Bearer token认证
     auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:]  # Remove "Bearer " prefix
+        user_payload = verify_access_token(token)
+        if user_payload:
+            return user_payload
     
-    token = auth_header[7:]  # Remove "Bearer " prefix
-    user_payload = verify_access_token(token)
-    return user_payload
+    # 🔧 然后尝试Cookie认证
+    auth_token = request.cookies.get("auth_token")
+    if auth_token:
+        user_payload = verify_access_token(auth_token)
+        if user_payload:
+            return user_payload
+    
+    return None
 
 @router.get("/api/billing/getBalance", response_model=BalanceResponse)
 async def get_balance(request: Request):
@@ -107,30 +116,36 @@ async def create_order(request: Request, order_data: CreateOrderRequest):
         user_uuid = user.get("uuid")
         user_email = user.get("email")
         
-        # 构建产品ID - 对于base计划使用真实的测试product_id
-        if order_data.plan_type == "base" and order_data.billing_period == "monthly":
-            product_id = "prod_QT1QHgJmtigUHce5HToDW"  # 测试环境的真实base产品ID
-        else:
-            product_id = f"prod_{order_data.plan_type}_{order_data.billing_period}"
+        # 🎯 根据plan_type和billing_period构建level，从数据库查询产品
+        level = f"{order_data.plan_type}_{order_data.billing_period}"
         
-        # 验证产品是否存在
-        product = await db_service.get_product_by_id(product_id)
+        logger.info(f"🎯 BILLING: 查询产品level: {level}")
+        
+        # 从数据库获取产品信息
+        product = await db_service.get_product_by_level(level)
         if not product:
-            raise HTTPException(status_code=400, detail=f"Invalid product: {product_id}")
+            raise HTTPException(status_code=400, detail=f"Product not found for plan: {order_data.plan_type} {order_data.billing_period}")
         
-        # 创建本地订单记录
+        # 获取sku作为传递给Creem的product_id
+        creem_product_id = product.get('sku')
+        if not creem_product_id:
+            raise HTTPException(status_code=400, detail=f"Product SKU not found for level: {level}")
+        
+        logger.info(f"✅ BILLING: 找到产品: {product['name']} (level: {product['level']}, sku: {creem_product_id})")
+        
+        # 创建本地订单记录（使用数据库中的product_id，不是sku）
         order_id = await db_service.create_order(
             user_uuid=user_uuid, 
-            product_id=product_id, 
+            product_id=product['product_id'], 
             price_cents=product['price_cents']
         )
         
         if not order_id:
             raise HTTPException(status_code=500, detail="Failed to create order")
         
-        # 调用Creem API创建支付链接
+        # 调用Creem API创建支付链接（使用sku作为product_id）
         creem_result = await payment_service.create_checkout(
-            product_id=product_id,
+            product_id=creem_product_id,
             customer_email=user_email
         )
         
@@ -144,7 +159,32 @@ async def create_order(request: Request, order_data: CreateOrderRequest):
         # 更新订单记录，保存Creem相关信息
         creem_data = creem_result.get("data", {})
         checkout_id = creem_data.get("id")
-        checkout_url = creem_data.get("url")
+        
+        # 🔍 调试：查看 Creem API 返回的完整数据
+        logger.info(f"🔍 CREEM API 返回数据: {creem_data}")
+        
+        # 尝试从不同可能的字段名中获取 checkout URL
+        checkout_url = (
+            creem_data.get("url") or 
+            creem_data.get("checkout_url") or 
+            creem_data.get("payment_url") or
+            creem_data.get("link")
+        )
+        
+        # 如果还是没有 URL，尝试根据 checkout_id 构建
+        if not checkout_url and checkout_id:
+            checkout_url = f"https://checkout.creem.io/{checkout_id}"
+            logger.info(f"🔧 构建的支付链接: {checkout_url}")
+        
+        logger.info(f"✅ 最终的 checkout_url: {checkout_url}")
+        
+        # 🚨 确保有有效的 checkout_url
+        if not checkout_url:
+            logger.error(f"❌ 无法获取有效的支付链接，checkout_id: {checkout_id}")
+            return CreateOrderResponse(
+                success=False,
+                message="Failed to generate payment link"
+            )
         
         if checkout_id:
             await db_service.update_order_creem_info(
@@ -173,13 +213,16 @@ async def handle_payment_callback(request: Request):
     try:
         # 获取查询参数
         query_params = dict(request.query_params)
+        logger.info(f"🚀🚀🚀 CALLBACK HANDLER STARTED WITH FIXED CODE! 🚀🚀🚀")
         logger.info(f"Received payment callback: {query_params}")
         
         # 解析回调参数
         callback_data = payment_service.parse_callback_params(query_params)
         if not callback_data:
-            logger.error("Invalid callback parameters")
+            logger.error("❌ CALLBACK: Invalid callback parameters")
             raise HTTPException(status_code=400, detail="Invalid callback parameters")
+        
+        logger.info(f"✅ CALLBACK: 解析成功，callback_data: {callback_data}")
         
         # 验证回调签名（简化版本）
         if not payment_service.verify_callback_signature(query_params):
@@ -202,7 +245,7 @@ async def handle_payment_callback(request: Request):
             logger.info(f"Found order by checkout_id: {checkout_id}")
         
         if not order:
-            logger.error(f"Order not found for Creem order ID: {creem_order_id} or checkout ID: {checkout_id}")
+            logger.error(f"❌ CALLBACK: Order not found for Creem order ID: {creem_order_id} or checkout ID: {checkout_id}")
             raise HTTPException(status_code=404, detail="Order not found")
         
         # 检查订单是否已经处理过
@@ -219,10 +262,23 @@ async def handle_payment_callback(request: Request):
         )
         
         # 获取产品信息（积分数量）
-        product = await db_service.get_product_by_id(product_id)
+        # 🔧 由于Creem回调中的product_id实际上是sku，需要先根据sku查找，如果找不到再按product_id查找
+        logger.info(f"🔍 CALLBACK: 开始查找产品，回调product_id: {product_id}")
+        
+        product = await db_service.get_product_by_sku(product_id)
+        logger.info(f"🔍 CALLBACK: 根据sku查找结果: {product}")
+        
         if not product:
-            logger.error(f"Product not found: {product_id}")
+            # 回退到按product_id查找（兼容旧数据）
+            logger.info(f"🔄 CALLBACK: sku查找失败，尝试按product_id查找...")
+            product = await db_service.get_product_by_id(product_id)
+            logger.info(f"🔍 CALLBACK: 根据product_id查找结果: {product}")
+        
+        if not product:
+            logger.error(f"❌ CALLBACK: 产品查找失败，product_id: {product_id}")
             raise HTTPException(status_code=400, detail="Product not found")
+        
+        logger.info(f"✅ CALLBACK: 找到产品: {product['name']} (level: {product['level']}, sku: {product.get('sku', 'N/A')})")
         
         points_to_add = product['points']
         user_uuid = order['user_uuid']

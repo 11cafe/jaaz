@@ -22,6 +22,35 @@ function PricingPage() {
   const { t } = useTranslation('pricing')
   const { authStatus, refreshAuth } = useAuth()
   
+  // 🎯 根据用户等级自动设置billing period的辅助函数
+  const setBillingPeriodFromLevel = useCallback((level: string | null) => {
+    if (!level) return
+    
+    console.log(`🔧 PRICING: 根据用户等级自动设置billing period，level: "${level}"`)
+    
+    if (level.endsWith('_yearly')) {
+      console.log('🔧 PRICING: 检测到yearly等级，自动切换到Yearly标签')
+      setBillingPeriod('yearly')
+    } else if (level.endsWith('_monthly')) {
+      console.log('🔧 PRICING: 检测到monthly等级，自动切换到Monthly标签')
+      setBillingPeriod('monthly')
+    } else if (level === 'free') {
+      console.log('🔧 PRICING: 检测到free等级，保持Monthly标签')
+      setBillingPeriod('monthly')
+    }
+    // 其他情况保持当前设置不变
+  }, [])
+  
+  // 🎯 监听AuthContext的用户等级变化，自动设置billing period
+  useEffect(() => {
+    const currentUserLevel = authStatus.is_logged_in ? authStatus.user_info?.level : null
+    if (currentUserLevel && !apiDataLoaded) {
+      // 只在API数据还未加载时才使用AuthContext数据，避免重复设置
+      console.log('🔧 PRICING: 从AuthContext检测到用户等级变化，自动设置billing period')
+      setBillingPeriodFromLevel(currentUserLevel)
+    }
+  }, [authStatus.user_info?.level, apiDataLoaded, setBillingPeriodFromLevel])
+  
   // 🔄 页面加载时强制刷新认证状态，确保用户等级是最新的
   useEffect(() => {
     console.log('🔄 PRICING: 页面加载，强制刷新用户认证状态以获取最新等级')
@@ -46,6 +75,9 @@ function PricingPage() {
           // 🎯 将API返回的数据存储到state中
           setApiIsLoggedIn(pricingData.is_logged_in)
           setApiCurrentLevel(pricingData.current_level)
+          
+          // 🎯 根据获取到的等级自动设置billing period
+          setBillingPeriodFromLevel(pricingData.current_level)
           
           if (pricingData.is_logged_in) {
             console.log(`🎯 PRICING: 从后端获取到用户level: "${pricingData.current_level}"`)
@@ -109,7 +141,7 @@ function PricingPage() {
     }
   }, [refreshAuth])
 
-  const handleUpgrade = useCallback(async () => {
+  const handleUpgrade = useCallback(async (planType: string) => {
     try {
       setIsLoading(true)
       
@@ -127,10 +159,19 @@ function PricingPage() {
         console.log('🍪 Using httpOnly cookies for authentication')
       }
       
-      const response = await fetch('/api/create_checkout', {
+      // 🆕 构建请求体，包含计划类型和计费周期
+      const requestBody = {
+        plan_type: planType,
+        billing_period: billingPeriod
+      }
+      
+      console.log('🎯 PRICING: 创建订单请求:', requestBody)
+      
+      const response = await fetch('/api/billing/create_order', {
         method: 'POST',
         credentials: 'include', // 重要：包含httpOnly cookies
-        headers
+        headers,
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -151,7 +192,7 @@ function PricingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [billingPeriod, t])
 
   const getFeatures = (planKey: string): string[] => {
     const features = t(`plans.${planKey}.features`, { returnObjects: true })
@@ -202,7 +243,7 @@ function PricingPage() {
     }, 100)
   }
 
-  // 🎯 修复套餐状态判断逻辑 - 使用API返回的数据优先判断当前计划
+  // 🎯 修复套餐状态判断逻辑 - 支持新的7种level格式
   const isCurrentPlan = (planLevel: string) => {
     // 🚨 如果API数据还没加载完成，不显示任何计划为当前计划，避免闪烁
     if (!apiDataLoaded) {
@@ -214,15 +255,28 @@ function PricingPage() {
     const isLoggedIn = apiIsLoggedIn !== null ? apiIsLoggedIn : authStatus.is_logged_in
     const userLevel = apiCurrentLevel !== null ? apiCurrentLevel : currentUserLevel
     const hasLevel = !!userLevel
-    const isMatch = userLevel === planLevel
+    
+    // 🆕 新的匹配逻辑：支持具体的monthly/yearly计划对比
+    let isMatch = false
+    
+    if (planLevel === 'free') {
+      // Free计划直接匹配
+      isMatch = userLevel === 'free'
+    } else {
+      // 付费计划需要结合billing period进行匹配
+      const expectedLevel = `${planLevel}_${billingPeriod}`
+      isMatch = userLevel === expectedLevel
+    }
+    
     const result = isLoggedIn && hasLevel && isMatch
     
-    console.log(`🎯 PRICING: 套餐判断 "${planLevel.toUpperCase()}":`)
+    console.log(`🎯 PRICING: 套餐判断 "${planLevel.toUpperCase()}" (${billingPeriod}):`)
     console.log(`   - API数据已加载: ${apiDataLoaded}`)
     console.log(`   - 数据源: ${apiCurrentLevel !== null ? 'API数据' : 'AuthContext数据'}`)
     console.log(`   - 用户已登录: ${isLoggedIn}`)
     console.log(`   - 有等级信息: ${hasLevel} (level="${userLevel}")`)
-    console.log(`   - 等级匹配: ${isMatch} ("${userLevel}" === "${planLevel}")`)
+    console.log(`   - 期望等级: ${planLevel === 'free' ? 'free' : `${planLevel}_${billingPeriod}`}`)
+    console.log(`   - 等级匹配: ${isMatch}`)
     console.log(`   - 最终结果: ${result ? '✅ 当前计划' : '❌ 非当前计划'}`)
     
     return result
@@ -466,7 +520,7 @@ function PricingPage() {
                   variant={buttonVariant} 
                   className={`w-full ${plan.isCurrent ? 'cursor-not-allowed' : shouldShowPopular ? 'bg-black text-white hover:bg-gray-800' : ''}`}
                   size="lg"
-                  onClick={plan.isCurrent ? undefined : (plan.key !== 'free' ? handleUpgrade : undefined)}
+                  onClick={plan.isCurrent ? undefined : (plan.key !== 'free' ? () => handleUpgrade(plan.key) : undefined)}
                   disabled={plan.isCurrent || (plan.key !== 'free' && isLoading) || !apiDataLoaded}
                 >
                   {plan.key !== 'free' && isLoading ? t('buttons.processing') : buttonText}

@@ -78,8 +78,17 @@
     "currentPoints": "Credits",
     "buyPoints": "Buy Points",
     "upgrade": "Upgrade",
+    "managePlan": "Manage Plan",
     "left": "left",
-    "inviteCode": "Invite Code"
+    "inviteCode": "Invite Code",
+    "levels": {
+      "free": "Free",
+      "base": "Basic",
+      "pro": "Pro", 
+      "max": "Enterprise",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    }
   },
   "invite": {
     "title": "Invite Friends",

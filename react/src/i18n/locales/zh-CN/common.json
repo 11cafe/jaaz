@@ -84,8 +84,17 @@
     "currentPoints": "积分",
     "buyPoints": "购买点数",
     "upgrade": "升级",
+    "managePlan": "管理计划",
     "left": "剩余",
-    "inviteCode": "邀请码"
+    "inviteCode": "邀请码",
+    "levels": {
+      "free": "免费版",
+      "base": "基础版",
+      "pro": "Pro", 
+      "max": "企业版",
+      "monthly": "月付",
+      "yearly": "年付"
+    }
   },
   "invite": {
     "title": "邀请好友",

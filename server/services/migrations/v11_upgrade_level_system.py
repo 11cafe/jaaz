@@ -14,6 +14,10 @@ class V11UpgradeLevelSystem(Migration):
         # Step 1: Update tb_products level constraint to support new level values
         print("📝 Updating tb_products table constraints...")
         
+        # Clean up any existing temporary tables from previous failed runs
+        conn.execute("DROP TABLE IF EXISTS tb_products_new")
+        conn.execute("DROP TABLE IF EXISTS tb_user_new")
+        
         # Create new table with updated constraints
         conn.execute("""
             CREATE TABLE tb_products_new (
@@ -30,11 +34,44 @@ class V11UpgradeLevelSystem(Migration):
             )
         """)
         
-        # Copy existing data
-        conn.execute("""
-            INSERT INTO tb_products_new 
-            SELECT * FROM tb_products
-        """)
+        # Copy existing data with level conversion
+        print("🔄 Copying and converting product data...")
+        
+        # Copy data row by row with level conversion
+        cursor = conn.execute("SELECT * FROM tb_products")
+        products = cursor.fetchall()
+        
+        for product in products:
+            id, product_id, name, level, points, price_cents, description, is_active, created_at, updated_at = product
+            
+            # Convert level based on product_id naming pattern
+            new_level = level  # Default to current level
+            
+            if 'monthly' in product_id or product_id == 'prod_QT1QHgJmtigUHce5HToDW' or product_id == 'prod_1Pnf8nR8OUqp55ziFzDNLM':
+                # Monthly products
+                if level == 'base':
+                    new_level = 'base_monthly'
+                elif level == 'pro':
+                    new_level = 'pro_monthly'
+                elif level == 'max':
+                    new_level = 'max_monthly'
+            elif 'yearly' in product_id:
+                # Yearly products
+                if level == 'base':
+                    new_level = 'base_yearly'
+                elif level == 'pro':
+                    new_level = 'pro_yearly'
+                elif level == 'max':
+                    new_level = 'max_yearly'
+            
+            print(f"  Converting product {name}: {level} -> {new_level}")
+            
+            # Insert with converted level
+            conn.execute("""
+                INSERT INTO tb_products_new 
+                (id, product_id, name, level, points, price_cents, description, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id, product_id, name, new_level, points, price_cents, description, is_active, created_at, updated_at))
         
         # Drop old table and rename new one
         conn.execute("DROP TABLE tb_products")
@@ -51,112 +88,78 @@ class V11UpgradeLevelSystem(Migration):
             ON tb_products(level)
         """)
         
-        # Step 2: Update existing products to use new level format
-        print("🔄 Updating existing product levels...")
-        
-        # Update monthly products
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'base_monthly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%monthly%' AND level = 'base'
-        """)
-        
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'pro_monthly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%monthly%' AND level = 'pro'
-        """)
-        
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'max_monthly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%monthly%' AND level = 'max'
-        """)
-        
-        # Update yearly products
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'base_yearly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%yearly%' AND level = 'base'
-        """)
-        
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'pro_yearly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%yearly%' AND level = 'pro'
-        """)
-        
-        conn.execute("""
-            UPDATE tb_products 
-            SET level = 'max_yearly', updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE product_id LIKE '%yearly%' AND level = 'max'
-        """)
+        # Step 2: Product levels already converted during data copy above
         
         # Step 3: Update tb_user table constraint for new level values
         print("📝 Updating tb_user table constraints...")
         
-        # Get current table schema
-        cursor = conn.execute("PRAGMA table_info(tb_user)")
-        columns = cursor.fetchall()
-        
         # Create new user table with updated level constraint
-        create_sql = "CREATE TABLE tb_user_new ("
-        column_defs = []
-        
-        for col in columns:
-            col_name = col[1]
-            col_type = col[2]
-            not_null = " NOT NULL" if col[3] else ""
-            default = f" DEFAULT {col[4]}" if col[4] is not None else ""
-            pk = " PRIMARY KEY" if col[5] else ""
-            
-            if col_name == 'level':
-                # Update level column with new constraint
-                column_defs.append(f"level TEXT CHECK (level IN ('free', 'base_monthly', 'pro_monthly', 'max_monthly', 'base_yearly', 'pro_yearly', 'max_yearly')) DEFAULT 'free'")
-            else:
-                column_defs.append(f"{col_name} {col_type}{not_null}{default}{pk}")
-        
-        create_sql += ", ".join(column_defs) + ")"
-        conn.execute(create_sql)
-        
-        # Copy existing data
         conn.execute("""
-            INSERT INTO tb_user_new 
-            SELECT * FROM tb_user
+            CREATE TABLE tb_user_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                nickname TEXT NOT NULL,
+                ctime TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                mtime TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                points INTEGER DEFAULT 0,
+                uuid TEXT UNIQUE NOT NULL,
+                level TEXT DEFAULT 'free' 
+                CHECK (level IN ('free', 'base_monthly', 'pro_monthly', 'max_monthly', 'base_yearly', 'pro_yearly', 'max_yearly'))
+            )
         """)
+        
+        # Copy existing data with level conversion
+        print("🔄 Copying and converting user data...")
+        
+        # Copy data row by row with level conversion
+        cursor = conn.execute("SELECT * FROM tb_user")
+        users = cursor.fetchall()
+        
+        for user in users:
+            id, email, nickname, ctime, mtime, points, uuid, level = user
+            
+            # Convert old level values to new format (default to monthly for paid users)
+            new_level = level  # Default to current level
+            
+            if level == 'base':
+                new_level = 'base_monthly'
+            elif level == 'pro':
+                new_level = 'pro_monthly'
+            elif level == 'max':
+                new_level = 'max_monthly'
+            elif level == 'free' or level is None or level == '':
+                new_level = 'free'
+            
+            print(f"  Converting user {email}: {level} -> {new_level}")
+            
+            # Insert with converted level
+            conn.execute("""
+                INSERT INTO tb_user_new 
+                (id, email, nickname, ctime, mtime, points, uuid, level)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id, email, nickname, ctime, mtime, points, uuid, new_level))
         
         # Drop old table and rename new one
         conn.execute("DROP TABLE tb_user")
         conn.execute("ALTER TABLE tb_user_new RENAME TO tb_user")
         
-        # Step 4: Migrate existing user levels to new format (默认转换为monthly)
-        print("🔄 Migrating existing user levels...")
-        
-        # Update existing users (assume monthly if they had a paid plan)
+        # Recreate indexes for tb_user
         conn.execute("""
-            UPDATE tb_user 
-            SET level = 'base_monthly', mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE level = 'base'
+            CREATE INDEX IF NOT EXISTS idx_tb_user_email 
+            ON tb_user(email)
         """)
         
         conn.execute("""
-            UPDATE tb_user 
-            SET level = 'pro_monthly', mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE level = 'pro'
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_tb_user_uuid 
+            ON tb_user(uuid)
         """)
         
         conn.execute("""
-            UPDATE tb_user 
-            SET level = 'max_monthly', mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE level = 'max'
+            CREATE INDEX IF NOT EXISTS idx_tb_user_level 
+            ON tb_user(level)
         """)
         
-        # Set null/empty levels to free
-        conn.execute("""
-            UPDATE tb_user 
-            SET level = 'free', mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-            WHERE level IS NULL OR level = ''
-        """)
+        # Step 4: User levels already converted during data copy above
         
         print("✅ Level system successfully upgraded")
         print("✅ Products updated with new level format")

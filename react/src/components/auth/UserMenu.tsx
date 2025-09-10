@@ -15,31 +15,85 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
 import { useBalance } from '@/hooks/use-balance'
-import { useEffect, useState } from 'react'
+import { useUserInfo } from '@/hooks/use-user-info'
+import { useEffect, useState, useCallback } from 'react'
 import { LogOut, Crown, Gift } from 'lucide-react'
 import { InviteDialog } from '@/components/invite/InviteDialog'
 
+// 🆕 Helper function to format level display with i18n support
+const formatLevelDisplay = (level: string, t: any): { name: string, period: string, isMax: boolean } => {
+  if (!level || level === 'free') {
+    return { name: t('common:auth.levels.free'), period: '', isMax: false }
+  }
+  
+  // 解析新的level格式：base_monthly, pro_yearly等
+  const parts = level.split('_')
+  if (parts.length !== 2) {
+    // 兼容旧格式
+    const levelKey = level as 'base' | 'pro' | 'max'
+    return { 
+      name: t(`common:auth.levels.${levelKey}`, { defaultValue: level }), 
+      period: '', 
+      isMax: level === 'max' 
+    }
+  }
+  
+  const [planType, billingPeriod] = parts
+  
+  return {
+    name: t(`common:auth.levels.${planType}`, { defaultValue: planType }),
+    period: t(`common:auth.levels.${billingPeriod}`, { defaultValue: billingPeriod }),
+    isMax: planType === 'max'
+  }
+}
+
 export function UserMenu() {
-  const { authStatus } = useAuth()
+  const { authStatus, refreshAuth } = useAuth()
   const { setShowLoginDialog } = useConfigs()
   const { t } = useTranslation()
-  const { balance, isLoading, error } = useBalance()
+  const { balance, isLoading: balanceLoading, error: balanceError } = useBalance()
+  const { userInfo, currentLevel, isLoggedIn: userInfoLoggedIn, isLoading: userInfoLoading, refreshUserInfo } = useUserInfo()
   const navigate = useNavigate()
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  
+  // 🎯 用户菜单打开时主动刷新用户数据，确保信息是最新的
+  const handleMenuOpen = useCallback(() => {
+    console.log('👤 UserMenu: 菜单打开，主动刷新用户数据...')
+    // 同时刷新认证状态和用户信息
+    refreshAuth().catch(error => {
+      console.error('❌ UserMenu: 刷新认证状态失败:', error)
+    })
+    refreshUserInfo().catch(error => {
+      console.error('❌ UserMenu: 刷新用户信息失败:', error)
+    })
+  }, [refreshAuth, refreshUserInfo])
 
   // 计算积分显示
   const points = Math.max(0, Math.floor(parseFloat(balance) * 100))
 
-  // 调试认证状态
+  // 🎯 组件加载时主动刷新一次用户数据，确保等级信息最新
   useEffect(() => {
-    console.log('👤 UserMenu 认证状态:', {
-      isLoggedIn: authStatus.is_logged_in,
-      hasUserInfo: !!authStatus.user_info,
-      userEmail: authStatus.user_info?.email,
-      status: authStatus.status,
+    if (authStatus.is_logged_in && authStatus.user_info) {
+      console.log('👤 UserMenu: 组件加载，主动刷新用户数据确保等级最新...')
+      refreshAuth().catch(error => {
+        console.error('❌ UserMenu: 初始刷新认证状态失败:', error)
+      })
+    }
+  }, []) // 只在组件加载时执行一次
+  
+  // 调试状态信息
+  useEffect(() => {
+    console.log('👤 UserMenu 状态信息:', {
+      // AuthContext数据
+      authIsLoggedIn: authStatus.is_logged_in,
+      authUserLevel: authStatus.user_info?.level,
+      // useUserInfo数据
+      userInfoLoggedIn: userInfoLoggedIn,
+      currentLevel: currentLevel,
+      userInfoLoading: userInfoLoading,
       points,
     })
-  }, [authStatus, points])
+  }, [authStatus, userInfoLoggedIn, currentLevel, userInfoLoading, points])
 
   const handleLogout = async () => {
     console.log('🚪 UserMenu: Starting logout...')
@@ -53,15 +107,49 @@ export function UserMenu() {
     }
   }
 
+  // 🎯 智能判断登录状态：优先使用userInfo的数据，回退到authStatus
+  const isLoggedIn = userInfoLoggedIn || authStatus.is_logged_in
+  const hasUserInfo = (userInfo?.user_info && userInfo.is_logged_in) || authStatus.user_info
+
   // 如果用户已登录，显示用户菜单
-  if (authStatus.is_logged_in && authStatus.user_info) {
-    const { username, image_url, level } = authStatus.user_info
+  if (isLoggedIn && hasUserInfo) {
+    // 🎯 智能合并用户信息：userInfo提供level，AuthContext提供完整用户信息
+    const authUserInfo = authStatus.user_info
+    const apiUserInfo = userInfo?.user_info
+    
+    // 🔧 优先使用AuthContext的username和image_url，因为API接口没有返回这些字段
+    const username = authUserInfo?.username || apiUserInfo?.email?.split('@')[0] || 'User'
+    const image_url = authUserInfo?.image_url
+    const email = apiUserInfo?.email || authUserInfo?.email
+    const level = currentLevel || authUserInfo?.level || 'free'
     const initials = username ? username.substring(0, 2).toUpperCase() : 'U'
+    
+    // 🔍 调试头像信息
+    console.log('🔍 UserMenu: 头像信息调试:', {
+      authUserInfo,
+      apiUserInfo,
+      finalUsername: username,
+      finalImageUrl: image_url,
+      finalEmail: email,
+      finalLevel: level
+    })
+    
+    // 🔍 调试：显示实际使用的level值
+    console.log('🔍 UserMenu: 最终使用的用户等级:', {
+      currentLevel: currentLevel,
+      authLevel: authStatus.user_info?.level,
+      finalLevel: level,
+      source: currentLevel ? 'useUserInfo' : 'AuthContext'
+    })
+    
+    // 🆕 格式化用户等级显示
+    const levelInfo = formatLevelDisplay(level, t)
+    console.log('🔍 UserMenu: 格式化结果:', levelInfo)
     
 
     return (
       <>
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => open && handleMenuOpen()}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative p-1 h-auto rounded-full">
               <Avatar className="h-8 w-8">
@@ -83,8 +171,19 @@ export function UserMenu() {
                     {username}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {authStatus.user_info.email || 'No email provided'}
+                    {email || 'No email provided'}
                   </p>
+                  {/* 🆕 显示用户计划信息 */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                      {levelInfo.name}
+                    </span>
+                    {levelInfo.period && (
+                      <span className="text-xs text-muted-foreground">
+                        ({levelInfo.period})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -98,7 +197,7 @@ export function UserMenu() {
                 size="sm"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                {level === 'max' ? t('common:auth.managePlan') : t('common:auth.upgrade')}
+                {levelInfo.isMax ? t('common:auth.managePlan') : t('common:auth.upgrade')}
               </Button>
             </div>
             
@@ -108,7 +207,7 @@ export function UserMenu() {
                 <span className="text-sm font-medium">{t('common:auth.currentPoints')}</span>
                 <div className="flex items-center space-x-1">
                   <span className="text-sm font-semibold">
-                    {isLoading ? '...' : error ? '--' : points}
+                    {balanceLoading ? '...' : balanceError ? '--' : points}
                   </span>
                   <span className="text-xs text-muted-foreground">{t('common:auth.left')}</span>
                 </div>

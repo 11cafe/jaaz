@@ -8,9 +8,9 @@ logger = get_logger(__name__)
 class CreemPaymentService:
     def __init__(self):
         # Creem API配置
-        self.api_base_url = "https://api.creem.io/v1"
-        self.api_key = os.getenv("CREEM_API_KEY", "creem_test_52d9zTi0nMrpI8IEim7TRo")  # 测试环境API Key
-        self.return_url = os.getenv("CREEM_RETURN_URL", "http://localhost:8001/payments")
+        self.api_base_url = "https://test-api.creem.io/v1"
+        self.api_key = os.getenv("CREEM_API_KEY", "creem_test_7emlTUWBmWR007A0ODUAnU")  # 测试环境API Key
+        # self.return_url = os.getenv("CREEM_RETURN_URL", "http://localhost:8000/payments")
         
         self.headers = {
             "x-api-key": self.api_key,
@@ -33,12 +33,12 @@ class CreemPaymentService:
             
             payload = {
                 "product_id": product_id,
-                "return_url": self.return_url
+                # "return_url": self.return_url
             }
             
             # 如果提供了客户邮箱，添加到请求中
-            if customer_email:
-                payload["customer_email"] = customer_email
+            # if customer_email:
+            #     payload["customer_email"] = customer_email
             
             logger.info(f"Creating Creem checkout for product: {product_id}")
             

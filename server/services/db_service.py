@@ -789,6 +789,40 @@ class DatabaseService:
             logger.error(f"Error listing products: {e}")
             return []
     
+    async def get_product_by_level(self, level: str) -> Optional[Dict[str, Any]]:
+        """根据level获取产品信息，包括sku字段"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, product_id, name, level, points, price_cents, description, sku
+                    FROM tb_products
+                    WHERE level = ? AND is_active = 1
+                    LIMIT 1
+                """, (level,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting product by level {level}: {e}")
+            return None
+    
+    async def get_product_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
+        """根据sku获取产品信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, product_id, name, level, points, price_cents, description, sku
+                    FROM tb_products
+                    WHERE sku = ? AND is_active = 1
+                    LIMIT 1
+                """, (sku,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting product by sku {sku}: {e}")
+            return None
+    
     async def create_order(self, user_uuid: str, product_id: str, price_cents: int = 0) -> int:
         """创建新订单"""
         try:

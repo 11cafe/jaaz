@@ -132,8 +132,10 @@ async def get_pricing_info(request: Request):
                 "user_info": {
                     "id": str(user["id"]),
                     "email": user["email"],
+                    "username": user.get("username", user["email"].split("@")[0]),
                     "level": user_level,
-                    "points": user.get("points", 0)
+                    "points": user.get("points", 0),
+                    "image_url": user.get("image_url")
                 },
                 "message": f"用户等级: {user_level}"
             }
