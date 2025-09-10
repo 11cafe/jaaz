@@ -52,6 +52,210 @@ load_dotenv()
 
 router = APIRouter()
 
+@router.get("/api/pricing")
+async def get_pricing_info(request: Request):
+    """获取用户定价信息，包括用户等级和可用套餐"""
+    try:
+        logger.info("🎯 PRICING: 收到前端/pricing页面请求")
+        
+        # 从httpOnly cookie获取认证信息
+        auth_token = request.cookies.get("auth_token")
+        user_uuid = request.cookies.get("user_uuid")
+        user_email = request.cookies.get("user_email")
+        
+        logger.info(f"🔍 PRICING: 检查认证cookie状态")
+        logger.info(f"   - auth_token存在: {bool(auth_token)}")
+        logger.info(f"   - user_uuid: {user_uuid}")
+        logger.info(f"   - user_email: {user_email}")
+        
+        if not auth_token or not user_uuid:
+            logger.info("❌ PRICING: 用户未登录，返回默认套餐信息")
+            return {
+                "is_logged_in": False,
+                "current_level": None,
+                "available_plans": ["free", "base", "pro", "max"],
+                "message": "用户未登录"
+            }
+        
+        # 验证token
+        try:
+            payload = verify_access_token(auth_token)
+            if not payload:
+                logger.info("❌ PRICING: Token验证失败")
+                return {
+                    "is_logged_in": False,
+                    "current_level": None,
+                    "available_plans": ["free", "base", "pro", "max"],
+                    "message": "Token验证失败"
+                }
+            
+            user_id = payload.get("user_id")
+            if not user_id:
+                logger.info("❌ PRICING: Token中无用户ID")
+                return {
+                    "is_logged_in": False,
+                    "current_level": None,
+                    "available_plans": ["free", "base", "pro", "max"],
+                    "message": "Token中无用户ID"
+                }
+            
+            # 从数据库获取用户信息
+            user = await db_service.get_user_by_id(user_id)
+            if not user:
+                logger.info(f"❌ PRICING: 数据库中未找到用户 {user_id}")
+                return {
+                    "is_logged_in": False,
+                    "current_level": None,
+                    "available_plans": ["free", "base", "pro", "max"],
+                    "message": "数据库中未找到用户"
+                }
+            
+            # 🎯 详细记录用户level信息 - 专门为PRICING页面
+            user_level = user.get("level", "free")
+            logger.info(f"🎯 PRICING: ===========================================")
+            logger.info(f"🎯 PRICING: 用户等级详细信息")
+            logger.info(f"🎯 PRICING: ===========================================")
+            logger.info(f"🎯 PRICING: 用户邮箱: {user['email']}")
+            logger.info(f"🎯 PRICING: 用户ID: {user['id']}")
+            logger.info(f"🎯 PRICING: 用户UUID: {user.get('uuid', 'N/A')}")
+            logger.info(f"🎯 PRICING: 数据库原始level: {repr(user.get('level'))}")
+            logger.info(f"🎯 PRICING: Level数据类型: {type(user.get('level'))}")
+            logger.info(f"🎯 PRICING: 最终使用level: {user_level}")
+            logger.info(f"🎯 PRICING: 用户积分: {user.get('points', 0)}")
+            logger.info(f"🎯 PRICING: ===========================================")
+            
+            # 构建返回信息
+            pricing_info = {
+                "is_logged_in": True,
+                "current_level": user_level,
+                "available_plans": ["free", "base", "pro", "max"],
+                "user_info": {
+                    "id": str(user["id"]),
+                    "email": user["email"],
+                    "level": user_level,
+                    "points": user.get("points", 0)
+                },
+                "message": f"用户等级: {user_level}"
+            }
+            
+            logger.info(f"✅ PRICING: 成功返回用户定价信息，当前等级: {user_level}")
+            return pricing_info
+            
+        except Exception as token_error:
+            logger.error(f"❌ PRICING: Token验证异常: {token_error}")
+            return {
+                "is_logged_in": False,
+                "current_level": None,
+                "available_plans": ["free", "base", "pro", "max"],
+                "message": "Token验证异常"
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ PRICING: 获取定价信息异常: {e}")
+        return {
+            "is_logged_in": False,
+            "current_level": None,
+            "available_plans": ["free", "base", "pro", "max"],
+            "message": "服务器内部错误"
+        }
+
+@router.get("/api/auth/check-status")
+async def check_auth_status(request: Request):
+    """检查用户认证状态（基于httpOnly cookie）"""
+    try:
+        # 从httpOnly cookie获取认证信息
+        auth_token = request.cookies.get("auth_token")
+        user_uuid = request.cookies.get("user_uuid")
+        user_email = request.cookies.get("user_email")
+        
+        logger.info(f"🔍 Auth check - token: {bool(auth_token)}, uuid: {bool(user_uuid)}, email: {bool(user_email)}")
+        
+        if not auth_token or not user_uuid:
+            logger.info("❌ No valid auth cookies found")
+            return {
+                "is_logged_in": False,
+                "status": "logged_out",
+                "message": "No valid authentication cookies"
+            }
+        
+        # 验证token
+        try:
+            payload = verify_access_token(auth_token)
+            if not payload:
+                logger.info("❌ Invalid auth token")
+                return {
+                    "is_logged_in": False,
+                    "status": "logged_out",
+                    "message": "Invalid authentication token"
+                }
+            
+            user_id = payload.get("user_id")
+            if not user_id:
+                logger.info("❌ No user_id in token")
+                return {
+                    "is_logged_in": False,
+                    "status": "logged_out",
+                    "message": "Invalid token payload"
+                }
+            
+            # 从数据库获取完整用户信息
+            from services.db_service import db_service
+            user = await db_service.get_user_by_id(user_id)
+            if not user:
+                logger.info(f"❌ User {user_id} not found in database")
+                return {
+                    "is_logged_in": False,
+                    "status": "logged_out",
+                    "message": "User not found"
+                }
+            
+            # 🎯 详细记录用户level信息
+            user_level = user.get("level", "free")
+            logger.info(f"🔍 PRICING: User level details for {user['email']}:")
+            logger.info(f"   - Raw level from database: {repr(user.get('level'))}")
+            logger.info(f"   - Level type: {type(user.get('level'))}")
+            logger.info(f"   - Final level (with fallback): {user_level}")
+            logger.info(f"   - User ID: {user['id']}")
+            logger.info(f"   - User UUID: {user.get('uuid', 'N/A')}")
+            
+            # 构建用户信息
+            user_info = {
+                "id": str(user["id"]),
+                "username": user["username"],
+                "email": user["email"],
+                "image_url": user.get("image_url"),
+                "provider": user.get("provider"),
+                "level": user_level,
+                "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
+                "updated_at": user.get("updated_at").isoformat() if user.get("updated_at") else None,
+            }
+            
+            logger.info(f"✅ Auth check successful for user {user_id} ({user['email']}) with level: {user_level}")
+            logger.info(f"🎯 PRICING: Returning user_info.level = {user_info['level']}")
+            
+            return {
+                "is_logged_in": True,
+                "status": "logged_in",
+                "user_info": user_info,
+                "token": auth_token  # 返回token以便前端同步
+            }
+            
+        except Exception as token_error:
+            logger.error(f"❌ Token verification error: {token_error}")
+            return {
+                "is_logged_in": False,
+                "status": "logged_out",
+                "message": "Token verification failed"
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Auth status check error: {e}")
+        return {
+            "is_logged_in": False,
+            "status": "logged_out",
+            "message": "Auth check failed"
+        }
+
 
 # Google OAuth配置
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -429,33 +633,38 @@ async def oauth_callback(code: str = Query(...), state: str = Query(...), error:
             # 创建重定向响应并设置cookie
             response = RedirectResponse(url=f"{redirect_base}?auth_success=true&device_code={device_code}")
             
-            # 判断是否为HTTPS环境
+            # 🔧 优化Cookie设置，提高跨窗口兼容性
             is_secure = redirect_base.startswith("https://")
+            is_localhost = "localhost" in redirect_base or "127.0.0.1" in redirect_base
             
             # 设置用户认证相关的cookie（30天过期）
+            cookie_kwargs = {
+                "max_age": 30 * 24 * 60 * 60,  # 30天
+                "secure": is_secure and not is_localhost,  # localhost下不强制HTTPS
+                "samesite": "lax"  # 保持lax以支持跨窗口访问
+            }
+            
+            # 在localhost环境下，不设置domain让cookie对所有端口生效
+            if not is_localhost:
+                cookie_kwargs["domain"] = urlparse.urlparse(redirect_base).hostname
+            
             response.set_cookie(
                 key="auth_token",
                 value=app_token,
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=True,  # 防止XSS攻击
-                secure=is_secure,    # 根据环境动态设置
-                samesite="lax"  # CSRF保护
+                **cookie_kwargs
             )
             response.set_cookie(
                 key="user_uuid", 
                 value=user_info["uuid"],
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=False,  # 允许JavaScript读取UUID用于前端显示
-                secure=is_secure,
-                samesite="lax"
+                **cookie_kwargs
             )
             response.set_cookie(
                 key="user_email",
                 value=user_info["email"], 
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=False,
-                secure=is_secure,
-                samesite="lax"
+                **cookie_kwargs
             )
             
             return response
@@ -726,33 +935,38 @@ async def direct_oauth_callback(request: Request, code: str = Query(...), state:
             # 创建重定向响应并设置cookie
             response = RedirectResponse(url=f"{redirect_uri}?auth_success=true&auth_data={encoded_data}")
             
-            # 判断是否为HTTPS环境
+            # 🔧 优化Cookie设置，提高跨窗口兼容性
             is_secure = redirect_uri.startswith("https://")
+            is_localhost = "localhost" in redirect_uri or "127.0.0.1" in redirect_uri
             
             # 设置用户认证相关的cookie（30天过期）
+            cookie_kwargs = {
+                "max_age": 30 * 24 * 60 * 60,  # 30天
+                "secure": is_secure and not is_localhost,  # localhost下不强制HTTPS
+                "samesite": "lax"  # 保持lax以支持跨窗口访问
+            }
+            
+            # 在localhost环境下，不设置domain让cookie对所有端口生效
+            if not is_localhost:
+                cookie_kwargs["domain"] = urlparse.urlparse(redirect_uri).hostname
+            
             response.set_cookie(
                 key="auth_token",
                 value=app_token,
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=True,  # 防止XSS攻击
-                secure=is_secure,    # 根据环境动态设置
-                samesite="lax"  # CSRF保护
+                **cookie_kwargs
             )
             response.set_cookie(
                 key="user_uuid", 
                 value=user_info["uuid"],
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=False,  # 允许JavaScript读取UUID用于前端显示
-                secure=is_secure,
-                samesite="lax"
+                **cookie_kwargs
             )
             response.set_cookie(
                 key="user_email",
                 value=user_info["email"], 
-                max_age=30 * 24 * 60 * 60,  # 30天
                 httponly=False,
-                secure=is_secure,
-                samesite="lax"
+                **cookie_kwargs
             )
             
             return response

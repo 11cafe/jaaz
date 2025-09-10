@@ -107,5 +107,8 @@
   "messages": {
     "paymentError": "Failed to create payment order",
     "paymentErrorRetry": "Failed to create payment order, please try again later"
+  },
+  "discount": {
+    "save": "Save {{percent}}%"
   }
 }

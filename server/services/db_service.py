@@ -753,6 +753,159 @@ class DatabaseService:
                 'ip_limit_exceeded': False,
                 'device_limit_exceeded': False
             }
+    
+    # =================== 支付系统相关方法 ===================
+    
+    async def get_product_by_id(self, product_id: str) -> Optional[Dict[str, Any]]:
+        """根据产品ID获取产品信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, product_id, name, level, points, price_cents, description, is_active
+                    FROM tb_products
+                    WHERE product_id = ? AND is_active = 1
+                """, (product_id,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting product {product_id}: {e}")
+            return None
+    
+    async def list_products(self) -> List[Dict[str, Any]]:
+        """获取所有可用产品列表"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, product_id, name, level, points, price_cents, description
+                    FROM tb_products
+                    WHERE is_active = 1
+                    ORDER BY level, price_cents
+                """)
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error listing products: {e}")
+            return []
+    
+    async def create_order(self, user_uuid: str, product_id: str, price_cents: int = 0) -> int:
+        """创建新订单"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute("""
+                    INSERT INTO tb_orders (user_uuid, product_id, price_cents, status)
+                    VALUES (?, ?, ?, 'pending')
+                """, (user_uuid, product_id, price_cents))
+                await db.commit()
+                order_id = cursor.lastrowid
+                logger.info(f"Created order {order_id} for user {user_uuid}, product {product_id}")
+                return order_id
+        except Exception as e:
+            logger.error(f"Error creating order: {e}")
+            return 0
+    
+    async def update_order_creem_info(self, order_id: int, creem_order_id: str = None, 
+                                    creem_checkout_id: str = None, creem_subscription_id: str = None):
+        """更新订单的Creem相关信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_orders 
+                    SET creem_order_id = ?, creem_checkout_id = ?, creem_subscription_id = ?,
+                        updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE id = ?
+                """, (creem_order_id, creem_checkout_id, creem_subscription_id, order_id))
+                await db.commit()
+                logger.info(f"Updated order {order_id} with Creem info")
+        except Exception as e:
+            logger.error(f"Error updating order Creem info: {e}")
+    
+    async def get_order_by_creem_order_id(self, creem_order_id: str) -> Optional[Dict[str, Any]]:
+        """根据Creem订单ID获取订单信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT o.*, p.points, p.level
+                    FROM tb_orders o
+                    LEFT JOIN tb_products p ON o.product_id = p.product_id
+                    WHERE o.creem_order_id = ?
+                """, (creem_order_id,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting order by Creem order ID {creem_order_id}: {e}")
+            return None
+    
+    async def get_order_by_checkout_id(self, checkout_id: str) -> Optional[Dict[str, Any]]:
+        """根据checkout_id获取订单信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT o.*, p.points, p.level
+                    FROM tb_orders o
+                    LEFT JOIN tb_products p ON o.product_id = p.product_id
+                    WHERE o.creem_checkout_id = ?
+                """, (checkout_id,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting order by checkout ID {checkout_id}: {e}")
+            return None
+    
+    async def complete_order(self, order_id: int, points_awarded: int) -> bool:
+        """完成订单并标记状态"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_orders 
+                    SET status = 'completed', points_awarded = ?,
+                        updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE id = ?
+                """, (points_awarded, order_id))
+                await db.commit()
+                logger.info(f"Completed order {order_id} with {points_awarded} points")
+                return True
+        except Exception as e:
+            logger.error(f"Error completing order {order_id}: {e}")
+            return False
+    
+    async def get_user_orders(self, user_uuid: str, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
+        """获取用户订单历史"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT o.*, p.name as product_name, p.level
+                    FROM tb_orders o
+                    LEFT JOIN tb_products p ON o.product_id = p.product_id
+                    WHERE o.user_uuid = ?
+                    ORDER BY o.created_at DESC
+                    LIMIT ? OFFSET ?
+                """, (user_uuid, limit, offset))
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error getting orders for user {user_uuid}: {e}")
+            return []
+    
+    async def add_user_points(self, user_uuid: str, points: int) -> bool:
+        """为用户增加积分"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_user 
+                    SET points = points + ?, mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE uuid = ?
+                """, (points, user_uuid))
+                await db.commit()
+                logger.info(f"Added {points} points to user {user_uuid}")
+                return True
+        except Exception as e:
+            logger.error(f"Error adding points to user {user_uuid}: {e}")
+            return False
 
 # Create a singleton instance
 db_service = DatabaseService()

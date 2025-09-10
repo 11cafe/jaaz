@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
 import { useBalance } from '@/hooks/use-balance'
 import { useEffect, useState } from 'react'
-import { Zap, LogOut, Crown, Gift } from 'lucide-react'
+import { LogOut, Crown, Gift } from 'lucide-react'
 import { InviteDialog } from '@/components/invite/InviteDialog'
 
 export function UserMenu() {
@@ -55,8 +55,9 @@ export function UserMenu() {
 
   // 如果用户已登录，显示用户菜单
   if (authStatus.is_logged_in && authStatus.user_info) {
-    const { username, image_url } = authStatus.user_info
+    const { username, image_url, level } = authStatus.user_info
     const initials = username ? username.substring(0, 2).toUpperCase() : 'U'
+    
 
     return (
       <>
@@ -88,6 +89,7 @@ export function UserMenu() {
               </div>
             </div>
             
+            
             {/* Upgrade Button */}
             <div className="px-3 py-3 border-b">
               <Button
@@ -96,7 +98,7 @@ export function UserMenu() {
                 size="sm"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                {t('common:auth.upgrade')}
+                {level === 'max' ? t('common:auth.managePlan') : t('common:auth.upgrade')}
               </Button>
             </div>
             

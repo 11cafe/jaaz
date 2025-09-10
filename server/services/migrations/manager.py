@@ -9,6 +9,7 @@ from services.migrations.v6_add_user_uuid import V6AddUserUuid
 from services.migrations.v7_rename_user_id_to_uuid import V7RenameUserIdToUuid
 from services.migrations.v8_add_invite_system import V8AddInviteSystem
 from services.migrations.v9_add_user_level import V9AddUserLevel
+from services.migrations.v10_add_payment_tables import V10AddPaymentTables
 from . import Migration
 from log import get_logger
 
@@ -53,6 +54,10 @@ ALL_MIGRATIONS = [
     {
         'version': 9,
         'migration': V9AddUserLevel,
+    },
+    {
+        'version': 10,
+        'migration': V10AddPaymentTables,
     },
 ]
 class MigrationManager:

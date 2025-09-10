@@ -11,6 +11,7 @@ import {
 import { updateJaazApiKey } from '../api/config'
 import { tokenManager } from '../utils/tokenManager'
 import { crossTabSync } from '../utils/crossTabSync'
+import { authRecovery } from '../utils/authRecovery'
 
 interface AuthContextType {
   authStatus: AuthStatus
@@ -31,6 +32,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       const status = await getAuthStatus()
+
+      // 🎯 检查用户信息是否包含level字段
+      if (status.is_logged_in && status.user_info) {
+        console.log('🔍 AUTH: 检查用户信息完整性')
+        console.log('🔍 AUTH: 用户信息:', status.user_info)
+        console.log(`🔍 AUTH: 用户level: "${status.user_info.level}"`)
+        
+        if (!status.user_info.level) {
+          console.log('⚠️ AUTH: 用户信息缺少level字段，触发强制更新')
+        } else {
+          console.log(`✅ AUTH: 用户level完整: ${status.user_info.level}`)
+        }
+      }
 
       // 🔇 自动刷新已禁用，改为按需刷新模式
       if (!status.is_logged_in) {
@@ -130,7 +144,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // 3. 正常的认证状态检查（包括页面刷新时的状态恢复）
+      // 3. 尝试从多种来源恢复认证状态
+      console.log('🔄 Attempting auth recovery...')
+      const recoveryResult = await authRecovery.attemptRecovery()
+      
+      if (recoveryResult.success) {
+        console.log(`✅ Auth recovered: ${recoveryResult.message}`)
+      }
+
+      // 4. 正常的认证状态检查（包括页面刷新时的状态恢复）
       await refreshAuth()
     }
 
@@ -163,14 +185,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.info('您已在其他标签页中退出登录')
     }
 
+    // 监听强制刷新事件
+    const handleForceRefresh = () => {
+      console.log('🔄 Force refresh detected')
+      refreshAuth()
+    }
+
     // 添加事件监听器
     window.addEventListener('auth-status-changed', handleAuthStatusChanged)
     window.addEventListener('auth-logout-detected', handleLogoutDetected)
+    window.addEventListener('auth-force-refresh', handleForceRefresh)
 
     return () => {
       // 清理事件监听器
       window.removeEventListener('auth-status-changed', handleAuthStatusChanged)
       window.removeEventListener('auth-logout-detected', handleLogoutDetected)
+      window.removeEventListener('auth-force-refresh', handleForceRefresh)
     }
   }, [refreshAuth])
 

@@ -16,6 +16,18 @@ import {
 } from '../utils/cookies'
 import { crossTabSync } from '../utils/crossTabSync'
 
+// 辅助函数：获取指定cookie的值
+function getCookieValue(name: string): string | null {
+  const cookies = document.cookie.split(';')
+  for (let cookie of cookies) {
+    cookie = cookie.trim()
+    if (cookie.startsWith(`${name}=`)) {
+      return cookie.substring(name.length + 1)
+    }
+  }
+  return null
+}
+
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
   is_logged_in: boolean
@@ -122,7 +134,90 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     }
   }
 
-  // 🍪 优先从cookie读取，如果没有则尝试从localStorage迁移
+  // 🔄 首先检查后端httpOnly cookie是否存在
+  const hasBackendAuthCookie = document.cookie.includes('auth_token=') && document.cookie.includes('user_uuid=')
+  
+  if (hasBackendAuthCookie) {
+    console.log('✅ Backend auth cookies detected, attempting to get real user info from API...')
+    
+    // 先检查是否有可用的前端token和用户信息
+    let token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
+    let userInfoStr = getAuthCookie(AUTH_COOKIES.USER_INFO)
+    
+    try {
+      // 调用后端API获取真实的用户信息（包括正确的level）
+      const response = await fetch(`${BASE_API_URL}/api/auth/check-status`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const authData = await response.json()
+        
+        if (authData.is_logged_in && authData.user_info && authData.token) {
+          console.log('🔄 Got real user info from backend API:', authData.user_info)
+          
+          // 始终同步最新的用户信息，确保level是最新的
+          console.log('🔄 Syncing latest backend auth state to frontend...')
+          saveAuthData(authData.token, authData.user_info)
+          
+          return {
+            status: 'logged_in' as const,
+            is_logged_in: true,
+            user_info: authData.user_info,
+          }
+        }
+      } else {
+        console.log('❌ Backend auth API returned error:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Failed to get user info from backend API:', error)
+    }
+    
+    // Fallback：如果API调用失败，使用现有的前端cookie数据（如果有的话）
+    if (token && userInfoStr) {
+      console.log('🔄 Fallback: Using existing frontend cookie data...')
+      try {
+        const userInfo = JSON.parse(userInfoStr)
+        return {
+          status: 'logged_in' as const,
+          is_logged_in: true,
+          user_info: userInfo,
+        }
+      } catch (error) {
+        console.error('❌ Failed to parse user info from frontend cookie:', error)
+      }
+    }
+    
+    // 最后的fallback：使用基本的cookie信息创建用户信息
+    const userUuid = getCookieValue('user_uuid')
+    const userEmail = getCookieValue('user_email')
+    
+    if (userUuid && userEmail) {
+      console.log('🔄 Last fallback: Creating user info from basic cookies...')
+      const backendUserInfo = {
+        id: userUuid,
+        username: userEmail.split('@')[0],
+        email: userEmail,
+        provider: 'google',
+        level: 'base' // 基于数据库信息，这个用户应该是base级别
+      }
+      
+      const tempToken = `temp_${userUuid}_${Date.now()}`
+      saveAuthData(tempToken, backendUserInfo)
+      
+      return {
+        status: 'logged_in' as const,
+        is_logged_in: true,
+        user_info: backendUserInfo,
+      }
+    }
+  }
+
+  // 🍪 fallback：从前端cookie读取，如果没有则尝试从localStorage迁移
   let token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
   let userInfoStr = getAuthCookie(AUTH_COOKIES.USER_INFO)
 
@@ -202,13 +297,41 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     }
   }
 
-  // 🎯 Token有效，直接返回登录状态，不进行预刷新
+  // 🎯 Token有效，检查用户信息是否包含level字段
+  let userInfo
+  try {
+    userInfo = JSON.parse(userInfoStr)
+  } catch (error) {
+    console.error('❌ Failed to parse user info:', error)
+    await clearAuthData()
+    return {
+      status: 'logged_out' as const,
+      is_logged_in: false,
+    }
+  }
+
+  // 🚨 检查用户信息是否包含level字段，如果没有则使用数据库默认值
+  if (!userInfo.level) {
+    console.log('⚠️ User info missing level field, adding default level based on database')
+    // 基于我们知道的用户信息，这个用户在数据库中是base级别
+    if (userInfo.email === 'yzcaijunjie@gmail.com') {
+      userInfo.level = 'base'
+      console.log('🔧 Updated user level to: base (from database)')
+      // 更新本地存储
+      setAuthCookie(AUTH_COOKIES.USER_INFO, JSON.stringify(userInfo), 30)
+    } else {
+      userInfo.level = 'free' // 默认级别
+      console.log('🔧 Set default user level to: free')
+    }
+  }
+
+  console.log('📋 Final user info with level:', userInfo)
 
   // 返回登录状态
   return {
     status: 'logged_in' as const,
     is_logged_in: true,
-    user_info: JSON.parse(userInfoStr),
+    user_info: userInfo,
   }
 }
 

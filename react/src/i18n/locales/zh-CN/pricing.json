@@ -1,76 +1,76 @@
 {
-  "title": "Choose the Right Plan for You",
-  "subtitle": "Whether you're an individual user or a business team, we have the right pricing plan to meet your needs",
-  "mostPopular": "Most Popular",
-  "currentPlan": "当前计划",
+  "title": "选择适合您的方案",
+  "subtitle": "无论您是个人用户还是企业团队，我们都有合适的定价方案满足您的需求",
+  "mostPopular": "最受欢迎",
+  "currentPlan": "当前方案",
   "monthlyYearly": {
-    "monthly": "Monthly",
-    "yearly": "Yearly"
+    "monthly": "月付",
+    "yearly": "年付"
   },
   "plans": {
-    "current": "当前计划",
+    "current": "当前方案",
     "free": {
-      "name": "Free",
+      "name": "免费版",
       "pricing": {
-        "monthly": { "price": "0", "period": "Forever Free" },
-        "yearly": { "price": "0", "period": "Forever Free" }
+        "monthly": { "price": "0", "period": "永久免费" },
+        "yearly": { "price": "0", "period": "永久免费" }
       },
-      "description": "Perfect for individual users to experience",
+      "description": "非常适合个人用户体验",
       "features": [
-        "Credits: 20",
-        "Images: 10",
-        "Basic features",
-        "Community support"
+        "积分：20",
+        "图片：10",
+        "基础功能",
+        "社区支持"
       ],
-      "buttonText": "Get Started"
+      "buttonText": "立即开始"
     },
     "base": {
-      "name": "Base",
+      "name": "基础版",
       "pricing": {
-        "monthly": { "price": "$5.9", "period": "/Monthly" },
-        "yearly": { "price": "$59", "period": "/Yearly", "originalPrice": "$70.8" }
+        "monthly": { "price": "$5.9", "period": "/月" },
+        "yearly": { "price": "$59", "period": "/年", "originalPrice": "$70.8" }
       },
-      "description": "Perfect for individual creators",
+      "description": "非常适合个人创作者",
       "features": [
-        "Credits: 300",
-        "Images: 150",
-        "All basic features",
-        "Email support"
+        "积分：300",
+        "图片：150",
+        "所有基础功能",
+        "邮件支持"
       ],
       "buttonText": "登录后购买",
-      "buttonTextLoggedIn": "Get Base"
+      "buttonTextLoggedIn": "获取基础版"
     },
     "pro": {
-      "name": "Pro",
+      "name": "专业版",
       "pricing": {
-        "monthly": { "price": "$9.9", "period": "/Monthly" },
-        "yearly": { "price": "$99", "period": "/Yearly", "originalPrice": "$118.8" }
+        "monthly": { "price": "$9.9", "period": "/月" },
+        "yearly": { "price": "$99", "period": "/年", "originalPrice": "$118.8" }
       },
-      "description": "Perfect for professional creators",
+      "description": "非常适合专业创作者",
       "features": [
-        "Credits: 1000",
-        "Images: 500",
-        "All advanced features",
-        "Priority support"
+        "积分：1000",
+        "图片：500",
+        "所有高级功能",
+        "优先支持"
       ],
       "buttonText": "登录后购买",
-      "buttonTextLoggedIn": "Get Pro"
+      "buttonTextLoggedIn": "获取专业版"
     },
     "max": {
-      "name": "Max",
+      "name": "企业版",
       "pricing": {
-        "monthly": { "price": "$29.9", "period": "/Monthly" },
-        "yearly": { "price": "$299", "period": "/Yearly", "originalPrice": "$358.8" }
+        "monthly": { "price": "$29.9", "period": "/月" },
+        "yearly": { "price": "$299", "period": "/年", "originalPrice": "$358.8" }
       },
-      "description": "Perfect for enterprises and teams",
+      "description": "非常适合企业和团队",
       "features": [
-        "Credits: 3000",
-        "Images: 1500",
-        "All enterprise features",
-        "Dedicated support"
+        "积分：3000",
+        "图片：1500",
+        "所有企业功能",
+        "专属支持"
       ],
       "buttonText": "登录后购买",
-      "buttonTextLoggedIn": "Get Max"
+      "buttonTextLoggedIn": "获取企业版"
     }
   },
   "faq": {
@@ -107,5 +107,8 @@
   "messages": {
     "paymentError": "创建支付订单失败",
     "paymentErrorRetry": "创建支付订单失败，请稍后重试"
+  },
+  "discount": {
+    "save": "节省{{percent}}%"
   }
 }
