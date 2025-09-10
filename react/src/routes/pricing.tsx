@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Check } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAuthCookie, AUTH_COOKIES } from '@/utils/cookies'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/pricing')({
   component: PricingPage,
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/pricing')({
 
 function PricingPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingOperation, setLoadingOperation] = useState<'cancel' | 'upgrade' | string | null>(null) // 追踪具体的操作类型
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
   const [apiCurrentLevel, setApiCurrentLevel] = useState<string | null>(null)
   const [apiIsLoggedIn, setApiIsLoggedIn] = useState<boolean | null>(null)
@@ -144,6 +146,7 @@ function PricingPage() {
   const handleUpgrade = useCallback(async (planType: string) => {
     try {
       setIsLoading(true)
+      setLoadingOperation(`upgrade-${planType}`) // 设置具体的升级操作
       
       // 🔧 构建请求头，包含多种认证方式
       const headers: Record<string, string> = {
@@ -188,11 +191,80 @@ function PricingPage() {
       }
     } catch (error) {
       console.error('支付处理失败:', error)
-      alert(t('messages.paymentErrorRetry'))
+      toast.error(t('messages.paymentErrorRetry'))
     } finally {
       setIsLoading(false)
+      setLoadingOperation(null) // 清除loading操作状态
     }
   }, [billingPeriod, t])
+
+  const handleCancelSubscription = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setLoadingOperation('cancel') // 设置取消订阅操作
+      
+      console.log('🚀 PRICING: 开始取消订阅...')
+      
+      // 🔧 构建请求头，包含多种认证方式
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // 尝试添加Bearer token（如果存在）
+      const token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+        console.log('🔑 Added Bearer token to cancel request')
+      } else {
+        console.log('🍪 Using httpOnly cookies for cancel authentication')
+      }
+      
+      const response = await fetch('/api/billing/cancel_subscription', {
+        method: 'POST',
+        credentials: 'include', // 重要：包含httpOnly cookies
+        headers
+      })
+
+      if (!response.ok) {
+        throw new Error(t('messages.paymentError'))
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('✅ PRICING: 订阅取消成功')
+        toast.success('Subscription cancelled successfully!', {
+          duration: 4000,
+        })
+        
+        // 强制刷新认证状态以更新用户等级
+        setTimeout(() => {
+          refreshAuth()
+          // 强制触发页面数据重新加载
+          window.dispatchEvent(new CustomEvent('auth-force-refresh'))
+          // 重新获取定价信息
+          window.location.reload()
+        }, 1000)
+      } else {
+        throw new Error(data.message || 'Failed to cancel subscription')
+      }
+    } catch (error) {
+      console.error('取消订阅失败:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      toast.error(`Failed to cancel subscription: ${errorMessage}`, {
+        duration: 4000,
+      })
+      
+      // 即使失败也要刷新状态，以防服务器状态已变更
+      setTimeout(() => {
+        refreshAuth()
+        window.dispatchEvent(new CustomEvent('auth-force-refresh'))
+      }, 1000)
+    } finally {
+      setIsLoading(false)
+      setLoadingOperation(null) // 清除loading操作状态
+    }
+  }, [t, refreshAuth])
 
   const getFeatures = (planKey: string): string[] => {
     const features = t(`plans.${planKey}.features`, { returnObjects: true })
@@ -300,7 +372,7 @@ function PricingPage() {
       pricing: getPlanPricing('base'),
       description: t('plans.base.description'),
       features: getFeatures('base'),
-      popular: true, // 🔄 恢复为静态值，在渲染时动态判断
+      popular: false, // 🔄 移除Most Popular样式
       isCurrent: isCurrentPlan('base'),
     },
     {
@@ -330,8 +402,6 @@ function PricingPage() {
   console.log('🎯 PRICING: 套餐状态总结 (实际渲染状态)')
   console.log('==================================================')
   plans.forEach(plan => {
-    const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded && billingPeriod === 'monthly'
-    
     // 模拟按钮文本计算逻辑
     const getButtonText = () => {
       if (plan.isCurrent) return 'Current Plan'
@@ -341,8 +411,8 @@ function PricingPage() {
     }
     
     const status = plan.isCurrent ? '✅ 当前计划' : '⭕ 可选择'
-    const border = plan.isCurrent ? '绿色边框' : shouldShowPopular ? '蓝色强调边框' : '普通边框'
-    const badge = plan.isCurrent ? 'Current Plan' : (shouldShowPopular ? 'Most Popular' : '无标签')
+    const border = plan.isCurrent ? '绿色边框' : '普通边框'
+    const badge = plan.isCurrent ? 'Current Plan' : '无标签'
     const buttonText = getButtonText()
     const renderState = apiDataLoaded ? '数据已加载' : '等待API数据'
     
@@ -405,13 +475,16 @@ function PricingPage() {
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => {
-            // 🎯 动态判断是否应用Popular样式和标签，防止闪烁，只在monthly时显示
-            const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded && billingPeriod === 'monthly'
             
             // 🎯 动态计算按钮文本和变体，防止闪烁
             const getButtonText = () => {
               if (plan.isCurrent) {
-                return t('plans.current')
+                // 🎯 Free计划显示"Current Plan"，付费计划显示"Cancel Subscription"
+                if (plan.key === 'free') {
+                  return t('plans.current') // "Current Plan"
+                } else {
+                  return 'Cancel Subscription' // 付费计划当前计划显示取消订阅
+                }
               }
               
               // 🚨 关键：如果API数据未加载，显示加载状态而不是升级文本
@@ -421,6 +494,7 @@ function PricingPage() {
               
               // API数据已加载，安全显示升级文本
               if (plan.key === 'free') {
+                // 🎯 Free计划只显示"Get Started"，不显示"Cancel Subscription"
                 return t('plans.free.buttonText')
               } else {
                 return authStatus.is_logged_in 
@@ -431,7 +505,12 @@ function PricingPage() {
             
             const getButtonVariant = () => {
               if (plan.isCurrent) {
-                return 'secondary' as const
+                // 🎯 Free计划用secondary样式，付费计划的取消订阅用低调的outline样式
+                if (plan.key === 'free') {
+                  return 'secondary' as const // Free计划的"Current Plan"
+                } else {
+                  return 'outline' as const // 付费计划的"Cancel Subscription" - 低调样式
+                }
               }
               
               // 如果API数据未加载，使用中性样式
@@ -439,30 +518,24 @@ function PricingPage() {
                 return 'outline' as const
               }
               
-              // API数据已加载，使用正确的样式
-              return shouldShowPopular ? 'default' as const : 'outline' as const
+              // API数据已加载，使用outline样式
+              return 'outline' as const
             }
             
             const buttonText = getButtonText()
             const buttonVariant = getButtonVariant()
             
-            // 🎯 确保当前计划优先级最高，不会被popular样式干扰
+            // 🎯 卡片样式：当前计划特殊样式，其他为普通样式
             const cardClassName = plan.isCurrent 
               ? 'border-green-500 shadow-lg ring-2 ring-green-500/20' 
-              : shouldShowPopular 
-                ? 'border-primary shadow-lg ring-2 ring-primary/20' 
-                : 'border-border'
+              : 'border-border'
             
             return (
               <Card key={plan.key} id={plan.id} className={`relative flex flex-col ${cardClassName}`}>
-                {/* 🎯 严格控制标签显示逻辑，避免闪烁 */}
+                {/* 🎯 只显示当前计划标签 */}
                 {plan.isCurrent ? (
                   <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1">
                     {t('currentPlan')}
-                  </Badge>
-                ) : shouldShowPopular ? (
-                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-1">
-                    {t('mostPopular')}
                   </Badge>
                 ) : null}
               
@@ -518,15 +591,42 @@ function PricingPage() {
               </CardContent>
               
               <CardFooter className="pt-4">
-                <Button 
-                  variant={buttonVariant} 
-                  className={`w-full ${plan.isCurrent ? 'cursor-not-allowed' : shouldShowPopular ? 'bg-black text-white hover:bg-gray-800' : ''}`}
-                  size="lg"
-                  onClick={plan.isCurrent ? undefined : (plan.key !== 'free' ? () => handleUpgrade(plan.key) : undefined)}
-                  disabled={plan.isCurrent || (plan.key !== 'free' && isLoading) || !apiDataLoaded}
-                >
-                  {plan.key !== 'free' && isLoading ? t('buttons.processing') : buttonText}
-                </Button>
+                {/* 🎯 Free计划完全不显示任何按钮 */}
+                {plan.key !== 'free' && (
+                  <Button 
+                    variant={buttonVariant} 
+                    className="w-full"
+                    size="lg"
+                    onClick={(() => {
+                      // 🎯 简化的点击逻辑：只处理付费计划（Free已被排除）
+                      if (plan.isCurrent) {
+                        // 当前付费计划：取消订阅
+                        return () => handleCancelSubscription()
+                      } else {
+                        // 非当前付费计划：升级
+                        return () => handleUpgrade(plan.key)
+                      }
+                    })()}
+                    disabled={(() => {
+                      // 🎯 只有在当前按钮的操作进行时才禁用此按钮
+                      if (!apiDataLoaded) return true // API数据未加载时禁用
+                      if (plan.isCurrent && loadingOperation === 'cancel') return true // 当前计划取消中
+                      if (!plan.isCurrent && loadingOperation === `upgrade-${plan.key}`) return true // 升级到此计划中
+                      return false // 其他情况允许点击
+                    })()}
+                  >
+                    {(() => {
+                      // 🎯 只在当前操作的按钮上显示loading
+                      if (plan.isCurrent && loadingOperation === 'cancel') {
+                        return t('buttons.processing') // 当前计划取消订阅中
+                      } else if (!plan.isCurrent && loadingOperation === `upgrade-${plan.key}`) {
+                        return t('buttons.processing') // 升级到此计划中
+                      } else {
+                        return buttonText // 显示正常文本
+                      }
+                    })()}
+                  </Button>
+                )}
               </CardFooter>
             </Card>
             )

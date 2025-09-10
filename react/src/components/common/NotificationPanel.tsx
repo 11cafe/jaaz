@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
   Bell,
   CheckCheck,
+  CheckCircle,
   CircleX,
   ImageIcon,
   InfoIcon,
@@ -44,6 +45,8 @@ export const NotificationPanel: React.FC = () => {
         return <CircleX className="w-4 h-4" />
       case 'info':
         return <InfoIcon className="w-4 h-4" />
+      case 'success':
+        return <CheckCircle className="w-4 h-4" />
       default:
         return <InfoIcon className="w-4 h-4" />
     }
@@ -59,6 +62,8 @@ export const NotificationPanel: React.FC = () => {
         return 'border-l-red-500'
       case 'info':
         return 'border-l-yellow-500'
+      case 'success':
+        return 'border-l-green-500'
       default:
         return 'border-l-gray-500'
     }

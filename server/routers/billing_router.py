@@ -36,6 +36,11 @@ class Product(BaseModel):
 class ProductListResponse(BaseModel):
     products: List[Product]
 
+class CancelSubscriptionResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+    subscription_id: Optional[str] = None
+
 def get_current_user(request: Request) -> Optional[dict]:
     """从请求头或Cookie中获取当前用户信息"""
     # 🔧 首先尝试Bearer token认证
@@ -378,4 +383,73 @@ async def handle_payment_callback(request: Request):
         raise
     except Exception as e:
         logger.error(f"Error processing payment callback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/api/billing/cancel_subscription", response_model=CancelSubscriptionResponse)
+async def cancel_subscription(request: Request):
+    """取消用户订阅"""
+    # 验证用户认证
+    user_payload = get_current_user(request)
+    if not user_payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    user_id = user_payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token: missing user_id")
+    
+    try:
+        # 获取用户信息
+        user = await db_service.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # 检查用户是否有有效的订阅
+        subscription_id = user.get("subscription_id")
+        if not subscription_id:
+            raise HTTPException(status_code=400, detail="No active subscription found")
+        
+        logger.info(f"Cancel subscription request for user {user_id}, subscription: {subscription_id}")
+        
+        # 调用Creem API取消订阅
+        cancel_result = await payment_service.cancel_subscription(subscription_id)
+        
+        if not cancel_result.get("success"):
+            logger.error(f"Failed to cancel subscription {subscription_id}: {cancel_result}")
+            return CancelSubscriptionResponse(
+                success=False,
+                message=f"Failed to cancel subscription: {cancel_result.get('error', 'Unknown error')}"
+            )
+        
+        # 验证取消成功后，更新数据库
+        # 清空subscription_id和order_id，设置level为free
+        user_uuid = user.get("uuid")
+        update_success = await db_service.clear_user_subscription(user_uuid)
+        
+        if update_success:
+            # 更新用户等级为free
+            level_update_success = await db_service.update_user_level(user_id, 'free')
+            if level_update_success:
+                logger.info(f"Successfully cancelled subscription and updated user {user_id} to free level")
+                return CancelSubscriptionResponse(
+                    success=True,
+                    message="Subscription cancelled successfully",
+                    subscription_id=subscription_id
+                )
+            else:
+                logger.error(f"Failed to update user level to free for user {user_id}")
+                return CancelSubscriptionResponse(
+                    success=False,
+                    message="Subscription cancelled but failed to update user level"
+                )
+        else:
+            logger.error(f"Failed to update subscription info for user {user_id}")
+            return CancelSubscriptionResponse(
+                success=False,
+                message="Subscription cancelled but failed to update user info"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling subscription for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")

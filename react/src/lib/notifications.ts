@@ -1,6 +1,6 @@
 import { eventBus } from './event'
 
-type NotificationType = 'canvas_update' | 'session_done' | 'error' | 'info'
+type NotificationType = 'canvas_update' | 'session_done' | 'error' | 'info' | 'success'
 
 export interface Notification {
   id: string
@@ -134,6 +134,31 @@ class NotificationManager {
   // Get session notifications
   public getSessionNotifications(sessionId: string): Notification[] {
     return this.notifications.filter((n) => n.sessionId === sessionId)
+  }
+
+  // Public methods to show notifications
+  public showSuccess(title: string, message: string) {
+    this.addNotification({
+      type: 'success',
+      title,
+      message
+    })
+  }
+
+  public showError(title: string, message: string) {
+    this.addNotification({
+      type: 'error',
+      title,
+      message
+    })
+  }
+
+  public showInfo(title: string, message: string) {
+    this.addNotification({
+      type: 'info',
+      title,
+      message
+    })
   }
 }
 

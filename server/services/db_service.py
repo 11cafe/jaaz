@@ -431,7 +431,7 @@ class DatabaseService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, email, nickname, points, ctime, mtime, uuid, level
+                SELECT id, email, nickname, points, ctime, mtime, uuid, level, subscription_id, order_id
                 FROM tb_user
                 WHERE id = ?
             """, (user_id,))
@@ -443,7 +443,7 @@ class DatabaseService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = await db.execute("""
-                SELECT id, email, nickname, points, ctime, mtime, uuid, level
+                SELECT id, email, nickname, points, ctime, mtime, uuid, level, subscription_id, order_id
                 FROM tb_user
                 WHERE uuid = ?
             """, (user_uuid,))
@@ -483,15 +483,21 @@ class DatabaseService:
                 """, (email, user_id))
             await db.commit()
 
-    async def update_user_level(self, user_id: int, level: str):
+    async def update_user_level(self, user_id: int, level: str) -> bool:
         """Update user subscription level"""
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                UPDATE tb_user 
-                SET level = ?, mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
-                WHERE id = ?
-            """, (level, user_id))
-            await db.commit()
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    UPDATE tb_user 
+                    SET level = ?, mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE id = ?
+                """, (level, user_id))
+                await db.commit()
+                logger.info(f"Updated user {user_id} level to {level}")
+                return True
+        except Exception as e:
+            logger.error(f"Error updating user level for user {user_id}: {e}")
+            return False
 
     async def get_or_create_user(self, email: str, username: str, provider: str = "google", 
                                 google_id: str = None, image_url: str = None) -> Dict[str, Any]:
@@ -979,6 +985,28 @@ class DatabaseService:
                 
         except Exception as e:
             logger.error(f"Error updating subscription info for user {user_uuid}: {e}")
+            return False
+    
+    async def clear_user_subscription(self, user_uuid: str) -> bool:
+        """清空用户的订阅信息（设置为NULL）"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                sql = """
+                    UPDATE tb_user 
+                    SET subscription_id = NULL, 
+                        order_id = NULL,
+                        mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE uuid = ?
+                """
+                
+                await db.execute(sql, (user_uuid,))
+                await db.commit()
+                
+                logger.info(f"Cleared subscription info for user {user_uuid}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error clearing subscription info for user {user_uuid}: {e}")
             return False
     
     async def get_user_subscription_info(self, user_uuid: str) -> Optional[Dict[str, Any]]:

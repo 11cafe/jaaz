@@ -138,6 +138,93 @@ class CreemPaymentService:
         except Exception as e:
             logger.error(f"Error parsing callback parameters: {e}")
             return None
+    
+    async def cancel_subscription(self, subscription_id: str) -> Dict[str, Any]:
+        """
+        取消Creem订阅
+        
+        Args:
+            subscription_id: Creem订阅ID
+        
+        Returns:
+            Dict包含取消结果信息
+        """
+        try:
+            url = f"{self.api_base_url}/subscriptions/{subscription_id}/cancel"
+            
+            logger.info(f"Cancelling Creem subscription: {subscription_id}")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url, 
+                    headers=self.headers,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200 or response.status_code == 201:
+                    result = response.json()
+                    
+                    # 验证返回的ID是否一致
+                    returned_id = result.get('id')
+                    if returned_id != subscription_id:
+                        logger.error(f"Subscription ID mismatch: requested {subscription_id}, returned {returned_id}")
+                        return {
+                            "success": False,
+                            "error": "Subscription ID mismatch in response"
+                        }
+                    
+                    # 验证状态是否为cancelled
+                    status = result.get('status')
+                    if status != 'canceled':
+                        logger.error(f"Subscription cancellation failed: status is {status}, expected 'canceled'")
+                        return {
+                            "success": False,
+                            "error": f"Cancellation failed: status is {status}"
+                        }
+                    
+                    logger.info(f"Subscription {subscription_id} cancelled successfully")
+                    return {
+                        "success": True,
+                        "data": result,
+                        "subscription_id": returned_id,
+                        "status": status
+                    }
+                else:
+                    # 检查是否是"已经取消"的错误
+                    if response.status_code == 400:
+                        try:
+                            error_data = response.json()
+                            if "already canceled" in error_data.get("message", "").lower():
+                                logger.info(f"Subscription {subscription_id} was already cancelled")
+                                return {
+                                    "success": True,
+                                    "data": {"id": subscription_id, "status": "canceled"},
+                                    "subscription_id": subscription_id,
+                                    "status": "canceled",
+                                    "message": "Subscription was already cancelled"
+                                }
+                        except:
+                            pass
+                    
+                    logger.error(f"Creem cancel subscription API error: {response.status_code} - {response.text}")
+                    return {
+                        "success": False,
+                        "error": f"Creem API error: {response.status_code}",
+                        "details": response.text
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("Creem cancel subscription API timeout")
+            return {
+                "success": False,
+                "error": "Payment service timeout"
+            }
+        except Exception as e:
+            logger.error(f"Error cancelling Creem subscription: {e}")
+            return {
+                "success": False,
+                "error": f"Payment service error: {str(e)}"
+            }
 
 # 创建单例实例
 payment_service = CreemPaymentService()

@@ -22,5 +22,8 @@ export function useNotifications() {
       notificationManager.getCanvasNotifications.bind(notificationManager),
     getSessionNotifications:
       notificationManager.getSessionNotifications.bind(notificationManager),
+    showSuccess: notificationManager.showSuccess.bind(notificationManager),
+    showError: notificationManager.showError.bind(notificationManager),
+    showInfo: notificationManager.showInfo.bind(notificationManager),
   }
 }
