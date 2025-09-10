@@ -191,7 +191,7 @@ function PricingPage() {
       }
     } catch (error) {
       console.error('支付处理失败:', error)
-      toast.error(t('messages.paymentErrorRetry'))
+      toast.error(t('common:toast.paymentError'))
     } finally {
       setIsLoading(false)
       setLoadingOperation(null) // 清除loading操作状态
@@ -233,7 +233,7 @@ function PricingPage() {
       
       if (data.success) {
         console.log('✅ PRICING: 订阅取消成功')
-        toast.success('Subscription cancelled successfully!', {
+        toast.success(t('common:toast.subscriptionCancelled'), {
           duration: 4000,
         })
         
@@ -251,7 +251,7 @@ function PricingPage() {
     } catch (error) {
       console.error('取消订阅失败:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      toast.error(`Failed to cancel subscription: ${errorMessage}`, {
+      toast.error(`${t('common:toast.subscriptionCancelError')}: ${errorMessage}`, {
         duration: 4000,
       })
       

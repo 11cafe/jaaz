@@ -31,6 +31,25 @@
     "saved": "Saved successfully",
     "deleted": "Deleted successfully"
   },
+  "toast": {
+    "loginExpired": "Login has expired, please login again",
+    "crossTabLogout": "You have been logged out in another tab",
+    "loginSuccess": "Login successful!",
+    "loginError": "Error occurred during login",
+    "loginFailed": "Login failed",
+    "paymentSuccess": "Payment successful!",
+    "paymentError": "Payment failed, please try again",
+    "subscriptionCancelled": "Subscription cancelled successfully!",
+    "subscriptionCancelError": "Failed to cancel subscription",
+    "imageUploadFailed": "Image upload failed",
+    "copySuccess": "Copied successfully!",
+    "copyError": "Copy failed",
+    "knowledgeListError": "Failed to get knowledge base list",
+    "knowledgeSettingsSaved": "Knowledge base settings saved",
+    "knowledgeSettingsError": "Failed to save knowledge base settings",
+    "fileReadError": "Failed to read file",
+    "networkError": "Network error"
+  },
   "notifications": {
     "title": "Notifications",
     "clear": "Clear",
@@ -81,6 +100,13 @@
     "managePlan": "Manage Plan",
     "left": "left",
     "inviteCode": "Invite Code",
+    "loginDialog": {
+      "welcomeTitle": "Welcome to MagicArt",
+      "subtitle": "Please login to continue using AI design assistant",
+      "continueWithGoogle": "Continue with Google",
+      "redirecting": "Redirecting...",
+      "secureLogin": "Secure Login"
+    },
     "levels": {
       "free": "Free",
       "base": "Basic",

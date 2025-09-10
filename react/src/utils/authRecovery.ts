@@ -19,6 +19,19 @@ class AuthRecovery {
   public async attemptRecovery(): Promise<AuthRecoveryResult> {
     console.log('🔄 Starting auth recovery process...')
 
+    // 🚨 首先检查是否在logout过程中，如果是则拒绝恢复
+    const isLoggingOut = sessionStorage.getItem('is_logging_out')
+    const forceLogout = sessionStorage.getItem('force_logout')
+    
+    if (isLoggingOut === 'true' || forceLogout === 'true') {
+      console.log('🚪 Logout in progress, skipping auth recovery')
+      return {
+        success: false,
+        source: 'none',
+        message: 'Auth recovery blocked during logout process'
+      }
+    }
+
     // 1. 检查当前cookie状态
     const currentToken = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
     const currentUserInfo = getAuthCookie(AUTH_COOKIES.USER_INFO)
@@ -64,6 +77,15 @@ class AuthRecovery {
   private recoverFromLocalStorage(): AuthRecoveryResult {
     try {
       console.log('🔍 Attempting recovery from localStorage...')
+      
+      // 🚨 再次检查logout状态（防御性编程）
+      const isLoggingOut = sessionStorage.getItem('is_logging_out')
+      const forceLogout = sessionStorage.getItem('force_logout')
+      
+      if (isLoggingOut === 'true' || forceLogout === 'true') {
+        console.log('🚪 Logout in progress, skipping localStorage recovery')
+        return { success: false }
+      }
       
       // 检查备份数据
       const backupToken = localStorage.getItem(`backup_${AUTH_COOKIES.ACCESS_TOKEN}`)
@@ -130,6 +152,15 @@ class AuthRecovery {
     try {
       console.log('🔍 Attempting recovery from sessionStorage...')
       
+      // 🚨 检查logout状态
+      const isLoggingOut = sessionStorage.getItem('is_logging_out')
+      const forceLogout = sessionStorage.getItem('force_logout')
+      
+      if (isLoggingOut === 'true' || forceLogout === 'true') {
+        console.log('🚪 Logout in progress, skipping sessionStorage recovery')
+        return { success: false }
+      }
+      
       const sessionToken = sessionStorage.getItem('jaaz_access_token')
       const sessionUserInfo = sessionStorage.getItem('jaaz_user_info')
       
@@ -160,6 +191,15 @@ class AuthRecovery {
   private recoverFromAlternateCookies(): AuthRecoveryResult {
     try {
       console.log('🔍 Attempting recovery from alternate cookies...')
+      
+      // 🚨 检查logout状态
+      const isLoggingOut = sessionStorage.getItem('is_logging_out')
+      const forceLogout = sessionStorage.getItem('force_logout')
+      
+      if (isLoggingOut === 'true' || forceLogout === 'true') {
+        console.log('🚪 Logout in progress, skipping alternate cookie recovery')
+        return { success: false }
+      }
       
       // 检查可能的其他cookie名称
       const alternateCookieNames = [

@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getUserInfo } from '@/api/billing'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect } from 'react'
 
 export function useUserInfo() {
   const { authStatus } = useAuth()
+  const queryClient = useQueryClient()
 
   const { data, error, refetch, isLoading } = useQuery({
     queryKey: ['userInfo'],
@@ -48,14 +49,33 @@ export function useUserInfo() {
       refetch()
     }
 
+    const handleAuthLogout = () => {
+      console.log('🚪 useUserInfo: 检测到logout事件，清理所有用户相关缓存')
+      // 清除用户信息缓存
+      queryClient.removeQueries({ queryKey: ['userInfo'] })
+      queryClient.setQueryData(['userInfo'], null)
+      
+      // 🔄 清除项目数据缓存
+      queryClient.removeQueries({ queryKey: ['canvases'] })
+      console.log('🗑️ Cleared canvases cache')
+      
+      // 🔄 清除其他用户相关的缓存
+      queryClient.removeQueries({ queryKey: ['balance'] })
+      queryClient.removeQueries({ queryKey: ['orders'] })
+      queryClient.removeQueries({ queryKey: ['subscription'] })
+      console.log('🧹 All user-related caches cleared')
+    }
+
     // 监听自定义事件
     window.addEventListener('auth-force-refresh', handleAuthRefresh)
+    window.addEventListener('auth-logout-detected', handleAuthLogout)
     
     // 清理事件监听器
     return () => {
       window.removeEventListener('auth-force-refresh', handleAuthRefresh)
+      window.removeEventListener('auth-logout-detected', handleAuthLogout)
     }
-  }, [refetch])
+  }, [refetch, queryClient])
 
   return {
     userInfo: data,

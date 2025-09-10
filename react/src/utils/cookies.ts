@@ -156,6 +156,15 @@ export function getAuthCookie(name: string): string | null {
     return value
   }
   
+  // 🚨 检查是否在logout过程中，如果是则跳过localStorage恢复
+  const isLoggingOut = sessionStorage.getItem('is_logging_out')
+  const forceLogout = sessionStorage.getItem('force_logout')
+  
+  if (isLoggingOut === 'true' || forceLogout === 'true') {
+    console.log(`🚪 Logout in progress, skipping localStorage recovery for: ${name}`)
+    return null
+  }
+  
   // 🔄 如果cookie中没有，尝试从localStorage备份恢复
   try {
     const backupValue = localStorage.getItem(`backup_${name}`)

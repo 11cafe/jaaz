@@ -1,5 +1,6 @@
 import { CanvasData, Message, Session } from '@/types/types'
 import { ToolInfo } from '@/api/model'
+import { authenticatedFetch } from '@/api/auth'
 
 export type ListCanvasesResponse = {
   id: string
@@ -10,7 +11,17 @@ export type ListCanvasesResponse = {
 }
 
 export async function listCanvases(): Promise<ListCanvasesResponse[]> {
-  const response = await fetch('/api/canvas/list')
+  const response = await authenticatedFetch('/api/canvas/list')
+  
+  if (!response.ok) {
+    // 如果认证失败（401），返回空数组而不是抛出错误
+    if (response.status === 401) {
+      console.log('🚨 listCanvases: User not authenticated, returning empty list')
+      return []
+    }
+    throw new Error(`Failed to fetch canvases: ${response.status}`)
+  }
+  
   return await response.json()
 }
 

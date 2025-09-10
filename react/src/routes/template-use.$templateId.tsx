@@ -101,7 +101,7 @@ function TemplateUsePage() {
     },
     onError: (error) => {
       console.error('⚡ 模板页面上传失败', error)
-      toast.error('图片上传失败', {
+      toast.error(t('common:toast.imageUploadFailed'), {
         description: error.message,
       })
     },

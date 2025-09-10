@@ -484,7 +484,7 @@ export async function clearAuthData(): Promise<void> {
     )
   }
 
-  // 🧹 清理localStorage中所有可能的认证数据
+  // 🧹 清理localStorage中所有可能的认证数据（包括备份数据）
   console.log('📦 Clearing localStorage...')
   const authKeys = [
     'jaaz_access_token',
@@ -495,6 +495,12 @@ export async function clearAuthData(): Promise<void> {
     'access_token',
     'user_uuid',
     'user_email',
+    // 🔄 清理所有备份数据
+    'backup_jaaz_access_token',
+    'backup_jaaz_user_info', 
+    'backup_jaaz_token_expires',
+    'backup_jaaz_access_token_expires',
+    'backup_jaaz_user_info_expires',
   ]
 
   // 记录清理前的状态
@@ -524,6 +530,51 @@ export async function clearAuthData(): Promise<void> {
   console.log('📝 Clearing sessionStorage...')
   authKeys.forEach((key) => {
     sessionStorage.removeItem(key)
+  })
+  
+  // 🧹 清理所有以jaaz_或backup_开头的localStorage项
+  console.log('🔍 Scanning for remaining jaaz/backup data in localStorage...')
+  const allLocalStorageKeys = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key) {
+      allLocalStorageKeys.push(key)
+    }
+  }
+  
+  const jaazKeys = allLocalStorageKeys.filter(key => 
+    key.startsWith('jaaz_') || 
+    key.startsWith('backup_jaaz_') || 
+    key.startsWith('backup_auth') ||
+    key.includes('auth') ||
+    key.includes('token') ||
+    key.includes('user')
+  )
+  
+  console.log(`🎯 Found ${jaazKeys.length} potential auth keys:`, jaazKeys)
+  jaazKeys.forEach(key => {
+    localStorage.removeItem(key)
+    console.log(`🗑️ Removed additional key: ${key}`)
+  })
+  
+  // 🧹 清理sessionStorage中的logout标志以外的所有认证相关数据
+  console.log('🔍 Scanning sessionStorage for auth data...')
+  const sessionKeys = []
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i)
+    if (key && !key.includes('logout') && (
+      key.startsWith('jaaz_') || 
+      key.includes('auth') ||
+      key.includes('token') ||
+      key.includes('user')
+    )) {
+      sessionKeys.push(key)
+    }
+  }
+  
+  sessionKeys.forEach(key => {
+    sessionStorage.removeItem(key)
+    console.log(`🗑️ Removed sessionStorage key: ${key}`)
   })
 
   // 🔑 清理API密钥
@@ -557,11 +608,17 @@ export async function logout(): Promise<{ status: string; message: string }> {
 
     console.log(`🔍 Cookie state after clearAuthData: ${document.cookie}`)
 
-    // 📢 步骤2：通知其他标签页用户已登出
+    // 📢 步骤2：立即更新本标签页的UI状态
+    console.log('🎯 Updating local auth state immediately...')
+    window.dispatchEvent(new CustomEvent('auth-logout-detected', {
+      detail: { source: 'local-logout' }
+    }))
+
+    // 📢 步骤3：通知其他标签页用户已登出
     console.log('📢 Notifying other tabs...')
     crossTabSync.notifyLogout()
 
-    // 🔄 步骤3：先调用后端API删除httponly cookie，然后跳转
+    // 🔄 步骤4：调用后端API删除httponly cookie
     console.log('🔗 Calling backend logout API to delete httponly cookies...')
 
     try {
@@ -585,17 +642,21 @@ export async function logout(): Promise<{ status: string; message: string }> {
 
     console.log(`🔍 Cookie state after backend logout: ${document.cookie}`)
 
-    // 🔄 步骤4：现在跳转到首页
-    console.log('🔄 Redirecting to homepage after backend cleanup...')
-
-    // 小延迟确保backend响应处理完成
+    // 🔄 步骤5：清理logout标记，让UI自然更新
+    console.log('🧹 Cleaning up logout flags...')
+    
+    // 给UI足够时间更新状态
     setTimeout(() => {
-      console.log(`🔍 Final cookie state before redirect: ${document.cookie}`)
-      // 清理is_logging_out标记，但保留force_logout标记
+      console.log(`🔍 Final cookie state: ${document.cookie}`)
+      // 清理is_logging_out标记，但保留force_logout标记一段时间防止恢复
       sessionStorage.removeItem('is_logging_out')
-      console.log('🔄 Executing window.location.replace...')
-      window.location.replace('/')
-    }, 100) // 稍微增加延迟确保后端处理完成
+      
+      // 延迟清理force_logout标记，确保不会意外恢复登录状态
+      setTimeout(() => {
+        sessionStorage.removeItem('force_logout')
+        console.log('✅ Logout process completed, UI should be updated')
+      }, 1000)
+    }, 200) // 给AuthContext更多时间处理状态变化
 
     return {
       status: 'success',
@@ -610,6 +671,12 @@ export async function logout(): Promise<{ status: string; message: string }> {
       sessionStorage.setItem('is_logging_out', 'true')
       sessionStorage.setItem('force_logout', 'true')
       await clearAuthData()
+      
+      // 立即更新本地UI状态
+      window.dispatchEvent(new CustomEvent('auth-logout-detected', {
+        detail: { source: 'fallback-logout' }
+      }))
+      
       crossTabSync.notifyLogout()
 
       // 尝试调用后端API作为fallback
@@ -624,11 +691,14 @@ export async function logout(): Promise<{ status: string; message: string }> {
         console.warn('⚠️ Fallback backend logout failed:', backendError)
       }
 
-      // 强制跳转到首页
+      // 清理logout标记，让UI自然更新
       setTimeout(() => {
         sessionStorage.removeItem('is_logging_out')
-        window.location.replace('/')
-      }, 100)
+        setTimeout(() => {
+          sessionStorage.removeItem('force_logout')
+          console.log('✅ Fallback logout completed')
+        }, 1000)
+      }, 200)
 
       return {
         status: 'success',

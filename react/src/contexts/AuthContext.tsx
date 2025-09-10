@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import {
   AuthStatus,
   getAuthStatus,
@@ -22,6 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation()
   const [authStatus, setAuthStatus] = useState<AuthStatus>({
     status: 'logged_out',
     is_logged_in: false,
@@ -53,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check if token expired based on the status returned by getAuthStatus
       if (status.tokenExpired) {
-        toast.error('登录状态已过期，请重新登录', {
+        toast.error(t('common:toast.loginExpired'), {
           duration: 5000,
         })
         // 📢 通知其他标签页token过期
@@ -79,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const directAuth = checkDirectAuthParams()
 
       if (directAuth.authError) {
-        toast.error(`登录失败: ${directAuth.authError}`)
+        toast.error(`${t('common:toast.loginFailed')}: ${directAuth.authError}`)
         setIsLoading(false)
         return
       }
@@ -96,14 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 📢 通知其他标签页
           crossTabSync.notifyAuthStatusChanged({ type: 'login_success' })
 
-          toast.success('登录成功!')
+          toast.success(t('common:toast.loginSuccess'))
 
           // 刷新认证状态
           await refreshAuth()
           return
         } catch (error) {
           console.error('保存认证数据失败:', error)
-          toast.error('登录过程中出现错误')
+          toast.error(t('common:toast.loginError'))
         }
       }
 
@@ -111,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const deviceAuth = checkUrlAuthParams()
 
       if (deviceAuth.authError) {
-        toast.error(`登录失败: ${deviceAuth.authError}`)
+        toast.error(`${t('common:toast.loginFailed')}: ${deviceAuth.authError}`)
         setIsLoading(false)
         return
       }
@@ -132,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 📢 通知其他标签页
             crossTabSync.notifyAuthStatusChanged({ type: 'device_login_success' })
 
-            toast.success('登录成功!')
+            toast.success(t('common:toast.loginSuccess'))
 
             // 刷新认证状态
             await refreshAuth()
@@ -140,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('完成认证失败:', error)
-          toast.error('登录过程中出现错误')
+          toast.error(t('common:toast.loginError'))
         }
       }
 
@@ -182,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         is_logged_in: false,
       })
       tokenManager.stopAutoRefresh()
-      toast.info('您已在其他标签页中退出登录')
+      toast.info(t('common:toast.crossTabLogout'))
     }
 
     // 监听强制刷新事件

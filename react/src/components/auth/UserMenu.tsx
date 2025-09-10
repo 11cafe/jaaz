@@ -99,20 +99,30 @@ export function UserMenu() {
     console.log('🚪 UserMenu: Starting logout...')
     try {
       // 🚀 调用优化后的logout函数
-      // 它会：1.调用后端API 2.清理前端数据 3.通知其他标签页 4.跳转到首页
+      // 它会：1.调用后端API 2.清理前端数据 3.通知其他标签页
       await logout()
+      
+      // 🏠 logout成功后，导航到首页
+      console.log('🏠 UserMenu: Navigating to homepage...')
+      navigate({ to: '/' })
     } catch (error) {
       console.error('❌ UserMenu logout failed:', error)
-      // 即使出错，logout函数内部也有兜底方案
+      // 即使出错，也尝试导航到首页
+      console.log('🏠 UserMenu: Fallback - navigating to homepage...')
+      navigate({ to: '/' })
     }
   }
 
   // 🎯 智能判断登录状态：优先使用userInfo的数据，回退到authStatus
   const isLoggedIn = userInfoLoggedIn || authStatus.is_logged_in
   const hasUserInfo = (userInfo?.user_info && userInfo.is_logged_in) || authStatus.user_info
+  
+  // 🚨 检查是否在logout过程中，如果是则强制显示Login按钮
+  const isLoggingOut = sessionStorage.getItem('is_logging_out') === 'true' || 
+                      sessionStorage.getItem('force_logout') === 'true'
 
-  // 如果用户已登录，显示用户菜单
-  if (isLoggedIn && hasUserInfo) {
+  // 如果用户已登录且不在logout过程中，显示用户菜单
+  if (isLoggedIn && hasUserInfo && !isLoggingOut) {
     // 🎯 智能合并用户信息：userInfo提供level，AuthContext提供完整用户信息
     const authUserInfo = authStatus.user_info
     const apiUserInfo = userInfo?.user_info

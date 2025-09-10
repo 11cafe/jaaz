@@ -13,6 +13,7 @@ import { openDB } from 'idb'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { Toaster, toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
@@ -78,7 +79,7 @@ function PaymentSuccessHandler() {
         console.log('🎉 Payment success detected:', { points, level, orderId })
         
         // 显示成功通知
-        toast.success('支付成功！', {
+        toast.success(t('common:toast.paymentSuccess'), {
           description: `恭喜您获得 ${points} 积分，等级已升级为 ${level}`,
           duration: 8000,
         })
@@ -102,6 +103,7 @@ function PaymentSuccessHandler() {
 
 function App() {
   const { theme } = useTheme()
+  const { t } = useTranslation()
 
 
   // Auto-start ComfyUI on app startup
