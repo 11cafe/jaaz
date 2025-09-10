@@ -330,7 +330,7 @@ function PricingPage() {
   console.log('🎯 PRICING: 套餐状态总结 (实际渲染状态)')
   console.log('==================================================')
   plans.forEach(plan => {
-    const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded
+    const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded && billingPeriod === 'monthly'
     
     // 模拟按钮文本计算逻辑
     const getButtonText = () => {
@@ -405,8 +405,8 @@ function PricingPage() {
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => {
-            // 🎯 动态判断是否应用Popular样式和标签，防止闪烁
-            const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded
+            // 🎯 动态判断是否应用Popular样式和标签，防止闪烁，只在monthly时显示
+            const shouldShowPopular = plan.popular && !plan.isCurrent && apiDataLoaded && billingPeriod === 'monthly'
             
             // 🎯 动态计算按钮文本和变体，防止闪烁
             const getButtonText = () => {
@@ -480,12 +480,14 @@ function PricingPage() {
                   ) : (
                     <>
                       <div className="flex flex-col items-center">
-                        <span className="text-4xl font-bold">
-                          {(plan.pricing as any)[billingPeriod]?.price || '$0'}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {(plan.pricing as any)[billingPeriod]?.period || '/Monthly'}
-                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold">
+                            {(plan.pricing as any)[billingPeriod]?.price || '$0'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {(plan.pricing as any)[billingPeriod]?.period || '/Monthly'}
+                          </span>
+                        </div>
                         {billingPeriod === 'yearly' && (plan.pricing as any)[billingPeriod]?.originalPrice && (
                           <div className="mt-1">
                             <span className="text-sm text-muted-foreground line-through">

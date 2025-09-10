@@ -940,6 +940,62 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error adding points to user {user_uuid}: {e}")
             return False
+    
+    async def update_user_subscription(self, user_uuid: str, subscription_id: str = None, order_id: str = None) -> bool:
+        """更新用户的订阅信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                # 构建动态更新语句
+                update_fields = []
+                params = []
+                
+                if subscription_id is not None:
+                    update_fields.append("subscription_id = ?")
+                    params.append(subscription_id)
+                
+                if order_id is not None:
+                    update_fields.append("order_id = ?")
+                    params.append(order_id)
+                
+                if not update_fields:
+                    logger.warning(f"No subscription fields to update for user {user_uuid}")
+                    return True
+                
+                # 总是更新mtime
+                update_fields.append("mtime = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')")
+                params.append(user_uuid)  # 添加WHERE条件的参数
+                
+                sql = f"""
+                    UPDATE tb_user 
+                    SET {', '.join(update_fields)}
+                    WHERE uuid = ?
+                """
+                
+                await db.execute(sql, params)
+                await db.commit()
+                
+                logger.info(f"Updated subscription info for user {user_uuid}: subscription_id={subscription_id}, order_id={order_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error updating subscription info for user {user_uuid}: {e}")
+            return False
+    
+    async def get_user_subscription_info(self, user_uuid: str) -> Optional[Dict[str, Any]]:
+        """获取用户的订阅信息"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = await db.execute("""
+                    SELECT id, email, nickname, level, subscription_id, order_id, points, mtime
+                    FROM tb_user
+                    WHERE uuid = ?
+                """, (user_uuid,))
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting subscription info for user {user_uuid}: {e}")
+            return None
 
 # Create a singleton instance
 db_service = DatabaseService()

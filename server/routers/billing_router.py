@@ -295,6 +295,26 @@ async def handle_payment_callback(request: Request):
             await db_service.update_user_level(user['id'], product['level'])
             logger.info(f"Updated user {user_uuid} level to {product['level']}")
         
+        # 🆕 更新用户订阅信息：存储subscription_id和order_id
+        creem_subscription_id = callback_data.get('subscription_id')
+        creem_order_id = callback_data.get('order_id')
+        
+        if creem_subscription_id or creem_order_id:
+            logger.info(f"🎯 CALLBACK: 更新用户订阅信息 - subscription_id: {creem_subscription_id}, order_id: {creem_order_id}")
+            
+            subscription_update_success = await db_service.update_user_subscription(
+                user_uuid=user_uuid,
+                subscription_id=creem_subscription_id,
+                order_id=creem_order_id
+            )
+            
+            if subscription_update_success:
+                logger.info(f"✅ CALLBACK: 订阅信息更新成功 - User: {user_uuid}")
+            else:
+                logger.error(f"❌ CALLBACK: 订阅信息更新失败 - User: {user_uuid}")
+        else:
+            logger.warning(f"⚠️ CALLBACK: 回调中缺少subscription_id或order_id，跳过订阅信息更新")
+        
         # 完成订单
         await db_service.complete_order(order['id'], points_to_add)
         

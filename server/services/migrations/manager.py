@@ -12,13 +12,14 @@ from services.migrations.v9_add_user_level import V9AddUserLevel
 from services.migrations.v10_add_payment_tables import V10AddPaymentTables
 from services.migrations.v11_upgrade_level_system import V11UpgradeLevelSystem
 from services.migrations.v12_add_product_sku import V12AddProductSku
+from services.migrations.v13_add_user_subscription_fields import V13AddUserSubscriptionFields
 from . import Migration
 from log import get_logger
 
 logger = get_logger(__name__)
 
 # Database version
-CURRENT_VERSION = 12
+CURRENT_VERSION = 13
 
 ALL_MIGRATIONS = [
     {
@@ -68,6 +69,10 @@ ALL_MIGRATIONS = [
     {
         'version': 12,
         'migration': V12AddProductSku,
+    },
+    {
+        'version': 13,
+        'migration': V13AddUserSubscriptionFields,
     },
 ]
 class MigrationManager:
