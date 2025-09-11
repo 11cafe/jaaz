@@ -31,6 +31,9 @@ export interface SessionBaseEvent {
 export interface SessionErrorEvent extends SessionBaseEvent {
   type: SessionEventType.Error
   error: string
+  error_code?: string
+  current_points?: number
+  required_points?: number
 }
 export interface SessionDoneEvent extends SessionBaseEvent {
   type: SessionEventType.Done

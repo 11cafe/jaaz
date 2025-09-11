@@ -31,6 +31,20 @@
     "saved": "保存成功",
     "deleted": "删除成功"
   },
+  "points": {
+    "insufficientTitle": "积分不足",
+    "currentBalance": "当前余额",
+    "required": "需要",
+    "credits": "积分",
+    "insufficientDescription": "抱歉，您的账户余额不足以完成此次图片生成。",
+    "upgradeHint": "升级您的订阅计划以获得更多积分，畅享无限创作！",
+    "upgradePlan": "升级套餐",
+    "viewPricing": "查看定价",
+    "upgradeFeatures": "升级后您将获得：",
+    "feature1": "更多积分用于图片生成",
+    "feature2": "优先处理和更快生成速度",
+    "feature3": "高级AI模型和更多功能"
+  },
   "toast": {
     "loginExpired": "登录状态已过期，请重新登录",
     "crossTabLogout": "您已在其他标签页中退出登录",
@@ -48,7 +62,9 @@
     "knowledgeSettingsSaved": "知识库设置已保存",
     "knowledgeSettingsError": "保存知识库设置失败",
     "fileReadError": "文件读取失败",
-    "networkError": "网络错误"
+    "networkError": "网络错误",
+    "insufficientPoints": "积分不足无法生成图片",
+    "insufficientPointsWithDetails": "积分不足，当前积分: {{current}}，需要积分: {{required}}"
   },
   "notifications": {
     "title": "通知",

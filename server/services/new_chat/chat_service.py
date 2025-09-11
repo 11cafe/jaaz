@@ -15,13 +15,14 @@ from services.config_service import USER_DATA_DIR, DEFAULT_PROVIDERS_CONFIG
 from services.new_chat import create_local_response
 from services.websocket_service import (
     send_to_websocket, 
-    send_user_message_confirmation,
     send_ai_thinking_status,
     send_image_generation_status,
     send_image_upload_status,
     send_generation_complete
 )  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
+from services.points_service import points_service, InsufficientPointsError
+from services.i18n_service import i18n_service
 from log import get_logger
 from models.config_model import ModelInfo
 
@@ -264,24 +265,127 @@ async def handle_chat(data: Dict[str, Any]) -> None:
             })
             logger.info(f"[DEBUG] ✅ 用户消息发送成功")
             
-            # 发送用户消息确认和开始处理状态
-            await send_user_message_confirmation(
-                session_id=session_id,
-                canvas_id=canvas_id,
-                message=user_message
-            )
+            # 发送用户消息确认和开始处理状态 - 已删除，不再显示"AI正在思考中"提示
+            # await send_user_message_confirmation(
+            #     session_id=session_id,
+            #     canvas_id=canvas_id,
+            #     message=user_message
+            # )
         except Exception as e:
             logger.error(f"[ERROR] ❌ 用户消息发送失败: {e}")
             # 即使 WebSocket 发送失败，也要继续处理
 
     
+    # 🎯 提前检查画图积分：在AI生成前检查用户是否有足够积分
+    user_has_drawing_intent = False
+    if messages and len(messages) > 0:
+        user_message = messages[-1]
+        if user_message.get('role') == 'user':
+            content = user_message.get('content', [])
+            if isinstance(content, list):
+                for item in content:
+                    if item.get('type') == 'text':
+                        text = item.get('text', '').lower()
+                        drawing_keywords = ['画', '绘制', '生成图片', '创建图像', '制作图片', 'draw', 'generate image', 'create picture']
+                        if any(keyword in text for keyword in drawing_keywords):
+                            user_has_drawing_intent = True
+                            break
+            elif isinstance(content, str):
+                text = content.lower()
+                drawing_keywords = ['画', '绘制', '生成图片', '创建图像', '制作图片', 'draw', 'generate image', 'create picture']
+                if any(keyword in text for keyword in drawing_keywords):
+                    user_has_drawing_intent = True
+    
+    logger.info(f"🔍 [DEBUG] 预检查用户画图意图: {user_has_drawing_intent}")
+    
+    # 如果检测到画图意图，立即进行积分检查
+    if user_has_drawing_intent and user_info and user_info.get('id') and user_info.get('uuid'):
+        try:
+            logger.info(f"🎯 [DEBUG] 检测到画图意图，进行预积分检查")
+            await points_service.check_and_reserve_image_generation_points(
+                user_info.get('id'), user_info.get('uuid')
+            )
+            logger.info(f"✅ [DEBUG] 画图积分预检查通过，继续处理")
+        except InsufficientPointsError as e:
+            logger.warning(f"❌ 画图积分预检查失败，用户 {user_info.get('id')}: {e.message}")
+            
+            # 获取用户语言偏好
+            user_language = user_info.get('language', 'en') if user_info else 'en'
+            
+            # 生成多语言的积分不足消息
+            insufficient_points_message = i18n_service.get_insufficient_points_message(
+                language=user_language,
+                current_points=e.current_points,
+                required_points=e.required_points,
+                show_details=True
+            )
+            
+            logger.info(f"🌍 [DEBUG] 发送积分不足消息 (语言: {user_language}): {insufficient_points_message}")
+            
+            # 创建AI助手回复消息，而不是错误消息
+            assistant_response = {
+                'role': 'assistant',
+                'content': insufficient_points_message,
+                'timestamp': int(time.time() * 1000),
+                'message_id': f"{session_id}_{int(time.time() * 1000)}_{str(uuid.uuid4())[:8]}"
+            }
+            
+            # 保存消息到数据库
+            user_uuid = user_info.get('uuid') if user_info else None
+            if user_uuid:
+                await db_service.create_message(session_id, 'assistant', json.dumps(assistant_response), user_uuid)
+            
+            logger.warning(f"🚨 [CHAT_DEBUG] 积分不足，准备发送错误消息。当前历史消息数: {len(parsed_history)}")
+            
+            # 🔥 修复：发送完整的消息历史（包括用户消息和错误消息）而不是只发送错误消息
+            # 重新获取完整的历史消息（包括刚保存的错误消息）
+            try:
+                updated_history = await db_service.get_chat_history(session_id, user_uuid or '')
+                logger.info(f"✅ [CHAT_DEBUG] 获取到完整历史消息数: {len(updated_history)}")
+                
+                # 发送完整历史消息到前端，保持聊天连续性
+                await send_to_websocket(session_id, {
+                    'type': 'all_messages',
+                    'messages': updated_history  # 发送完整历史消息，不会替换聊天
+                })
+                
+                logger.info(f"✅ [CHAT_DEBUG] 已发送完整历史消息（{len(updated_history)}条），保持聊天连续性")
+                
+            except Exception as e:
+                logger.error(f"❌ [CHAT_DEBUG] 获取完整历史失败，回退到追加模式: {e}")
+                
+                # 如果获取历史失败，尝试用已有历史 + 错误消息
+                complete_messages = parsed_history[:]  # 复制历史消息
+                if enhanced_user_message:
+                    complete_messages.append(enhanced_user_message)
+                complete_messages.append(assistant_response)
+                
+                await send_to_websocket(session_id, {
+                    'type': 'all_messages',
+                    'messages': complete_messages
+                })
+                logger.info(f"⚠️ [CHAT_DEBUG] 使用回退方案发送消息（{len(complete_messages)}条）")
+            
+            # 发送done信号结束处理
+            await send_to_websocket(session_id, {'type': 'done'})
+            return  # 直接返回，不继续处理
+        except Exception as e:
+            logger.error(f"❌ 画图积分预检查时发生错误: {e}")
+            await send_to_websocket(session_id, {
+                'type': 'error',
+                'error': '系统错误，暂时无法处理画图请求',
+                'error_code': 'system_error'
+            })
+            await send_to_websocket(session_id, {'type': 'done'})
+            return
+
     # 如果是模版生成，先发送一张图片到前端
     if template_id:
         # 先推送用户上传的图片到前端显示
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message))
+    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message, user_has_drawing_intent))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -379,7 +483,8 @@ async def _process_generation(
     model_name: str,
     user_uuid: Optional[str] = None,
     user_info: Optional[Dict[str, Any]] = None,
-    enhanced_user_message: Optional[Dict[str, Any]] = None
+    enhanced_user_message: Optional[Dict[str, Any]] = None,
+    user_has_drawing_intent: bool = False
 ) -> None:
     """
     Process generation in a separate async task.
@@ -406,11 +511,127 @@ async def _process_generation(
         # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
         ai_response = await create_local_response(messages, session_id, canvas_id, model_name, user_info)
         
-        # 4. 检查生成结果是否包含图片
-        if isinstance(ai_response.get('content'), str) and '![image_id:' in ai_response.get('content', ''):
+        # 4. 检查生成结果是否包含图片，或者检查用户是否有画图意图
+        logger.info(f"🔍 [DEBUG] 检查AI响应内容: {str(ai_response.get('content', ''))[:200]}...")
+        
+        # 检查是否实际生成了图片
+        has_generated_image = isinstance(ai_response.get('content'), str) and '![image_id:' in ai_response.get('content', '')
+        
+        # 检查用户是否有画图意图（检查用户消息中的关键词）
+        user_has_drawing_intent = False
+        if messages and len(messages) > 0:
+            user_message = messages[-1]
+            if user_message.get('role') == 'user':
+                content = user_message.get('content', [])
+                if isinstance(content, list):
+                    for item in content:
+                        if item.get('type') == 'text':
+                            text = item.get('text', '').lower()
+                            drawing_keywords = ['画', '绘制', '生成图片', '创建图像', '制作图片', 'draw', 'generate image', 'create picture']
+                            if any(keyword in text for keyword in drawing_keywords):
+                                user_has_drawing_intent = True
+                                break
+                elif isinstance(content, str):
+                    text = content.lower()
+                    drawing_keywords = ['画', '绘制', '生成图片', '创建图像', '制作图片', 'draw', 'generate image', 'create picture']
+                    if any(keyword in text for keyword in drawing_keywords):
+                        user_has_drawing_intent = True
+        
+        logger.info(f"🔍 [DEBUG] 图片检测结果: has_generated_image={has_generated_image}, user_has_drawing_intent={user_has_drawing_intent}")
+        
+        # 🎯 新逻辑：如果用户有画图意图且积分检查已通过，直接扣除积分
+        if user_has_drawing_intent and user_info and user_info.get('id') and user_info.get('uuid'):
+            logger.info(f"🎯 [DEBUG] 用户有画图意图且积分已预检查通过，进行积分扣除")
+            try:
+                # 扣除积分（积分检查已在主函数中完成）
+                deduction_result = await points_service.deduct_image_generation_points(
+                    user_id=user_info.get('id'),
+                    user_uuid=user_info.get('uuid'),
+                    session_id=session_id
+                )
+                
+                if deduction_result['success']:
+                    logger.info(f"✅ 聊天画图积分扣除成功: {deduction_result['message']}")
+                    has_image = True
+                    # 发送图片上传状态
+                    await send_image_upload_status(session_id=session_id, canvas_id=canvas_id)
+                    
+                    # 根据是否实际生成图片调整消息
+                    if has_generated_image:
+                        message_text = f"生成图片完成，扣除{deduction_result['points_deducted']}积分，剩余{deduction_result['balance_after']}积分"
+                    else:
+                        message_text = f"画图请求已处理，扣除{deduction_result['points_deducted']}积分，剩余{deduction_result['balance_after']}积分"
+                    
+                    # 通过WebSocket通知前端积分变化
+                    notification_message = {
+                        'type': 'points_deducted',
+                        'points_deducted': deduction_result['points_deducted'],
+                        'balance_after': deduction_result['balance_after'],
+                        'message': message_text
+                    }
+                    logger.info(f"📡 [DEBUG] 准备发送积分扣除通知: {notification_message}")
+                    
+                    await send_to_websocket(session_id, notification_message)
+                    logger.info(f"📡 [DEBUG] 积分扣除通知已发送到session: {session_id}")
+                else:
+                    logger.error(f"❌ 聊天画图积分扣除失败: {deduction_result['message']}")
+                    
+            except Exception as e:
+                logger.error(f"❌ 聊天画图扣除积分时发生错误: {e}")
+                
+        # 如果实际生成了图片但没有预先的画图意图，进行传统积分处理
+        elif has_generated_image and not user_has_drawing_intent:
             has_image = True
+            logger.info(f"🎯 [DEBUG] 检测到实际生成了图片，开始积分处理流程")
             # 发送图片上传状态
             await send_image_upload_status(session_id=session_id, canvas_id=canvas_id)
+            
+            # 🎯 检测到生成了图片，扣除积分
+            if user_info and user_info.get('id') and user_info.get('uuid'):
+                logger.info(f"🔍 [DEBUG] 用户信息验证通过: user_id={user_info.get('id')}, user_uuid={user_info.get('uuid')}")
+                try:
+                    # 先检查积分是否足够
+                    await points_service.check_and_reserve_image_generation_points(
+                        user_info.get('id'), user_info.get('uuid')
+                    )
+                    
+                    # 扣除积分
+                    deduction_result = await points_service.deduct_image_generation_points(
+                        user_id=user_info.get('id'),
+                        user_uuid=user_info.get('uuid'),
+                        session_id=session_id
+                    )
+                    
+                    if deduction_result['success']:
+                        logger.info(f"✅ 聊天画图积分扣除成功: {deduction_result['message']}")
+                        # 通过WebSocket通知前端积分变化
+                        notification_message = {
+                            'type': 'points_deducted',
+                            'points_deducted': deduction_result['points_deducted'],
+                            'balance_after': deduction_result['balance_after'],
+                            'message': f"生成图片完成，扣除{deduction_result['points_deducted']}积分，剩余{deduction_result['balance_after']}积分"
+                        }
+                        logger.info(f"📡 [DEBUG] 准备发送积分扣除通知: {notification_message}")
+                        
+                        await send_to_websocket(session_id, notification_message)
+                        logger.info(f"📡 [DEBUG] 积分扣除通知已发送到session: {session_id}")
+                    else:
+                        logger.error(f"❌ 聊天画图积分扣除失败: {deduction_result['message']}")
+                        
+                except InsufficientPointsError as e:
+                    logger.warning(f"❌ 实际生成图片后发现积分不足，用户 {user_info.get('id')}: {e.message}")
+                    # 这种情况比较特殊，图片已经生成但积分不足
+                    await send_to_websocket(session_id, {
+                        'type': 'warning',
+                        'message': f"图片已生成但{e.message}，请及时充值积分",
+                        'error_code': 'insufficient_points_after_generation'
+                    })
+                except Exception as e:
+                    logger.error(f"❌ 聊天画图扣除积分时发生错误: {e}")
+            else:
+                logger.warning(f"⚠️ [DEBUG] 检测到图片但用户信息不完整，跳过积分扣除: user_info={user_info}")
+        else:
+            logger.info(f"🔍 [DEBUG] 未检测到图片生成或画图意图，不进行积分扣除")
         
     except Exception as e:
         logger.error(f"[ERROR] 生成过程出错: {e}")

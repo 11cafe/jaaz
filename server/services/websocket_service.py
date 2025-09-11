@@ -15,23 +15,33 @@ async def broadcast_session_update(session_id: str, canvas_id: str | None, event
         return
     
     socket_ids = get_all_socket_ids()
+    logger.info(f"📡 [DEBUG] 准备广播到 {len(socket_ids)} 个socket: session_id={session_id}, event_type={event.get('type', 'unknown')}")
+    
     if socket_ids:
         try:
+            broadcast_message = {
+                'canvas_id': canvas_id,
+                'session_id': session_id,
+                **event
+            }
+            
             for socket_id in socket_ids:
-                await sio.emit('session_update', {
-                    'canvas_id': canvas_id,
-                    'session_id': session_id,
-                    **event
-                }, room=socket_id)
+                logger.info(f"📡 [DEBUG] 发送到socket {socket_id}: {broadcast_message}")
+                await sio.emit('session_update', broadcast_message, room=socket_id)
+                
+            logger.info(f"📡 [DEBUG] 成功广播到所有socket")
         except Exception as e:
             logger.error(f"Error broadcasting session update for {session_id}: {e}")
             traceback.print_exc()
+    else:
+        logger.warning(f"⚠️ [DEBUG] 没有找到可用的socket连接，无法发送通知")
 
 # compatible with legacy codes
 # TODO: All Broadcast should have a canvas_id
 
 
 async def send_to_websocket(session_id: str, event: Dict[str, Any]):
+    logger.info(f"📡 [DEBUG] send_to_websocket 被调用: session_id={session_id}, event_type={event.get('type', 'unknown')}")
     await broadcast_session_update(session_id, None, event)
 
 

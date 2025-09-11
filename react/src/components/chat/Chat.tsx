@@ -623,10 +623,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
+      
+      console.log('🔍 [DEBUG] handleAllMessages called:', {
+        sessionId,
+        currentMessagesCount: messages.length,
+        newMessagesCount: data.messages.length,
+        hasDisplayedInitialMessage,
+        firstNewMessage: data.messages[0]?.role,
+        currentMessages: messages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 50) : 'mixed' }))
+      })
+      
       const processedMessages = mergeToolCallResult(data.messages)
 
       // 如果已经显示了初始用户消息，且后端消息为空，则不覆盖
       if (hasDisplayedInitialMessage && processedMessages.length === 0 && messages.length > 0) {
+        console.log('🔍 [DEBUG] handleAllMessages: 保持当前消息，不覆盖空消息')
         return
       }
 
@@ -635,11 +646,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const hasUserMessage = processedMessages.some((msg) => msg.role === 'user')
         if (!hasUserMessage) {
           const mergedMessages = [...messages, ...processedMessages]
+          console.log('🔍 [DEBUG] handleAllMessages: 合并消息，当前消息数:', messages.length, '新消息数:', processedMessages.length, '合并后:', mergedMessages.length)
           setMessages(mergedMessages)
           scrollToBottom()
           return
         }
       }
+      
+      console.log('🔍 [DEBUG] handleAllMessages: 完全替换消息列表，从', messages.length, '条消息到', processedMessages.length, '条消息')
       setMessages(processedMessages)
       scrollToBottom()
     },
@@ -665,12 +679,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
     setPending(false)
-    toast.error('Error: ' + data.error, {
-      closeButton: true,
-      duration: 3600 * 1000,
-      style: { color: 'red' },
-    })
-  }, [])
+    
+    // 特别处理积分不足错误
+    if (data.error_code === 'insufficient_points') {
+      if (data.current_points !== undefined && data.required_points !== undefined) {
+        toast.error(t('common:toast.insufficientPointsWithDetails', {
+          current: data.current_points,
+          required: data.required_points
+        }), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      } else {
+        toast.error(t('common:toast.insufficientPoints'), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      }
+    } else {
+      // 其他错误使用原有的显示方式
+      toast.error('Error: ' + data.error, {
+        closeButton: true,
+        duration: 3600 * 1000,
+        style: { color: 'red' },
+      })
+    }
+  }, [t])
 
   const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
     toast.info(data.info, {

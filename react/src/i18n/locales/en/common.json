@@ -31,6 +31,20 @@
     "saved": "Saved successfully",
     "deleted": "Deleted successfully"
   },
+  "points": {
+    "insufficientTitle": "Insufficient Credits",
+    "currentBalance": "Current Balance",
+    "required": "Required",
+    "credits": "credits",
+    "insufficientDescription": "Sorry, your account balance is insufficient to complete this image generation.",
+    "upgradeHint": "Upgrade your subscription plan to get more credits and enjoy unlimited creativity!",
+    "upgradePlan": "Upgrade Plan",
+    "viewPricing": "View Pricing",
+    "upgradeFeatures": "After upgrading, you will get:",
+    "feature1": "More credits for image generation",
+    "feature2": "Priority processing and faster generation",
+    "feature3": "Advanced AI models and more features"
+  },
   "toast": {
     "loginExpired": "Login has expired, please login again",
     "crossTabLogout": "You have been logged out in another tab",
@@ -48,7 +62,9 @@
     "knowledgeSettingsSaved": "Knowledge base settings saved",
     "knowledgeSettingsError": "Failed to save knowledge base settings",
     "fileReadError": "Failed to read file",
-    "networkError": "Network error"
+    "networkError": "Network error",
+    "insufficientPoints": "Insufficient points to generate image",
+    "insufficientPointsWithDetails": "Insufficient points, current: {{current}}, required: {{required}}"
   },
   "notifications": {
     "title": "Notifications",

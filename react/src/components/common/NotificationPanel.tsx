@@ -77,11 +77,32 @@ export const NotificationPanel: React.FC = () => {
       return
     }
 
-    toast.error('Error: ' + data.error, {
-      closeButton: true,
-      duration: 3600 * 1000,
-      style: { color: 'red' },
-    })
+    // 特别处理积分不足错误
+    if (data.error_code === 'insufficient_points') {
+      if (data.current_points !== undefined && data.required_points !== undefined) {
+        toast.error(t('common:toast.insufficientPointsWithDetails', {
+          current: data.current_points,
+          required: data.required_points
+        }), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      } else {
+        toast.error(t('common:toast.insufficientPoints'), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      }
+    } else {
+      // 其他错误使用原有的显示方式
+      toast.error('Error: ' + data.error, {
+        closeButton: true,
+        duration: 3600 * 1000,
+        style: { color: 'red' },
+      })
+    }
   }
 
   useEffect(() => {
