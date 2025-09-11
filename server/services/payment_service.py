@@ -2,13 +2,15 @@ import os
 import httpx
 from typing import Dict, Any, Optional
 from log import get_logger
+from dotenv import load_dotenv
+load_dotenv()
 
 logger = get_logger(__name__)
 
 class CreemPaymentService:
     def __init__(self):
         # Creem API配置
-        self.api_base_url = "https://test-api.creem.io/v1"
+        self.api_base_url = f"{os.getenv('CREEM_API_URL')}/v1"
         self.api_key = os.getenv("CREEM_API_KEY", "creem_test_7emlTUWBmWR007A0ODUAnU")  # 测试环境API Key
         # self.return_url = os.getenv("CREEM_RETURN_URL", "http://localhost:8000/payments")
         

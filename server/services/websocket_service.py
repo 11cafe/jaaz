@@ -26,7 +26,7 @@ async def broadcast_session_update(session_id: str, canvas_id: str | None, event
             }
             
             for socket_id in socket_ids:
-                logger.info(f"📡 [DEBUG] 发送到socket {socket_id}: {broadcast_message}")
+                # logger.info(f"📡 [DEBUG] 发送到socket {socket_id}: {broadcast_message}")
                 await sio.emit('session_update', broadcast_message, room=socket_id)
                 
             logger.info(f"📡 [DEBUG] 成功广播到所有socket")

@@ -16,6 +16,8 @@ from utils.http_client import HttpClient
 from models.config_model import ModelInfo
 from typing import List
 from services.tool_service import TOOL_MAPPING
+from dotenv import load_dotenv
+load_dotenv()
 
 router = APIRouter(prefix="/api")
 
@@ -218,11 +220,14 @@ async def create_checkout(request: Request):
         
         timeout = httpx.Timeout(10.0)
         async with HttpClient.create(timeout=timeout) as client:
+            api_key = os.getenv("CREEM_API_KEY")
+            if not api_key:
+                raise ValueError("CREEM_API_KEY environment variable is not set")
             response = await client.post(
-                'https://test-api.creem.io/v1/checkouts',
+                f"{os.getenv('CREEM_API_URL')}/v1/checkouts",
                 headers={
-                    'Content-Type': 'application/json',
-                    'x-api-key': 'creem_test_7emlTUWBmWR007A0ODUAnU'
+                    "Content-Type": "application/json",
+                    "x-api-key": api_key
                 },
                 json={
                     'product_id': 'prod_1Pnf8nR8OUqp55ziFzDNLM'

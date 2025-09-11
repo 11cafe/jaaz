@@ -5,7 +5,7 @@ import uuid
 import json
 import asyncio
 import aiohttp
-from typing import Dict, Any, Optional, List, Literal
+from typing import Dict, Any, Optional, List, Literal, AsyncGenerator, Union
 from utils.http_client import HttpClient
 from services.config_service import config_service
 from utils.image_analyser import ImageAnalyser
@@ -288,7 +288,7 @@ class TuziLLMService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def generate(self, model_name:str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]] | str:
+    async def generate(self, model_name:str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]] = None, stream: bool = False) -> Union[Optional[Dict[str, Any]], AsyncGenerator[str, None], str]:
         """
         生成魔法图像的完整流程
 
@@ -297,9 +297,13 @@ class TuziLLMService:
             user_prompt: 用户输入的文本
             image_content: 图片内容（base64 或 URL），可能为空
             user_info: 用户信息
+            stream: 是否启用流式输出（仅对文本对话有效）
 
         Returns:
-            Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
+            如果是图片生成: 返回包含 result_url 的字典
+            如果是文本对话且stream=False: 返回包含文本内容的字典
+            如果是文本对话且stream=True: 返回异步生成器
+            失败时: 返回包含 error 信息的字典
         """
         try:
             # 步骤1: 判断用户是否有图片上传，如果有肯定是画图
@@ -323,7 +327,7 @@ class TuziLLMService:
             else:
                 logger.info("💬 检测到文本对话意图，执行文本对话流程")
                 # 步骤3: 不是画图，直接走用户设定的大模型调用
-                return await self._handle_text_conversation(model_name, user_prompt, user_info)
+                return await self._handle_text_conversation(model_name, user_prompt, user_info, stream=stream)
                 
         except Exception as e:
             error_msg = f"Error in generate: {str(e)}"
@@ -442,26 +446,48 @@ class TuziLLMService:
             logger.error(f"❌ {error_msg}")
             return {"error": error_msg}
 
-    async def _handle_text_conversation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]] | str:
+    async def _handle_text_conversation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]], stream: bool = False) -> Union[Optional[Dict[str, Any]], AsyncGenerator[str, None], str]:
         """处理文本对话流程"""
         try:
-            text_response = await self._chat_with_tuzi(user_prompt, model_name) 
-            if text_response:
-                logger.info(f"✅ 文本对话成功")
+            text_response = await self._chat_with_tuzi(user_prompt, model_name, stream=stream) 
+            if stream:
+                # 流式输出，直接返回异步生成器
                 return text_response
             else:
-                logger.error("❌ 文本对话失败")
-                return {"error": "Text conversation failed"}
+                # 非流式输出，保持原有逻辑
+                if text_response:
+                    logger.info(f"✅ 文本对话成功")
+                    return text_response
+                else:
+                    logger.error("❌ 文本对话失败")
+                    return {"error": "Text conversation failed"}
         except Exception as e:
             error_msg = f"Error in text conversation: {str(e)}"
             logger.error(f"❌ {error_msg}")
-            return {"error": error_msg}
+            if stream:
+                # 流式输出时，返回错误生成器
+                async def error_generator():
+                    yield f"[错误] {error_msg}"
+                return error_generator()
+            else:
+                return {"error": error_msg}
 
-    async def _chat_with_tuzi(self, prompt: str, model: str) -> Optional[Dict[str, Any]]:
-        """GPT 文本对话"""
+    async def _chat_with_tuzi(self, prompt: str, model: str, stream: bool = False) -> Union[Optional[Dict[str, Any]], AsyncGenerator[str, None]]:
+        """GPT 文本对话
+        
+        Args:
+            prompt: 用户输入的提示词
+            model: 使用的模型名称
+            stream: 是否启用流式输出
+            
+        Returns:
+            如果 stream=False: 返回包含完整响应的字典
+            如果 stream=True: 返回异步生成器，逐步yield文本片段
+        """
         logger.info(f"🔍 [DEBUG] gpt_by_tuzi 参数:")
         logger.info(f"   prompt: {prompt}")
         logger.info(f"   model: {model}")
+        logger.info(f"   stream: {stream}")
         logger.info(f"   base_url: {self.api_url}")     
         logger.info(f"💬 [DEBUG] 使用文本对话模式")
         logger.info(f"🚀 [DEBUG] 调用 client.chat.completions.create...")
@@ -473,30 +499,75 @@ class TuziLLMService:
                 max_retries=0   # 禁用重试，避免重复调用
             )
         
-        completion = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-        
-        if completion.choices and len(completion.choices) > 0:
-            response_content = completion.choices[0].message.content
-            if response_content:
-                logger.info(f"✅ [DEBUG] GPT 响应: {response_content[:100]}...")
-                return {
-                    'text_content': response_content,
-                    'type': 'text'
-                }
-            else:
-                logger.error("❌ GPT 响应内容为空")
-                return None
+        if stream:
+            # 流式输出
+            return self._stream_chat_response(client, model, prompt)
         else:
-            logger.error("❌ GPT 响应没有choices")
-            return None
+            # 非流式输出，保持原有逻辑
+            completion = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            
+            if completion.choices and len(completion.choices) > 0:
+                response_content = completion.choices[0].message.content
+                if response_content:
+                    logger.info(f"✅ [DEBUG] GPT 响应: {response_content[:100]}...")
+                    return {
+                        'text_content': response_content,
+                        'type': 'text'
+                    }
+                else:
+                    logger.error("❌ GPT 响应内容为空")
+                    return None
+            else:
+                logger.error("❌ GPT 响应没有choices")
+                return None
+
+    async def _stream_chat_response(self, client: AsyncOpenAI, model: str, prompt: str) -> AsyncGenerator[str, None]:
+        """处理流式聊天响应
+        
+        Args:
+            client: OpenAI客户端
+            model: 模型名称
+            prompt: 用户提示词
+            
+        Yields:
+            str: 文本片段
+        """
+        try:
+            logger.info(f"🌊 [DEBUG] 开始流式响应...")
+            
+            # 创建流式completions
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                stream=True
+            )
+            
+            # 逐步处理流式响应
+            async for chunk in stream:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        logger.info(f"🌊 [DEBUG] 收到流式片段: {delta.content[:50]}...")
+                        yield delta.content
+                        
+            logger.info(f"✅ [DEBUG] 流式响应完成")
+            
+        except Exception as e:
+            logger.error(f"❌ 流式响应失败: {e}")
+            yield f"[错误] 流式响应失败: {str(e)}"
 
     async def gemini_edit_image_by_tuzi(
         self,
