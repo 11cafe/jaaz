@@ -79,12 +79,23 @@ async def create_local_response(messages: List[Dict[str, Any]],
         # 检查是否有错误
         if isinstance(result, dict) and result.get('error'):
             error_msg = result['error']
+            user_message = result.get('user_message')  # 获取用户友好的错误消息
+            
             logger.error(f"❌ Magic generation error: {error_msg}")
-            from utils.error_messages import get_user_friendly_error
-            return {
-                'role': 'assistant',
-                'content': get_user_friendly_error(error_msg)
-            }
+            
+            # 优先使用预设的用户友好消息，否则使用通用错误处理
+            if user_message:
+                logger.info(f"📝 使用预设的用户友好消息: {user_message}")
+                return {
+                    'role': 'assistant',
+                    'content': user_message
+                }
+            else:
+                from utils.error_messages import get_user_friendly_error
+                return {
+                    'role': 'assistant',
+                    'content': get_user_friendly_error(error_msg)
+                }
 
         # 检查是否是文本响应（GPT-4o等文本模型）
         if isinstance(result, dict) and result.get('type') == 'text' and result.get('text_content'):

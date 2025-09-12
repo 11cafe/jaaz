@@ -396,6 +396,7 @@ class TuziLLMService:
 回答:"""
 
             logger.info(f"🤖 使用大模型进行意图理解...")
+            logger.info(f"🤖 使用大模型进行意图理解... {self.api_url} {self.api_token}")
             intent_client = AsyncOpenAI(
                 api_key=self.api_token,
                 base_url=self.api_url,
@@ -404,10 +405,10 @@ class TuziLLMService:
             )
             
             intent_completion = await intent_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=[{"role": "user", "content": intent_prompt}],
-                max_tokens=10,
-                temperature=0
+                max_tokens=2000,
+                temperature=0.1
             )
             
             intent_result = intent_completion.choices[0].message.content.strip().upper()
@@ -432,19 +433,46 @@ class TuziLLMService:
             return "gemini-2.5-flash-image"
 
     async def _handle_image_generation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """处理图片生成流程"""
+        """处理图片生成流程（带重试和状态反馈）"""
         try:
+            logger.info(f"🎨 开始图片生成流程: model={model_name}")
+            
+            # 调用带重试机制的图片生成
             result = await self.gemini_generate_by_tuzi(user_prompt, model_name)
+            
             if result:
-                logger.info(f"✅ 图片生成成功: {result.get('result_url')}")
+                logger.info(f"🎉 图片生成成功: {result.get('result_url', 'base64_data')}")
                 return result
             else:
-                logger.error("❌ 图片生成失败")
-                return {"error": "Failed to generate image"}
+                logger.error("💥 图片生成失败: 所有重试尝试都失败")
+                # 返回更友好的错误信息
+                from utils.error_messages import ErrorMessages
+                error_message = ErrorMessages.get_generation_failed_message()
+                return {"error": "Failed to generate image", "user_message": error_message}
+                
+        except asyncio.TimeoutError:
+            logger.error("⏰ 图片生成超时")
+            from utils.error_messages import ErrorMessages
+            timeout_message = ErrorMessages.get_timeout_message()
+            return {"error": "Image generation timeout", "user_message": timeout_message}
+            
         except Exception as e:
             error_msg = f"Error in image generation: {str(e)}"
-            logger.error(f"❌ {error_msg}")
-            return {"error": error_msg}
+            logger.error(f"💀 图片生成异常: {error_msg}")
+            
+            # 根据错误类型返回不同的用户友好消息
+            if "timeout" in str(e).lower():
+                from utils.error_messages import ErrorMessages
+                user_message = ErrorMessages.get_timeout_message()
+            elif "401" in str(e) or "403" in str(e):
+                user_message = "🔑 API认证失败，请检查配置"
+            elif "network" in str(e).lower() or "connection" in str(e).lower():
+                user_message = "🌐 网络连接异常，请稍后重试"
+            else:
+                from utils.error_messages import ErrorMessages
+                user_message = ErrorMessages.get_generation_failed_message()
+                
+            return {"error": error_msg, "user_message": user_message}
 
     async def _handle_text_conversation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]], stream: bool = False) -> Union[Optional[Dict[str, Any]], AsyncGenerator[str, None], str]:
         """处理文本对话流程"""
@@ -706,7 +734,7 @@ User needs: {prompt}
         model: str = "gemini-2.5-flash-image",
     ) -> Optional[Dict[str, str]]:
         """
-        生成魔法图片
+        生成魔法图片（带重试机制）
 
         Args:
             prompt: 图片生成提示词
@@ -715,110 +743,161 @@ User needs: {prompt}
         Returns:
             Optional[Dict[str, str]]: 包含 base64 或 url 的字典，失败时返回None
         """
-        try:
-            # 创建 OpenAI 客户端
-            client = AsyncOpenAI(
-                base_url=self.api_url,
-                api_key=self.api_token,
-                timeout=180.0,  # 增加到3分钟，确保足够的时间
-                max_retries=0   # 禁用重试，保持一致性
-            )
-            
-            # 打印详细的调试信息
-            logger.info(f"🔍 [DEBUG] generate_by_tuzi 参数:")
-            logger.info(f"   prompt: {prompt}")
-            logger.info(f"   model: {model}")
-            logger.info(f"   base_url: {self.api_url}")
-            logger.info(f"   api_key: {self.api_token[:10]}***")
-            
-            # 生成图片
-            logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
-            logger.info(f"🔍 [DEBUG] 传递给API的模型名称: '{model}'")
-            logger.info(f"🔍 [DEBUG] 传递给API的提示词: '{prompt}'")
-            logger.info(f"🔍 [DEBUG] API调用URL: {self.api_url}/images/generations")
-            image_model = model
-            logger.info(f"🎯 [DEBUG] 最终使用的图像生成模型: {image_model}")
-            
-            result = await client.images.generate(
-                model=image_model,
-                prompt=prompt
-            )
-            
-            # 打印完整的响应数据
-            logger.info(f"📥 [DEBUG] API 响应原始数据:")
-            logger.info(f"   result.data 长度: {len(result.data) if result.data else 0}")
-            if result.data:
-                for i, data in enumerate(result.data):
-                    logger.info(f"   data[{i}] 属性: {dir(data)}")
-                    logger.info(f"   data[{i}] 内容: {data}")
-                    if hasattr(data, '__dict__'):
-                        logger.info(f"   data[{i}] __dict__: {data.__dict__}")
-                    if hasattr(data, 'url'):
-                        logger.info(f"   data[{i}].url: {data.url}")
-                    if hasattr(data, 'b64_json'):
-                        logger.info(f"   data[{i}].b64_json: {'存在' if data.b64_json else '不存在'}")
-                    if hasattr(data, 'revised_prompt'):
-                        logger.info(f"   data[{i}].revised_prompt: {data.revised_prompt}")
-            if result.data and len(result.data) > 0:
-                image_data = result.data[0]
-                # 返回结果字典
-                response_data: Dict[str, str] = {}
+        max_retries = 3
+        timeout_seconds = 120  # 缩短到2分钟
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"🔄 [重试 {attempt + 1}/{max_retries}] 开始图片生成...")
                 
-                logger.info(f"🔍 [DEBUG] 处理第一个图片数据:")
-                logger.info(f"   type(image_data): {type(image_data)}")
+                # 创建 OpenAI 客户端，每次重试都创建新的客户端
+                client = AsyncOpenAI(
+                    base_url=self.api_url,
+                    api_key=self.api_token,
+                    timeout=timeout_seconds,
+                    max_retries=0   # 禁用SDK内置重试，使用我们自己的重试逻辑
+                )
                 
-                # 检查是否有 base64 数据
-                if hasattr(image_data, 'b64_json'):
-                    logger.info(f"   b64_json 属性存在: {image_data.b64_json is not None}")
-                    if image_data.b64_json:
-                        response_data['image_base64'] = image_data.b64_json
-                        logger.info(f"✅ Image generated with base64 data")
+                # 打印详细的调试信息
+                logger.info(f"🔍 [DEBUG] generate_by_tuzi 参数:")
+                logger.info(f"   prompt: {prompt}")
+                logger.info(f"   model: {model}")
+                logger.info(f"   base_url: {self.api_url}")
+                logger.info(f"   api_key: {self.api_token[:10]}***")
+                logger.info(f"   timeout: {timeout_seconds}秒")
+                
+                # 生成图片
+                logger.info(f"🚀 [DEBUG] 调用 client.images.generate...")
+                logger.info(f"🔍 [DEBUG] 传递给API的模型名称: '{model}'")
+                logger.info(f"🔍 [DEBUG] 传递给API的提示词: '{prompt}'")
+                logger.info(f"🔍 [DEBUG] API调用URL: {self.api_url}/images/generations")
+                image_model = model
+                logger.info(f"🎯 [DEBUG] 最终使用的图像生成模型: {image_model}")
+                
+                # 使用 asyncio.wait_for 添加额外的超时保护
+                result = await asyncio.wait_for(
+                    client.images.generate(
+                        model=image_model,
+                        prompt=prompt
+                    ),
+                    timeout=timeout_seconds
+                )
+                
+                # 成功获得结果，处理响应
+                logger.info(f"✅ [重试 {attempt + 1}/{max_retries}] API调用成功")
+                
+                # 打印完整的响应数据
+                logger.info(f"📥 [DEBUG] API 响应原始数据:")
+                logger.info(f"   result.data 长度: {len(result.data) if result.data else 0}")
+                if result.data:
+                    for i, data in enumerate(result.data):
+                        logger.info(f"   data[{i}] 属性: {dir(data)}")
+                        logger.info(f"   data[{i}] 内容: {data}")
+                        if hasattr(data, '__dict__'):
+                            logger.info(f"   data[{i}] __dict__: {data.__dict__}")
+                        if hasattr(data, 'url'):
+                            logger.info(f"   data[{i}].url: {data.url}")
+                        if hasattr(data, 'b64_json'):
+                            logger.info(f"   data[{i}].b64_json: {'存在' if data.b64_json else '不存在'}")
+                        if hasattr(data, 'revised_prompt'):
+                            logger.info(f"   data[{i}].revised_prompt: {data.revised_prompt}")
+                if result.data and len(result.data) > 0:
+                    image_data = result.data[0]
+                    # 返回结果字典
+                    response_data: Dict[str, str] = {}
+                    
+                    logger.info(f"🔍 [DEBUG] 处理第一个图片数据:")
+                    logger.info(f"   type(image_data): {type(image_data)}")
+                    
+                    # 检查是否有 base64 数据
+                    if hasattr(image_data, 'b64_json'):
+                        logger.info(f"   b64_json 属性存在: {image_data.b64_json is not None}")
+                        if image_data.b64_json:
+                            response_data['image_base64'] = image_data.b64_json
+                            logger.info(f"✅ Image generated with base64 data")
+                    else:
+                        logger.info(f"   无 b64_json 属性")
+                    
+                    # 检查是否有 URL
+                    if hasattr(image_data, 'url'):
+                        logger.info(f"   url 属性存在: {image_data.url}")
+                        if image_data.url:
+                            response_data['result_url'] = image_data.url
+                            logger.info(f"✅ Image generated with URL: {image_data.url}")
+                    else:
+                        logger.info(f"   无 url 属性")
+                    
+                    # 检查是否有文本回复（当没有图片生成时）
+                    if "image_base64" not in response_data \
+                        and "result_url" not in response_data \
+                        and hasattr(image_data, 'revised_prompt'):
+                        logger.info(f"   revised_prompt 属性存在: {image_data.revised_prompt}")
+                        if image_data.revised_prompt and not response_data:
+                            # 如果没有图片数据但有文本回复，说明这是一个文本对话
+                            response_data['text_content'] = image_data.revised_prompt
+                            response_data['type'] = 'text'
+                            logger.info(f"✅ Gemini text response: {image_data.revised_prompt}")
+                    else:
+                        logger.info(f"   无 revised_prompt 属性")
+                    
+                    # 尝试其他可能的属性
+                    for attr in ['image', 'data', 'content', 'image_url', 'image_data']:
+                        if hasattr(image_data, attr):
+                            value = getattr(image_data, attr)
+                            logger.info(f"   发现额外属性 {attr}: {value}")
+                            if value and attr not in ['image', 'data']:  # 避免处理文件对象
+                                response_data[f'found_{attr}'] = str(value)
+                    
+                    logger.info(f"🎯 [DEBUG] 最终 response_data: {response_data}")
+                    
+                    if response_data:
+                        logger.info(f"🎉 [成功] 第 {attempt + 1} 次尝试成功生成图片")
+                        return response_data
+                    else:
+                        logger.error(f"❌ [重试 {attempt + 1}/{max_retries}] No image data returned")
+                        if attempt == max_retries - 1:  # 最后一次尝试
+                            return None
+                        continue
                 else:
-                    logger.info(f"   无 b64_json 属性")
-                
-                # 检查是否有 URL
-                if hasattr(image_data, 'url'):
-                    logger.info(f"   url 属性存在: {image_data.url}")
-                    if image_data.url:
-                        response_data['result_url'] = image_data.url
-                        logger.info(f"✅ Image generated with URL: {image_data.url}")
+                    logger.error(f"❌ [重试 {attempt + 1}/{max_retries}] No image data in response")
+                    if attempt == max_retries - 1:  # 最后一次尝试
+                        return None
+                    continue
+                    
+            except asyncio.TimeoutError:
+                logger.error(f"⏰ [重试 {attempt + 1}/{max_retries}] 请求超时 ({timeout_seconds}秒)")
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # 指数退避: 1s, 2s, 4s
+                    logger.info(f"⏳ 等待 {wait_time} 秒后重试...")
+                    await asyncio.sleep(wait_time)
+                    continue
                 else:
-                    logger.info(f"   无 url 属性")
-                
-                # 检查是否有文本回复（当没有图片生成时）
-                if "image_base64" not in response_data \
-                    and "result_url" not in response_data \
-                    and hasattr(image_data, 'revised_prompt'):
-                    logger.info(f"   revised_prompt 属性存在: {image_data.revised_prompt}")
-                    if image_data.revised_prompt and not response_data:
-                        # 如果没有图片数据但有文本回复，说明这是一个文本对话
-                        response_data['text_content'] = image_data.revised_prompt
-                        response_data['type'] = 'text'
-                        logger.info(f"✅ Gemini text response: {image_data.revised_prompt}")
-                else:
-                    logger.info(f"   无 revised_prompt 属性")
-                
-                # 尝试其他可能的属性
-                for attr in ['image', 'data', 'content', 'image_url', 'image_data']:
-                    if hasattr(image_data, attr):
-                        value = getattr(image_data, attr)
-                        logger.info(f"   发现额外属性 {attr}: {value}")
-                        if value and attr not in ['image', 'data']:  # 避免处理文件对象
-                            response_data[f'found_{attr}'] = str(value)
-                
-                logger.info(f"🎯 [DEBUG] 最终 response_data: {response_data}")
-                
-                if response_data:
-                    return response_data
-                else:
-                    logger.error("❌ No image data returned")
+                    logger.error(f"💥 所有重试尝试都已超时，放弃生成")
                     return None
-            else:
-                logger.error("❌ No image data in response")
-                return None
-        except Exception as e:
-            print(f"❌ Error generating image: {e}")
-            return None
+                    
+            except Exception as e:
+                error_type = type(e).__name__
+                error_msg = str(e)
+                logger.error(f"💀 [重试 {attempt + 1}/{max_retries}] 生成图片时出错: {error_type}: {error_msg}")
+                
+                # 判断是否应该重试
+                if attempt < max_retries - 1:
+                    # 对于某些错误类型，不进行重试
+                    if "401" in error_msg or "403" in error_msg or "invalid" in error_msg.lower():
+                        logger.error(f"🚫 认证或配置错误，不再重试: {error_msg}")
+                        return None
+                    
+                    wait_time = 2 ** attempt  # 指数退避
+                    logger.info(f"⏳ 等待 {wait_time} 秒后重试...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"💥 所有重试尝试都失败了，放弃生成")
+                    return None
+        
+        # 如果所有重试都失败了
+        logger.error(f"💥 所有 {max_retries} 次重试都失败了")
+        return None
 
 
     async def generate_video(
