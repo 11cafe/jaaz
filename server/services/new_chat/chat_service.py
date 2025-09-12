@@ -203,6 +203,8 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         provider = 'google'
     elif 'claude' in model_name.lower() or 'anthropic' in model_name.lower():
         provider = 'anthropic'
+    elif 'seedream' in model_name.lower():
+        provider = 'doubao'
     else:
         provider = 'openai'  # 默认提供商
     
@@ -417,7 +419,16 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message, user_has_drawing_intent, user_language))
+    task = asyncio.create_task(_process_generation(messages, 
+                                                   session_id, 
+                                                   canvas_id, 
+                                                   model_name, 
+                                                   user_uuid, 
+                                                   user_info, 
+                                                   enhanced_user_message, 
+                                                   user_has_drawing_intent, 
+                                                   user_language,
+                                                   provider))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -515,7 +526,8 @@ async def _process_generation(
     user_info: Optional[Dict[str, Any]] = None,
     enhanced_user_message: Optional[Dict[str, Any]] = None,
     user_has_drawing_intent: bool = False,
-    user_language: str = 'en'
+    user_language: str = 'en',
+    provider: str = 'openai'
 ) -> None:
     """
     Process generation in a separate async task.
@@ -531,6 +543,7 @@ async def _process_generation(
     ai_response = {}
     
     try:
+        logger.info(f"🔍 [DEBUG] 开始处理生成: {model_name}, provider: {provider}")
         # 1. 发送AI思考状态
         await send_ai_thinking_status(session_id=session_id, canvas_id=canvas_id)
         
@@ -540,7 +553,12 @@ async def _process_generation(
         # 3. 执行AI生成
         # 原来是基于云端生成
         # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
-        ai_response = await create_local_response(messages, session_id, canvas_id, model_name, user_info)
+        ai_response = await create_local_response(messages, 
+                                                  session_id, 
+                                                  canvas_id, 
+                                                  model_name, 
+                                                  user_info,
+                                                  provider=provider)
         
         # 4. 检查生成结果是否包含图片，或者检查用户是否有画图意图
         logger.info(f"🔍 [DEBUG] 检查AI响应内容: {str(ai_response.get('content', ''))[:200]}...")

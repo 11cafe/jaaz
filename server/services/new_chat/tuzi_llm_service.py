@@ -18,9 +18,9 @@ class TuziLLMService:
     """基于兔子API的LLM服务
     """
 
-    def __init__(self):
+    def __init__(self, provider: str = 'openai'):
         """初始化Tuzi LLM服务"""
-        config = config_service.app_config.get('openai', {})
+        config = config_service.app_config.get(provider, {})
         self.api_url = str(config.get("url", "")).rstrip("/")
         self.api_token = str(config.get("api_key", ""))
 
@@ -423,7 +423,7 @@ class TuziLLMService:
 
     def _get_image_generation_model(self, user_model: str) -> str:
         """获取图片生成模型，如果用户选择的不是画图模型则使用默认模型"""
-        image_models = ["gemini-2.5-flash-image", "gpt-4o"]
+        image_models = ["gemini-2.5-flash-image", "gpt-4o", "seedream-4.0"]
         
         if user_model in image_models:
             logger.info(f"✅ 用户选择的模型 {user_model} 支持图片生成")
@@ -438,6 +438,8 @@ class TuziLLMService:
             logger.info(f"🎨 开始图片生成流程: model={model_name}")
             
             # 调用带重试机制的图片生成
+            if model_name == "seedream-4.0":
+                model_name = "doubao-seedream-4-0-250828"
             result = await self.gemini_generate_by_tuzi(user_prompt, model_name)
             
             if result:

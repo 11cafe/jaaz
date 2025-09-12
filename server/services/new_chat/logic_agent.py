@@ -20,7 +20,8 @@ async def create_local_response(messages: List[Dict[str, Any]],
                                       canvas_id: str = "",
                                       model_name: str = "gpt-4o",
                                       user_info: Optional[Dict[str, Any]] = None,
-                                      user_language: str = 'en') -> Dict[str, Any]:
+                                      user_language: str = 'en',
+                                      provider: str = 'openai') -> Dict[str, Any]:
     """
     本地的魔法生成功能
     实现和 magic_agent 相同的功能
@@ -39,7 +40,8 @@ async def create_local_response(messages: List[Dict[str, Any]],
 
         # 创建 LLM 服务实例
         try:
-            llm_service = TuziLLMService()
+            logger.info(f"🔍 创建 LLM 服务实例: {provider}")
+            llm_service = TuziLLMService(provider=provider)
         except ValueError as e:
             logger.error(f"❌ Tu-zi service configuration error: {e}")
             return {
