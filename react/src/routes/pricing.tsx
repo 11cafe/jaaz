@@ -663,12 +663,36 @@ function PricingPage() {
             {t('contact.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="outline" size="lg">
-              {t('contact.customerService')}
+            <Button variant="outline" size="lg" asChild>
+              <a href="mailto:support@magicart.cc">
+                {t('contact.customerService')}
+              </a>
             </Button>
             <Button variant="outline" size="lg">
               {t('contact.documentation')}
             </Button>
+          </div>
+          
+          {/* Footer */}
+          <div className="mt-16 pt-8 border-t border-border text-center">
+            <div className="flex items-center justify-center space-x-6 mb-4">
+              <a 
+                href='mailto:support@magicart.cc' 
+                className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+              >
+                Contact Support
+              </a>
+              <div className='w-px h-4 bg-border'></div>
+              <a 
+                href='/' 
+                className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+              >
+                Back to Home
+              </a>
+            </div>
+            <p className="text-muted-foreground">
+              © 2025 MagicArt AI Image Generator. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

@@ -159,6 +159,13 @@ function Home() {
                 >
                   Terms of Service
                 </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a 
+                  href='mailto:support@magicart.cc' 
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Contact Support
+                </a>
               </div>
 
               {/* 版权信息 */}
