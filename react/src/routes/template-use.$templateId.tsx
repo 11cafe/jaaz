@@ -11,9 +11,6 @@ import {
   Wand2,
   Loader2,
   PlusIcon,
-  RectangleVertical,
-  ChevronDown,
-  Hash,
   XIcon,
 } from 'lucide-react'
 import { useState, useRef, useCallback, useEffect } from 'react'
@@ -27,12 +24,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import ModelSelectorV3 from '@/components/chat/ModelSelectorV3'
 import { useConfigs } from '@/contexts/configs'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
@@ -60,16 +51,11 @@ function TemplateUsePage() {
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('auto')
-  const [quantity, setQuantity] = useState<number>(1)
-  const [showQuantitySlider, setShowQuantitySlider] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatingStep, setGeneratingStep] = useState('')
 
   const textareaRef = useRef<TextAreaRef>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const quantitySliderRef = useRef<HTMLDivElement>(null)
-  const MAX_QUANTITY = 10
 
   // 获取模板数据
   const {
@@ -81,6 +67,14 @@ function TemplateUsePage() {
     queryFn: () => getTemplate(parseInt(templateId)),
     staleTime: 5 * 60 * 1000,
   })
+
+  // 当模版加载完成时，设置默认的prompt内容
+  useEffect(() => {
+    if (template?.prompt && !characterName) {
+      // 去除prompt前后的空白字符（包括换行符）
+      setCharacterName(template.prompt.trim())
+    }
+  }, [template?.prompt, characterName])
 
   // 图片上传 - 使用快速上传API
   const { mutate: uploadImageMutation } = useMutation({
@@ -301,22 +295,6 @@ function TemplateUsePage() {
     navigateToCanvas,
   ])
 
-  // 关闭数量滑块的点击外部事件
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (quantitySliderRef.current && !quantitySliderRef.current.contains(event.target as Node)) {
-        setShowQuantitySlider(false)
-      }
-    }
-
-    if (showQuantitySlider) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showQuantitySlider])
 
   // 清理本地预览URL
   useEffect(() => {
@@ -398,40 +376,17 @@ function TemplateUsePage() {
                 </div>
               </div>
 
-              {/* Template info overlay */}
-              <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6'>
-                <div className='mb-2'>
-                  <h3 className='text-xl font-bold text-white'>{template.title}</h3>
-                </div>
-                <p className='text-white/80 text-sm'>{template.description}</p>
-              </div>
             </div>
           </div>
 
           {/* Right side - Input form */}
           <div className='flex-1 h-full flex flex-col'>
-            {/* Header */}
+            {/* Header - 模版信息 */}
             <div className='mb-6'>
               <h2 className='text-2xl font-bold mb-2'>{template.title}</h2>
-              <p className='text-muted-foreground'>
-                {t('form.subtitle')}
-              </p>
+              <p className='text-muted-foreground mb-4'>{template.description}</p>
             </div>
 
-            {/* Template usage info */}
-            <div className='mb-4'>
-              <div className='flex items-center gap-2 mb-3'>
-                <span className='text-sm text-muted-foreground'>{t('template.using')}</span>
-                <Badge variant='outline' className='flex items-center gap-1'>
-                  <Wand2 className='h-3 w-3' />
-                  {template.title}
-                </Badge>
-              </div>
-
-              <p className='text-sm text-muted-foreground'>
-                {t('form.characterName.description')}
-              </p>
-            </div>
 
             {/* Enhanced Input Area */}
             <div className='flex-1'>
@@ -548,86 +503,6 @@ function TemplateUsePage() {
                     {/* Model Selector */}
                     <ModelSelectorV3 />
 
-                    {/* Aspect Ratio Selector */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant='outline' className='flex items-center gap-1' size={'sm'}>
-                          <RectangleVertical className='size-4' />
-                          <span className='text-sm'>{selectedAspectRatio}</span>
-                          <ChevronDown className='size-3 opacity-50' />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align='start' className='w-32'>
-                        {['auto', '1:1', '4:3', '3:4', '16:9', '9:16'].map((ratio) => (
-                          <DropdownMenuItem
-                            key={ratio}
-                            onClick={() => setSelectedAspectRatio(ratio)}
-                            className='flex items-center justify-between'
-                          >
-                            <span>{ratio}</span>
-                            {selectedAspectRatio === ratio && (
-                              <div className='size-2 rounded-full bg-primary' />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {/* Quantity Selector */}
-                    <div className='relative' ref={quantitySliderRef}>
-                      <Button
-                        variant='outline'
-                        className='flex items-center gap-1'
-                        onClick={() => setShowQuantitySlider(!showQuantitySlider)}
-                        size={'sm'}
-                      >
-                        <Hash className='size-4' />
-                        <span className='text-sm'>{quantity}</span>
-                        <ChevronDown className='size-3 opacity-50' />
-                      </Button>
-
-                      {/* Quantity Slider */}
-                      <AnimatePresence>
-                        {showQuantitySlider && (
-                          <motion.div
-                            className='absolute bottom-full mb-2 left-0 bg-background border border-border rounded-lg p-4 shadow-lg min-w-48'
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            transition={{ duration: 0.15, ease: 'easeOut' }}
-                          >
-                            <div className='flex flex-col gap-3'>
-                              <div className='flex items-center justify-between'>
-                                <span className='text-sm font-medium'>{t('form.quantity')}</span>
-                                <span className='text-sm text-muted-foreground'>{quantity}</span>
-                              </div>
-                              <div className='flex items-center gap-3'>
-                                <span className='text-xs text-muted-foreground'>1</span>
-                                <input
-                                  type='range'
-                                  min='1'
-                                  max={MAX_QUANTITY}
-                                  value={quantity}
-                                  onChange={(e) => setQuantity(Number(e.target.value))}
-                                  className='flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
-                                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
-                                          [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-sm
-                                          [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
-                                          [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0'
-                                />
-                                <span className='text-xs text-muted-foreground'>
-                                  {MAX_QUANTITY}
-                                </span>
-                              </div>
-                            </div>
-                            {/* Arrow pointing down */}
-                            <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border'></div>
-                            <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-background translate-y-[-1px]'></div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
                   </div>
 
                   {/* Generate Button */}
