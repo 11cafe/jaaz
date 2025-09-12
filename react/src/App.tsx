@@ -67,6 +67,8 @@ const queryClient = new QueryClient({
 
 // 支付成功处理组件
 function PaymentSuccessHandler() {
+  const { t } = useTranslation()
+
   useEffect(() => {
     const handlePaymentSuccess = () => {
       const urlParams = new URLSearchParams(window.location.search)
@@ -96,7 +98,7 @@ function PaymentSuccessHandler() {
     }
 
     handlePaymentSuccess()
-  }, [])
+  }, [t])
 
   return null
 }

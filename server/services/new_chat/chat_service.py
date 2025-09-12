@@ -18,7 +18,8 @@ from services.websocket_service import (
     send_ai_thinking_status,
     send_image_generation_status,
     send_image_upload_status,
-    send_generation_complete
+    send_generation_complete,
+    process_and_send_images_to_canvas
 )  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from services.points_service import points_service, InsufficientPointsError
@@ -127,6 +128,37 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     user_info: Dict[str, Any] = data.get('user_info', {})
     model_name: str = data.get('model_name', '')
     text_model_data = data.get('text_model')
+    
+    # 🌐 [I18N] 检测用户语言偏好
+    user_language = 'en'  # 默认英文
+    try:
+        # 方法1: 从用户消息内容检测语言
+        if messages:
+            latest_message = messages[-1]
+            if isinstance(latest_message, dict) and 'content' in latest_message:
+                content = latest_message['content']
+                if isinstance(content, list) and content:
+                    for item in content:
+                        if isinstance(item, dict) and item.get('type') == 'text':
+                            text_content = item.get('text', '')
+                            if text_content:
+                                detected_lang = i18n_service.detect_language_from_content(text_content)
+                                user_language = detected_lang
+                                logger.info(f"🌐 [I18N] 从用户消息检测语言: {user_language} (内容: {text_content[:50]}...)")
+                                break
+        
+        # 方法2: 从请求头检测语言（如果有的话）
+        accept_language = data.get('accept_language')
+        if accept_language:
+            header_lang = i18n_service.detect_language_from_accept_header(accept_language)
+            user_language = header_lang
+            logger.info(f"🌐 [I18N] 从Accept-Language头检测语言: {user_language}")
+        
+    except Exception as e:
+        logger.warning(f"⚠️ [I18N] 语言检测失败，使用默认英文: {e}")
+        user_language = 'en'
+    
+    logger.info(f"🌐 [I18N] 最终确定用户语言: {user_language}")
     
     # 添加详细的调试信息
     logger.info(f"🔍 [DEBUG] 前端传入的完整请求数据 keys: {list(data.keys())}")
@@ -385,7 +417,7 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         await _push_user_images_to_frontend(messages, session_id, template_id)
 
     # Create and start magic generation task
-    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message, user_has_drawing_intent))
+    task = asyncio.create_task(_process_generation(messages, session_id, canvas_id, model_name, user_uuid, user_info, enhanced_user_message, user_has_drawing_intent, user_language))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
@@ -400,8 +432,6 @@ async def handle_chat(data: Dict[str, Any]) -> None:
         # Notify frontend WebSocket that magic generation is done
         await send_to_websocket(session_id, {'type': 'done'})
         
-
-    print('✨ magic_service 处理完成')
 
 
 async def _push_user_images_to_frontend(messages: List[Dict[str, Any]], session_id: str, template_id: str) -> None:
@@ -484,7 +514,8 @@ async def _process_generation(
     user_uuid: Optional[str] = None,
     user_info: Optional[Dict[str, Any]] = None,
     enhanced_user_message: Optional[Dict[str, Any]] = None,
-    user_has_drawing_intent: bool = False
+    user_has_drawing_intent: bool = False,
+    user_language: str = 'en'
 ) -> None:
     """
     Process generation in a separate async task.
@@ -515,7 +546,13 @@ async def _process_generation(
         logger.info(f"🔍 [DEBUG] 检查AI响应内容: {str(ai_response.get('content', ''))[:200]}...")
         
         # 检查是否实际生成了图片
-        has_generated_image = isinstance(ai_response.get('content'), str) and '![image_id:' in ai_response.get('content', '')
+        has_generated_image = False
+        content = ai_response.get('content', '')
+        if isinstance(content, str):
+            # 检查多种图片格式: ![image_id:...] 或 ![image](URL) 或 ![任何内容](URL)
+            has_generated_image = ('![image_id:' in content or 
+                                   '![image](' in content or 
+                                   (content.count('![') > 0 and content.count('](') > 0))
         
         # 检查用户是否有画图意图（检查用户消息中的关键词）
         user_has_drawing_intent = False
@@ -539,6 +576,16 @@ async def _process_generation(
         
         logger.info(f"🔍 [DEBUG] 图片检测结果: has_generated_image={has_generated_image}, user_has_drawing_intent={user_has_drawing_intent}")
         
+        # 🆕 [CHAT_DUAL_DISPLAY] AI响应内容检查，现在支持markdown图片格式用于聊天显示
+        ai_response_content = ai_response.get('content', '')
+        logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] AI响应内容预览: {str(ai_response_content)[:100]}...")
+        
+        # 检查：确认AI响应是否包含markdown图片格式（这在双重显示模式下是正常的）
+        if isinstance(ai_response_content, str) and ('![' in ai_response_content and '](' in ai_response_content):
+            logger.info(f"✅ [CHAT_DUAL_DISPLAY] AI响应包含markdown图片，用于聊天显示（正常）")
+        
+        # 🔧 [FIX] 移除重复保存标志，改用统一保存逻辑
+        
         # 🎯 新逻辑：如果用户有画图意图且积分检查已通过，直接扣除积分
         if user_has_drawing_intent and user_info and user_info.get('id') and user_info.get('uuid'):
             logger.info(f"🎯 [DEBUG] 用户有画图意图且积分已预检查通过，进行积分扣除")
@@ -555,6 +602,11 @@ async def _process_generation(
                     has_image = True
                     # 发送图片上传状态
                     await send_image_upload_status(session_id=session_id, canvas_id=canvas_id)
+                    
+                    # 🔧 [FIX] 移除第一分支的重复图片保存逻辑
+                    # 图片保存将在后续的统一位置处理，避免重复保存
+                    if has_generated_image and canvas_id:
+                        logger.info(f"🖼️ [DEBUG] 第一分支：检测到图片生成，标记待保存")
                     
                     # 根据是否实际生成图片调整消息
                     if has_generated_image:
@@ -604,6 +656,12 @@ async def _process_generation(
                     
                     if deduction_result['success']:
                         logger.info(f"✅ 聊天画图积分扣除成功: {deduction_result['message']}")
+                        
+                        # 🔧 [FIX] 移除第二分支的重复图片保存逻辑  
+                        # 图片保存将在后续的统一位置处理，避免重复保存
+                        if canvas_id:
+                            logger.info(f"🖼️ [DEBUG] 第二分支：检测到画布，图片将在统一位置保存")
+                        
                         # 通过WebSocket通知前端积分变化
                         notification_message = {
                             'type': 'points_deducted',
@@ -687,11 +745,25 @@ async def _process_generation(
         # 如果获取失败，至少发送AI响应
         final_parsed_history = [ai_response_with_id]
     
+    # 🆕 [CHAT_DUAL_DISPLAY] WebSocket发送日志，现在消息支持包含图片用于聊天显示
+    logger.info(f"🔗 [CHAT_DUAL_DISPLAY] 发送WebSocket消息: session_id={session_id}, 消息数量={len(final_parsed_history)}")
+    
+    # 检查：记录发送的消息是否包含图片内容（这在双重显示模式下是正常的）
+    for i, msg in enumerate(final_parsed_history):
+        msg_content = str(msg.get('content', ''))
+        if '![' in msg_content and '](' in msg_content:
+            logger.info(f"✅ [CHAT_DUAL_DISPLAY] WebSocket消息 {i} 包含markdown图片，用于聊天显示: {msg_content[:100]}...")
+    
     # 发送包含完整历史的消息列表（包括用户消息和AI响应）
     await send_to_websocket(session_id, {
         'type': 'all_messages', 
         'messages': final_parsed_history
     })
+    
+    # 🆕 [CHAT_DUAL_DISPLAY] 不需要从聊天内容中提取图片，因为采用双重显示架构
+    # 1. 图片生成服务已经调用save_image_to_canvas直接保存到画布
+    # 2. 聊天中的markdown图片只用于用户预览，不需要额外处理
+    logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] 双重显示架构：画布由生成服务直接处理，聊天显示用于用户预览")
     
     # 发送生成完成状态
     await send_generation_complete(

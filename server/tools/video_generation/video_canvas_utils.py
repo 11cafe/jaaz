@@ -19,7 +19,7 @@ import mimetypes
 from pymediainfo import MediaInfo
 from nanoid import generate
 import random
-from utils.canvas import find_next_best_element_position
+from utils.canvas import find_next_best_element_position, layout_config
 
 
 class CanvasLockManager:
@@ -39,6 +39,39 @@ class CanvasLockManager:
 
 # Global lock manager instance
 canvas_lock_manager = CanvasLockManager()
+
+def _calculate_video_optimal_size(original_width: int, original_height: int) -> tuple[int, int]:
+    """
+    计算视频的最优显示尺寸，保持16:9比例
+    
+    Args:
+        original_width: 原始宽度
+        original_height: 原始高度
+        
+    Returns:
+        tuple[int, int]: (优化后的宽度, 优化后的高度)
+    """
+    # 标准16:9比例
+    target_ratio = 16 / 9
+    
+    # 最大尺寸限制
+    max_width = layout_config.standard_width * 1.5
+    max_height = layout_config.standard_height * 1.5
+    
+    # 如果原始尺寸在合理范围内，直接使用
+    if original_width <= max_width and original_height <= max_height:
+        return original_width, original_height
+    
+    # 按照16:9比例和最大宽度计算
+    optimal_width = min(max_width, layout_config.standard_width)
+    optimal_height = int(optimal_width / target_ratio)
+    
+    # 确保高度不超过限制
+    if optimal_height > max_height:
+        optimal_height = max_height
+        optimal_width = int(optimal_height * target_ratio)
+    
+    return optimal_width, optimal_height
 
 
 async def save_video_to_canvas(
@@ -151,9 +184,22 @@ async def send_video_error_notification(session_id: str, error_message: str) -> 
     })
 
 
-def format_video_success_message(filename: str) -> str:
-    """Format success message for video generation"""
-    return f"video generated successfully ![video_id: {filename}]({BASE_URL}/api/file/{filename}?redirect=true)"
+def format_video_success_message(filename: str, session_id: str = None, canvas_id: str = None) -> str:
+    """🆕 [CHAT_DUAL_DISPLAY] Format success message for video generation - 双重显示"""
+    # 📝 [CHAT_DEBUG] 记录视频生成信息
+    from log import get_logger
+    logger = get_logger(__name__)
+    video_url = f"{BASE_URL}/api/file/{filename}?redirect=true"
+    logger.info(f"🎬 [CHAT_DEBUG] 视频生成完成: filename={filename}")
+    logger.info(f"🎬 [CHAT_DEBUG] 视频URL: {video_url}")
+    
+    # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+    logger.info(f"🎬 [CHAT_DUAL_DISPLAY] 视频双重显示:")
+    logger.info(f"   📱 聊天显示URL: {video_url}")
+    logger.info(f"   🎨 画布显示通过其他机制处理")
+    
+    # 聊天响应包含视频预览 + 提示文本
+    return f"🎬 视频已生成并添加到画布\n\n![{filename}]({video_url})"
 
 
 async def process_video_result(
@@ -251,23 +297,51 @@ async def generate_new_video_element(
     fileid: str,
     video_data: Dict[str, Any],
     canvas_data: Optional[Dict[str, Any]] = None,
+    use_standard_size: bool = True,
 ) -> Dict[str, Any]:
-    """Generate new video element for canvas"""
+    """
+    Generate new video element for canvas with improved layout
+    
+    Args:
+        canvas_id: 画布ID
+        fileid: 文件ID  
+        video_data: 视频数据
+        canvas_data: 画布数据（可选）
+        use_standard_size: 是否使用标准化尺寸（推荐）
+    """
     if canvas_data is None:
         canvas = await db_service.get_canvas_data(canvas_id)
         if canvas is None:
             canvas = {"data": {}}
         canvas_data = canvas.get("data", {})
 
-    new_x, new_y = await find_next_best_element_position(canvas_data)
+    # 获取视频原始尺寸
+    original_width = video_data.get("width", layout_config.standard_width)
+    original_height = video_data.get("height", layout_config.standard_height)
+    
+    # 决定使用的尺寸（视频通常使用标准尺寸以保证一致性）
+    if use_standard_size:
+        display_width = layout_config.standard_width
+        display_height = layout_config.standard_height
+    else:
+        # 对于视频，计算保持16:9比例的适当尺寸
+        display_width, display_height = _calculate_video_optimal_size(original_width, original_height)
+
+    # 使用新的布局算法计算位置
+    new_x, new_y = await find_next_best_element_position(
+        canvas_data,
+        element_width=display_width,
+        element_height=display_height,
+        force_standard_size=use_standard_size
+    )
 
     return {
         "type": "video",
         "id": fileid,
         "x": new_x,
         "y": new_y,
-        "width": video_data.get("width", 0),
-        "height": video_data.get("height", 0),
+        "width": display_width,
+        "height": display_height,
         "angle": 0,
         "fileId": fileid,
         "strokeColor": "#000000",

@@ -166,6 +166,18 @@ class ImageAnalyser:
             Optional[str]: 分析结果文本，失败时返回None
         """
         try:
+            # 分析base64图片数据格式
+            logger.info(f"[Image Analyser] 开始分析base64图片: 长度={len(base64_image)}")
+            
+            if base64_image.startswith('data:image/'):
+                # 提取MIME类型
+                mime_part = base64_image.split(',')[0]
+                logger.info(f"[Image Analyser] 检测到完整data URL: {mime_part}")
+                image_url = base64_image
+            else:
+                logger.info(f"[Image Analyser] 检测到纯base64数据，添加JPEG头")
+                image_url = f"data:image/jpeg;base64,{base64_image}"
+            
             # 构建请求payload
             payload = {
                 "model": model,
@@ -184,7 +196,7 @@ class ImageAnalyser:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": base64_image if base64_image.startswith('data:image/') else f"data:image/jpeg;base64,{base64_image}"
+                                    "url": image_url
                                 }
                             }
                         ]
@@ -192,6 +204,8 @@ class ImageAnalyser:
                 ],
                 "max_tokens": max_tokens
             }
+            
+            logger.info(f"[Image Analyser] 准备发送请求: model={model}, max_tokens={max_tokens}")
 
             # 发送请求
             async with aiohttp.ClientSession() as session:

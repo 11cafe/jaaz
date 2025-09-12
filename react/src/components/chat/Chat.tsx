@@ -678,11 +678,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
+    console.log('🚨 [Chat] 收到Socket错误事件:', {
+      error_code: data.error_code,
+      current_points: data.current_points,
+      required_points: data.required_points,
+      session_id: data.session_id,
+      current_session_id: sessionId,
+      error: data.error
+    })
+    
     setPending(false)
     
     // 特别处理积分不足错误
     if (data.error_code === 'insufficient_points') {
+      console.log('💰 [Chat] 处理积分不足错误')
       if (data.current_points !== undefined && data.required_points !== undefined) {
+        console.log('📊 [Chat] 显示详细积分不足提示', {
+          current: data.current_points,
+          required: data.required_points
+        })
         toast.error(t('common:toast.insufficientPointsWithDetails', {
           current: data.current_points,
           required: data.required_points
@@ -692,6 +706,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           style: { color: 'red' },
         })
       } else {
+        console.log('📊 [Chat] 显示基本积分不足提示')
         toast.error(t('common:toast.insufficientPoints'), {
           closeButton: true,
           duration: 5000,
@@ -699,6 +714,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       }
     } else {
+      console.log('⚠️ [Chat] 处理其他类型错误:', data.error)
       // 其他错误使用原有的显示方式
       toast.error('Error: ' + data.error, {
         closeButton: true,
@@ -706,7 +722,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         style: { color: 'red' },
       })
     }
-  }, [t])
+  }, [t, sessionId])
 
   const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
     toast.info(data.info, {

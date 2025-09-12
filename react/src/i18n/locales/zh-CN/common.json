@@ -66,13 +66,6 @@
     "insufficientPoints": "积分不足无法生成图片",
     "insufficientPointsWithDetails": "积分不足，当前积分: {{current}}，需要积分: {{required}}"
   },
-  "notifications": {
-    "title": "通知",
-    "clear": "清空",
-    "markAllAsRead": "全部已读",
-    "allRead": "全部已读",
-    "newImageGenerated": "新图片生成"
-  },
   "navigation": {
     "home": "首页",
     "canvas": "画布",

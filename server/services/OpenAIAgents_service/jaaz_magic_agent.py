@@ -123,9 +123,26 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
 
+        # 📝 [CHAT_DEBUG] 记录Jaaz Magic图片信息
+        logger.info(f"🖼️ [CHAT_DEBUG] Jaaz Magic图片处理完成: filename={filename}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 结果URL: {result_url}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 图片URL: {BASE_URL}{image_url}")
+        
+        # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+        # 聊天中显示腾讯云图片，画布中显示完整图片元素
+        
+        # Jaaz Magic使用本地URL（因为没有上传到腾讯云的逻辑）
+        chat_image_url = f"{BASE_URL}{image_url}"
+        
+        logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] Jaaz Magic图片双重显示:")
+        logger.info(f"   📱 聊天显示URL: {chat_image_url}")
+        logger.info(f"   🎨 画布已通过save_image_to_canvas显示")
+        logger.info(f"   ☁️ 使用本地URL")
+        
+        # 聊天响应包含图片预览 + 提示文本
         return {
             'role': 'assistant',
-            'content': f'✨ Magic Success!!!\n\nResult url: {result_url}\n\n![image_id: {filename}]({BASE_URL}{image_url})'
+            'content': f'🎨 图片已生成并添加到画布\n\n![{filename}]({chat_image_url})'
         }
 
     except (asyncio.TimeoutError, Exception) as e:

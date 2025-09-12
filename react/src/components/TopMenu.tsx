@@ -5,7 +5,6 @@ import ThemeButton from '@/components/theme/ThemeButton'
 import { LOGO_URL } from '@/constants'
 import LanguageSwitcher from './common/LanguageSwitcher'
 import { UserMenu } from './auth/UserMenu'
-import { NotificationPanel } from './common/NotificationPanel'
 
 export default function TopMenu({
   middle,
@@ -65,7 +64,6 @@ export default function TopMenu({
       <div className="flex items-center gap-1 sm:gap-2">
         {right}
         {/* <AgentSettings /> */}
-        <NotificationPanel />
         <LanguageSwitcher />
         <ThemeButton />
         <UserMenu />

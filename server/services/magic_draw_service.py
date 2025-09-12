@@ -220,29 +220,48 @@ class MagicDrawService:
             Dict[str, Any]: 包含 result_url 的任务结果，失败时返回包含 error 信息的字典
         """
         try:
+            # 分析传入的图片内容格式
+            logger.info(f"[Magic Draw] 开始生成魔法图片")
+            logger.info(f"[Magic Draw] 图片内容长度: {len(image_content)}")
+            
+            if image_content.startswith('data:image/'):
+                # 提取MIME类型信息
+                mime_part = image_content.split(',')[0] if ',' in image_content else 'unknown'
+                logger.info(f"[Magic Draw] 检测到data URL格式: {mime_part}")
+            else:
+                logger.warning(f"[Magic Draw] 未检测到data URL格式，内容开头: {image_content[:50]}...")
+            
             # 1. 图片意图识别, 创建图片分析器实例
             analyser = ImageAnalyser()
-            logger.info(f"👇generate_magic_image system_prompt: {system_prompt}")
+            logger.info(f"[Magic Draw] system_prompt长度: {len(system_prompt)}")
+            
             if image_content.startswith('data:image/'): 
                 try:
+                    logger.info(f"[Magic Draw] 开始分析图片意图...")
                     # 分析图片意图
                     analysis_result = await analyser.analyze_image_base64(system_prompt, image_content)
+                    
                     if analysis_result:
+                        logger.info(f"[Magic Draw] 图片分析返回结果: {analysis_result[:200]}...")
                         try:
                             result_json = json.loads(analysis_result)
                             magic_prompt = result_json.get('prompt', 'enhance the image with magical effects')
-                        except json.JSONDecodeError:
+                            logger.info(f"[Magic Draw] 解析JSON成功，提取prompt: {magic_prompt}")
+                        except json.JSONDecodeError as json_error:
+                            logger.warning(f"[Magic Draw] JSON解析失败: {json_error}，使用原始结果")
                             magic_prompt = analysis_result
                     else:
+                        logger.warning(f"[Magic Draw] 图片分析返回空结果，使用默认prompt")
                         magic_prompt = "enhance the image with magical effects"
                     
                     logger.info(f"✅ 图片意图分析完成: {magic_prompt}")
                 except Exception as e:
                     logger.error(f"❌ 图片意图分析失败: {e}")
+                    logger.error(f"[Magic Draw] 分析失败详情: {type(e).__name__}: {str(e)}")
                     return {"error": "Failed to analyze image intent"}
             else:
                 magic_prompt = "enhance the image with magical effects"
-                logger.error("⚠️ 无法解析图片格式，使用默认提示词")
+                logger.warning("⚠️ 无法解析图片格式，使用默认提示词")
             
             # 将图片内容写入用户目录
             from services.config_service import get_user_files_dir

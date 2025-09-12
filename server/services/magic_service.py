@@ -34,6 +34,8 @@ async def handle_magic(data: Dict[str, Any]) -> None:
             - text_model: text model configuration
             - tool_list: list of tool model configurations (images/videos)
     """
+    logger.info("[Magic Service] handle_magic开始执行")
+    
     # Extract fields from incoming data
     messages: List[Dict[str, Any]] = data.get('messages', [])
     session_id: str = data.get('session_id', '')
@@ -42,9 +44,11 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     template_id: str = data.get('template_id', '')
     user_info: Dict[str, Any] = data.get('user_info', {})
     
+    logger.info(f"[Magic Service] 解析请求参数: session_id={session_id}, canvas_id={canvas_id}, messages_count={len(messages)}, user_info={bool(user_info)}")
+    
     # Validate required fields
     if not session_id or session_id.strip() == '':
-        logger.error("[error] session_id is required but missing or empty")
+        logger.error("[Magic Service] session_id is required but missing or empty")
         raise ValueError("session_id is required")
     
     # Extract user information
@@ -54,10 +58,18 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     # 🎯 积分检查：画图前检查是否有足够积分
     if user_id and user_uuid:
         try:
+            logger.info(f"[Magic Service] 开始积分检查: user_id={user_id}, user_uuid={user_uuid}")
+            
+            # 先直接查询数据库验证用户积分
+            current_balance = await points_service.get_user_points_balance(user_uuid)
+            logger.info(f"[Magic Service] 直接查询用户积分: user_uuid={user_uuid}, balance={current_balance}")
+            
             await points_service.check_and_reserve_image_generation_points(user_id, user_uuid)
             logger.info(f"✅ 积分检查通过，用户 {user_id} 可以进行画图")
         except InsufficientPointsError as e:
-            logger.warning(f"❌ 积分不足，用户 {user_id}: {e.message}")
+            logger.error(f"❌ 积分不足，用户 {user_id}: {e.message}")
+            logger.error(f"[Magic Service] 积分检查详情: current_points={e.current_points}, required_points={e.required_points}")
+            
             # 通过WebSocket返回积分不足错误
             await send_to_websocket(session_id, {
                 'type': 'error',
@@ -117,11 +129,13 @@ async def handle_magic(data: Dict[str, Any]) -> None:
         logger.warn(f"🛑Magic generation session {session_id} cancelled")
     finally:
         # Always remove the task from stream_tasks after completion/cancellation
+        logger.info(f"[Magic Service] 清理stream_task: {session_id}")
         remove_stream_task(session_id)
         # Notify frontend WebSocket that magic generation is done
+        logger.info(f"[Magic Service] 发送WebSocket完成通知: {session_id}")
         await send_to_websocket(session_id, {'type': 'done'})
 
-    print('✨ magic_service 处理完成')
+    logger.info('[Magic Service] handle_magic处理完成')
 
 
 async def _push_user_images_to_frontend(messages: List[Dict[str, Any]], session_id: str, template_id: str) -> None:

@@ -14,7 +14,7 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 logger.info('Importing websocket_router')
 from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
 logger.info('Importing routers')
-from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings, tool_confirmation, templates_router, auth_router, billing_router, pages_router, invite_router
+from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings, tool_confirmation, templates_router, auth_router, billing_router, pages_router, invite_router, canvas_fix_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request, HTTPException
@@ -103,6 +103,7 @@ app.include_router(auth_router.router)
 app.include_router(billing_router.router)
 app.include_router(root_router.router)
 app.include_router(canvas.router)
+app.include_router(canvas_fix_router.router)  # Canvas跨域修复API
 app.include_router(workspace.router)
 app.include_router(image_router.router)
 app.include_router(ssl_test.router)

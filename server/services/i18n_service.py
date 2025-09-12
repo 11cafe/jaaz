@@ -25,6 +25,38 @@ class I18nService:
         'en-US': "Sorry, your account balance is insufficient for image generation. Please visit the subscription page to purchase more credits."
     }
     
+    # 🆕 图片生成成功消息
+    IMAGE_GENERATED_MESSAGES = {
+        'zh': "🎨 图片已生成并添加到画布",
+        'zh-CN': "🎨 图片已生成并添加到画布", 
+        'en': "🎨 Image generated and added to canvas",
+        'en-US': "🎨 Image generated and added to canvas"
+    }
+    
+    # 🆕 视频生成成功消息
+    VIDEO_GENERATED_MESSAGES = {
+        'zh': "🎬 视频已生成并添加到画布",
+        'zh-CN': "🎬 视频已生成并添加到画布",
+        'en': "🎬 Video generated and added to canvas", 
+        'en-US': "🎬 Video generated and added to canvas"
+    }
+    
+    # 🆕 多张图片生成成功消息
+    MULTIPLE_IMAGES_GENERATED_MESSAGES = {
+        'zh': "🎨 {service}已生成 {count} 张图片并添加到画布",
+        'zh-CN': "🎨 {service}已生成 {count} 张图片并添加到画布",
+        'en': "🎨 {service} generated {count} images and added to canvas",
+        'en-US': "🎨 {service} generated {count} images and added to canvas"
+    }
+    
+    # 🆕 多个文件生成成功消息
+    MULTIPLE_FILES_GENERATED_MESSAGES = {
+        'zh': "🔧 {service}工作流执行成功，已生成 {count} 个文件并添加到画布",
+        'zh-CN': "🔧 {service}工作流执行成功，已生成 {count} 个文件并添加到画布",
+        'en': "🔧 {service} workflow executed successfully, generated {count} files and added to canvas",
+        'en-US': "🔧 {service} workflow executed successfully, generated {count} files and added to canvas"
+    }
+    
     @staticmethod
     def detect_language_from_accept_header(accept_language: Optional[str]) -> str:
         """
@@ -146,6 +178,71 @@ class I18nService:
             return 'zh-CN'
         
         return 'en'
+    
+    @staticmethod
+    def get_message(message_dict: Dict[str, str], language: str = 'en', **kwargs) -> str:
+        """
+        获取本地化消息的通用方法
+        
+        Args:
+            message_dict: 消息字典
+            language: 语言代码
+            **kwargs: 格式化参数
+            
+        Returns:
+            本地化的消息文本
+        """
+        # 规范化语言代码
+        lang = language.lower()
+        
+        # 查找完全匹配的语言
+        if lang in message_dict:
+            template = message_dict[lang]
+        else:
+            # 查找语言族匹配
+            lang_family = lang.split('-')[0]
+            if lang_family in message_dict:
+                template = message_dict[lang_family]
+            else:
+                # 默认使用英文
+                template = message_dict.get('en', list(message_dict.values())[0])
+        
+        # 格式化消息
+        try:
+            return template.format(**kwargs)
+        except KeyError:
+            # 如果格式化失败，返回原始模板
+            return template
+    
+    @staticmethod
+    def get_image_generated_message(language: str = 'en') -> str:
+        """获取图片生成成功的本地化消息"""
+        return I18nService.get_message(I18nService.IMAGE_GENERATED_MESSAGES, language)
+    
+    @staticmethod
+    def get_video_generated_message(language: str = 'en') -> str:
+        """获取视频生成成功的本地化消息"""
+        return I18nService.get_message(I18nService.VIDEO_GENERATED_MESSAGES, language)
+    
+    @staticmethod
+    def get_multiple_images_generated_message(service: str, count: int, language: str = 'en') -> str:
+        """获取多张图片生成成功的本地化消息"""
+        return I18nService.get_message(
+            I18nService.MULTIPLE_IMAGES_GENERATED_MESSAGES, 
+            language, 
+            service=service, 
+            count=count
+        )
+    
+    @staticmethod
+    def get_multiple_files_generated_message(service: str, count: int, language: str = 'en') -> str:
+        """获取多个文件生成成功的本地化消息"""
+        return I18nService.get_message(
+            I18nService.MULTIPLE_FILES_GENERATED_MESSAGES, 
+            language, 
+            service=service, 
+            count=count
+        )
 
 # 创建全局实例
 i18n_service = I18nService()

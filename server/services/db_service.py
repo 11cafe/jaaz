@@ -66,31 +66,20 @@ class DatabaseService:
     def _convert_thumbnail_to_cos_url(self, thumbnail: str) -> str:
         """
         将 /api/file/ 格式的thumbnail转换为腾讯云直链URL
-        如果已经是腾讯云URL或转换失败，返回原URL
+        使用统一的URL转换工具
         """
         if not thumbnail or not isinstance(thumbnail, str):
             return thumbnail
             
-        # 检查是否是本地API格式
-        if not thumbnail.startswith('/api/file/'):
-            return thumbnail
-            
         try:
-            # 提取文件名
-            filename = thumbnail.replace('/api/file/', '')
-            if not filename:
-                return thumbnail
-                
-            # 获取腾讯云URL
-            cos_service = get_cos_image_service()
-            cos_url = cos_service.get_image_url(filename)
+            # 使用统一的URL转换工具
+            from utils.url_converter import convert_to_cos_url
+            cos_url = convert_to_cos_url(thumbnail)
             
-            if cos_url:
+            if cos_url != thumbnail:
                 logger.info(f"✨ 转换thumbnail URL: {thumbnail} -> {cos_url}")
-                return cos_url
-            else:
-                logger.warning(f"⚠️ 无法获取腾讯云URL，保持原格式: {thumbnail}")
-                return thumbnail
+            
+            return cos_url
                 
         except Exception as e:
             logger.error(f"❌ 转换thumbnail URL失败: {thumbnail}, error: {e}")

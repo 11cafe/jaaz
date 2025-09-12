@@ -102,7 +102,11 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
         {"status": "done"}
     """
     try:
+        logger.info("[Backend Magic] 接收到Magic Generation请求")
+        
+        # 解析请求数据
         data = await request.json()
+        logger.info(f"[Backend Magic] 请求数据解析成功: session_id={data.get('session_id', 'N/A')}, canvas_id={data.get('canvas_id', 'N/A')}, messages_count={len(data.get('messages', []))}")
         
         # 🔍 添加用户信息到请求数据中
         if current_user:
@@ -112,6 +116,10 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
                 'email': current_user.email,
                 'nickname': current_user.nickname
             }
+            logger.info(f"[Backend Magic] 用户信息已添加: user_id={current_user.id}, email={current_user.email}")
+        else:
+            logger.warning("[Backend Magic] 无用户信息")
+        
         # 立即启动异步magic生成任务，不等待完成
         # 这样前端可以立即得到响应，不会被阻塞
         import asyncio
@@ -119,9 +127,12 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
         # 添加错误处理包装，确保异步任务中的错误不会影响API响应
         async def safe_handle_magic():
             try:
+                logger.info("[Backend Magic] 开始调用handle_magic")
                 await handle_magic(data)
+                logger.info("[Backend Magic] handle_magic调用完成")
             except Exception as e:
-                logger.error(f"Async magic generation failed: {e}")
+                logger.error(f"[Backend Magic] Async magic generation failed: {e}")
+                logger.error(f"[Backend Magic] 错误详情: {type(e).__name__}: {str(e)}")
                 # 通过WebSocket通知前端错误
                 session_id = data.get('session_id', '')
                 if session_id:
@@ -131,7 +142,10 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
                         'error': f'Magic generation failed: {str(e)}'
                     })
         
+        logger.info("[Backend Magic] 创建异步任务")
         asyncio.create_task(safe_handle_magic())
+        
+        logger.info("[Backend Magic] 返回状态started")
         return {"status": "started"}
         
     except Exception as e:

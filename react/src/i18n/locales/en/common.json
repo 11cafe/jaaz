@@ -66,13 +66,6 @@
     "insufficientPoints": "Insufficient points to generate image",
     "insufficientPointsWithDetails": "Insufficient points, current: {{current}}, required: {{required}}"
   },
-  "notifications": {
-    "title": "Notifications",
-    "clear": "Clear",
-    "markAllAsRead": "Mark all as read",
-    "allRead": "All read",
-    "newImageGenerated": "New image generated"
-  },
   "navigation": {
     "home": "Home",
     "canvas": "Canvas",
