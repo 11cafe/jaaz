@@ -9,6 +9,7 @@ export interface Template {
   category: string
   created_at?: string
   updated_at?: string
+  prompt?: string
 }
 
 export interface TemplateListResponse {

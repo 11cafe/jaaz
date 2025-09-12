@@ -82,7 +82,7 @@ export default function Knowledge() {
       setTotalPages(response.data.pagination.total_pages)
     } catch (error) {
       console.error('Failed to fetch knowledge list:', error)
-      toast.error('获取知识库列表失败')
+      toast.error(t('common:toast.knowledgeListError'))
       setKnowledgeList([])
     } finally {
       setLoading(false)
@@ -149,10 +149,10 @@ export default function Knowledge() {
       console.log(
         `Saved ${enabledKnowledgeData.length} enabled knowledge items to settings`
       )
-      toast.success('知识库设置已保存')
+      toast.success(t('common:toast.knowledgeSettingsSaved'))
     } catch (error) {
       console.error('Failed to save knowledge data to settings:', error)
-      toast.error('保存知识库设置失败')
+      toast.error(t('common:toast.knowledgeSettingsError'))
       // Revert UI state on error
       const revertedEnabled = new Set(enabledKnowledge)
       if (enabled) {

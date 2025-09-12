@@ -51,7 +51,14 @@ const CanvasPopbarWrapper = () => {
       .map((image) => {
         const file = files[image.fileId!]
         const isBase64 = file.dataURL.startsWith('data:')
-        const id = isBase64 ? file.id : file.dataURL.split('/').at(-1)!
+        let id: string
+        if (isBase64) {
+          id = file.id
+        } else {
+          // 从URL中提取文件名，去掉查询参数
+          const urlPath = file.dataURL.split('?')[0] // 去掉查询参数
+          id = urlPath.split('/').at(-1)! // 提取文件名
+        }
         return {
           fileId: id,
           base64: isBase64 ? file.dataURL : undefined,

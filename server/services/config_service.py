@@ -26,16 +26,6 @@ AppConfig = Dict[str, ProviderConfig]
 
 
 DEFAULT_PROVIDERS_CONFIG: AppConfig = {
-    'tuzi': {
-        'models': {
-            # text models
-            'gpt-4o': {'type': 'text'},
-            'gpt-4o-mini': {'type': 'text'}
-        },
-        'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
-        'max_tokens': 8192,
-    },
     'comfyui': {
         'models': {},
         'url': 'http://127.0.0.1:8188',
@@ -53,13 +43,23 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gpt-4o-mini': {'type': 'text'},
         },
         'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
+        'api_key': 'sk-xNyBtMDiP435GMO6e2opXYiSpkNbcVwMK93Vz8joVIPTXuzV',
         'max_tokens': 8192,
     },
     'google': {
-        'models': {},
+        'models': {
+            'gemini-2.5-flash-image': {'type': 'image'},
+            'gemini-2.5-pro-all': {'type': 'text'},
+        },
         'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-XOEGtZvvM6HyK2U14jNHjSqblTORsKfNTDtqU5FBbOsbTuUH',
+        'api_key': 'sk-CRJTvndo8xN0nmzTe5fyij77T0tmT7ZMcjLZwMzZ0RmvkOP0',
+    },
+    'doubao': {
+        'models': {
+            'seedream-4.0': {'type': 'image'}
+        },
+        'url': 'https://yunwu.ai/v1',
+        'api_key': 'sk-T5GzBCTpRm92Po9G9WU9B19w1p1pxHJ8qwfcAcZ47MdZCzEM',
     },
 
 }
@@ -213,7 +213,7 @@ def email_to_directory_name(email: str) -> str:
     return safe_name
 
 
-def get_user_files_dir(user_email: str = None, user_id: str = None) -> str:
+def get_user_files_dir(user_email: Optional[str] = None, user_id: Optional[str] = None) -> str:
     """
     获取用户文件目录路径
     优先使用邮箱，如果没有邮箱则使用用户ID（向后兼容）

@@ -9,18 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as AssetsRouteImport } from './routes/assets'
 import { Route as Agent_studioRouteImport } from './routes/agent_studio'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TemplateUseTemplateIdRouteImport } from './routes/template-use.$templateId'
 import { Route as CanvasIdRouteImport } from './routes/canvas.$id'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -31,6 +44,11 @@ const PricingRoute = PricingRouteImport.update({
 const KnowledgeRoute = KnowledgeRouteImport.update({
   id: '/knowledge',
   path: '/knowledge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsRoute = AssetsRouteImport.update({
@@ -63,9 +81,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
+  '/invite': typeof InviteRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -73,9 +94,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
+  '/invite': typeof InviteRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -84,9 +108,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
+  '/invite': typeof InviteRoute
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
+  '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
@@ -96,9 +123,12 @@ export interface FileRouteTypes {
     | '/'
     | '/agent_studio'
     | '/assets'
+    | '/invite'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   fileRoutesByTo: FileRoutesByTo
@@ -106,9 +136,12 @@ export interface FileRouteTypes {
     | '/'
     | '/agent_studio'
     | '/assets'
+    | '/invite'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   id:
@@ -116,9 +149,12 @@ export interface FileRouteTypes {
     | '/'
     | '/agent_studio'
     | '/assets'
+    | '/invite'
     | '/knowledge'
     | '/pricing'
+    | '/privacy'
     | '/templates'
+    | '/terms'
     | '/canvas/$id'
     | '/template-use/$templateId'
   fileRoutesById: FileRoutesById
@@ -127,20 +163,37 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   Agent_studioRoute: typeof Agent_studioRoute
   AssetsRoute: typeof AssetsRoute
+  InviteRoute: typeof InviteRoute
   KnowledgeRoute: typeof KnowledgeRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   TemplatesRoute: typeof TemplatesRoute
+  TermsRoute: typeof TermsRoute
   CanvasIdRoute: typeof CanvasIdRoute
   TemplateUseTemplateIdRoute: typeof TemplateUseTemplateIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/templates': {
       id: '/templates'
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -155,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/knowledge'
       fullPath: '/knowledge'
       preLoaderRoute: typeof KnowledgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assets': {
@@ -199,9 +259,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   Agent_studioRoute: Agent_studioRoute,
   AssetsRoute: AssetsRoute,
+  InviteRoute: InviteRoute,
   KnowledgeRoute: KnowledgeRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   TemplatesRoute: TemplatesRoute,
+  TermsRoute: TermsRoute,
   CanvasIdRoute: CanvasIdRoute,
   TemplateUseTemplateIdRoute: TemplateUseTemplateIdRoute,
 }

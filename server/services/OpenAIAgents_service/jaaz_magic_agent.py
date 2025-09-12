@@ -7,7 +7,7 @@ from nanoid import generate
 from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 from ..jaaz_service import JaazService
 
 
@@ -71,12 +71,13 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
         if result.get('error'):
             error_msg = result['error']
             print(f"❌ Magic generation error: {error_msg}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
                 'content': [
                     {
                         'type': 'text',
-                        'text': f'✨ Magic Generation Error: {error_msg}'
+                        'text': get_user_friendly_error(error_msg)
                     }
                 ]
             }
@@ -122,9 +123,26 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
 
+        # 📝 [CHAT_DEBUG] 记录Jaaz Magic图片信息
+        logger.info(f"🖼️ [CHAT_DEBUG] Jaaz Magic图片处理完成: filename={filename}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 结果URL: {result_url}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 图片URL: {BASE_URL}{image_url}")
+        
+        # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+        # 聊天中显示腾讯云图片，画布中显示完整图片元素
+        
+        # Jaaz Magic使用本地URL（因为没有上传到腾讯云的逻辑）
+        chat_image_url = f"{BASE_URL}{image_url}"
+        
+        logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] Jaaz Magic图片双重显示:")
+        logger.info(f"   📱 聊天显示URL: {chat_image_url}")
+        logger.info(f"   🎨 画布已通过save_image_to_canvas显示")
+        logger.info(f"   ☁️ 使用本地URL")
+        
+        # 聊天响应包含图片预览 + 提示文本
         return {
             'role': 'assistant',
-            'content': f'✨ Magic Success!!!\n\nResult url: {result_url}\n\n![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})'
+            'content': f'🎨 图片已生成并添加到画布\n\n![{filename}]({chat_image_url})'
         }
 
     except (asyncio.TimeoutError, Exception) as e:
@@ -142,12 +160,13 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
             }
         else:
             print(f"❌ 创建魔法回复时出错: {e}")
+            from utils.error_messages import get_user_friendly_error
             return {
                 'role': 'assistant',
                 'content': [
                     {
                         'type': 'text',
-                        'text': f'✨ Magic Generation Error: {str(e)}'
+                        'text': get_user_friendly_error(str(e))
                     }
                 ]
             }

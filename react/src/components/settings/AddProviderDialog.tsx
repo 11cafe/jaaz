@@ -114,9 +114,28 @@ const PROVIDER_OPTIONS = [
     value: 'Google',
     label: 'Google',
     data: {
-      apiUrl: 'https://api./v1',
+      apiUrl: 'https://api.google.com/v1',
       models: {
-        'nano-banana': { type: 'image' },
+        'gemini-2.5-flash-image': { type: 'image' },
+        // not supported yet!
+        // 'gemini-2.0-flash-preview-image-generation': { type: 'image' },
+        // 'imagen-4.0-generate-preview-06-06': { type: 'image' },
+        // 'imagen-4.0-fast-generate-preview-06-06': { type: 'image' },
+        // 'imagen-4.0-ultra-generate-preview-06-06': { type: 'image' },
+        // 'imagen-3.0-generate-002': { type: 'image' },
+        // 'imagen-3.0-fast-generate-001': { type: 'image' },
+        // 'veo-3.0-generate-preview': { type: 'video' },
+        // 'veo-2.0-generate-001': { type: 'video' },
+      },
+    },
+  },
+  {
+    value: 'doubao',
+    label: 'Doubao',
+    data: {
+      apiUrl: 'https://yunwu.ai/v1',
+      models: {
+        'seedream-4.0': { type: 'image' },
         // not supported yet!
         // 'gemini-2.0-flash-preview-image-generation': { type: 'image' },
         // 'imagen-4.0-generate-preview-06-06': { type: 'image' },

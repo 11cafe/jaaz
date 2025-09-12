@@ -37,6 +37,7 @@
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-switch": "^1.1.2",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@tabler/icons-react": "^3.31.0",
     "@tailwindcss/vite": "^4.0.17",

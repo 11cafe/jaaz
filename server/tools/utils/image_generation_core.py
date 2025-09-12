@@ -4,7 +4,7 @@ Contains the main orchestration logic for image generation across different prov
 """
 
 from typing import Optional, Dict, Any
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 from tools.utils.image_utils import process_input_image
 from ..image_providers.image_base_provider import ImageProviderBase
 
@@ -20,6 +20,7 @@ from ..image_providers.google_nano_provider import GoogleNanoImageProvider
 from .image_canvas_utils import (
     save_image_to_canvas,
 )
+from utils.url_converter import get_chat_image_url
 import time
 
 IMAGE_PROVIDERS: dict[str, ImageProviderBase] = {
@@ -93,9 +94,27 @@ async def generate_image_with_provider(
         metadata=metadata,
     )
 
+    # 🔧 [CHAT_FIX_V2] 保留画布保存逻辑 + 直接发送到画布
     # Save image to canvas
     image_url = await save_image_to_canvas(
         session_id, canvas_id, filename, mime_type, width, height
     )
 
-    return f"image generated successfully ![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})"
+    # 📝 [CHAT_DEBUG] 记录图片生成核心信息
+    logger.info(f"🖼️ [CHAT_DEBUG] 图片生成核心完成: filename={filename}")
+    logger.info(f"🖼️ [CHAT_DEBUG] 图片尺寸: {width}x{height}")
+    logger.info(f"🖼️ [CHAT_DEBUG] MIME类型: {mime_type}")
+    logger.info(f"🖼️ [CHAT_DEBUG] 画布URL: {image_url}")
+
+    # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+    # 聊天中显示图片，画布中显示完整图片元素
+    
+    # 构建聊天显示URL - 优先使用腾讯云直链
+    chat_image_url = get_chat_image_url(filename)
+    
+    logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] 图片生成核心双重显示:")
+    logger.info(f"   📱 聊天显示URL: {chat_image_url}")
+    logger.info(f"   🎨 画布已通过save_image_to_canvas显示")
+    
+    # 聊天响应包含图片预览 + 提示文本
+    return f"🎨 图片已生成并添加到画布\n\n![{filename}]({chat_image_url})"

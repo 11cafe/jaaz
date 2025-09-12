@@ -1,8 +1,9 @@
 #server/routers/chat_router.py
-from fastapi import APIRouter, Request, Depends
-from services.chat_service import handle_chat
+from fastapi import APIRouter, Request, Depends, HTTPException
+from services.new_chat import handle_chat
 from services.magic_service import handle_magic
 from services.stream_service import get_stream_task
+from services.i18n_service import i18n_service
 from utils.auth_utils import get_current_user_optional, CurrentUser
 from typing import Dict, Optional
 from log import get_logger
@@ -27,13 +28,40 @@ async def chat(request: Request, current_user: Optional[CurrentUser] = Depends(g
     """
     data = await request.json()
     
+    # 🔍 检测用户语言偏好
+    accept_language = request.headers.get('accept-language', '')
+    user_language = i18n_service.detect_language_from_accept_header(accept_language)
+    
+    # 如果用户发送的是中文消息，也可以作为语言检测的辅助
+    messages = data.get('messages', [])
+    if messages:
+        latest_message = messages[-1]
+        if latest_message.get('role') == 'user':
+            content = latest_message.get('content', '')
+            if isinstance(content, list):
+                # 提取文本内容
+                text_content = ''
+                for item in content:
+                    if isinstance(item, dict) and item.get('type') == 'text':
+                        text_content += item.get('text', '')
+            else:
+                text_content = str(content)
+            
+            # 基于内容检测语言
+            content_language = i18n_service.detect_language_from_content(text_content)
+            if content_language != 'en':  # 如果内容检测不是英文，优先使用内容检测结果
+                user_language = content_language
+    
+    logger.info(f"🌍 [DEBUG] 检测到用户语言: {user_language} (Accept-Language: {accept_language})")
+    
     # 🔍 添加用户信息到请求数据中
     if current_user:
         data['user_info'] = {
             'id': current_user.id,
             'uuid': current_user.uuid,
             'email': current_user.email,
-            'nickname': current_user.nickname
+            'nickname': current_user.nickname,
+            'language': user_language  # 添加语言信息
         }
     
     await handle_chat(data)
@@ -73,20 +101,67 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
     Response:
         {"status": "done"}
     """
-    data = await request.json()
-    
-    # 🔍 添加用户信息到请求数据中
-    if current_user:
-        data['user_info'] = {
-            'id': current_user.id,
-            'uuid': current_user.uuid,
-            'email': current_user.email,
-            'nickname': current_user.nickname
-        }
-    
-    logger.info(f"magic data: {data}")
-    await handle_magic(data)
-    return {"status": "done"}
+    try:
+        logger.info("[Backend Magic] 接收到Magic Generation请求")
+        
+        # 解析请求数据
+        data = await request.json()
+        logger.info(f"[Backend Magic] 请求数据解析成功: session_id={data.get('session_id', 'N/A')}, canvas_id={data.get('canvas_id', 'N/A')}, messages_count={len(data.get('messages', []))}")
+        
+        # 🔍 添加用户信息到请求数据中
+        if current_user:
+            data['user_info'] = {
+                'id': current_user.id,
+                'uuid': current_user.uuid,
+                'email': current_user.email,
+                'nickname': current_user.nickname
+            }
+            logger.info(f"[Backend Magic] 用户信息已添加: user_id={current_user.id}, email={current_user.email}")
+        else:
+            logger.warning("[Backend Magic] 无用户信息")
+        
+        # 立即启动异步magic生成任务，不等待完成
+        # 这样前端可以立即得到响应，不会被阻塞
+        import asyncio
+        
+        # 添加错误处理包装，确保异步任务中的错误不会影响API响应
+        async def safe_handle_magic():
+            try:
+                logger.info("[Backend Magic] 开始调用handle_magic")
+                await handle_magic(data)
+                logger.info("[Backend Magic] handle_magic调用完成")
+            except Exception as e:
+                logger.error(f"[Backend Magic] Async magic generation failed: {e}")
+                logger.error(f"[Backend Magic] 错误详情: {type(e).__name__}: {str(e)}")
+                # 通过WebSocket通知前端错误
+                session_id = data.get('session_id', '')
+                if session_id:
+                    from services.websocket_service import send_to_websocket
+                    await send_to_websocket(session_id, {
+                        'type': 'error',
+                        'error': f'Magic generation failed: {str(e)}'
+                    })
+        
+        logger.info("[Backend Magic] 创建异步任务")
+        asyncio.create_task(safe_handle_magic())
+        
+        logger.info("[Backend Magic] 返回状态started")
+        return {"status": "started"}
+        
+    except Exception as e:
+        logger.error(f"Magic generation error: {e}")
+        # 检查是否是文件过大错误
+        error_msg = str(e).lower()
+        if "413" in error_msg or "too large" in error_msg or "entity too large" in error_msg:
+            raise HTTPException(
+                status_code=413,
+                detail="Image file is too large. Please use an image smaller than 50MB."
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Magic generation failed: {str(e)}"
+            )
 
 @router.post("/magic/cancel/{session_id}")
 async def cancel_magic(session_id: str) -> Dict[str, str]:

@@ -6,7 +6,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(1 0 0); /* 纯白色背景 */
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -117,6 +117,90 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* 背景动画效果 */
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.7;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-gentle {
+    animation: pulse-gentle 8s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  
+  .animate-float-up {
+    animation: float-up 6s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(circle at center, var(--tw-gradient-stops));
+  }
+  
+  /* 背景优化 */
+  .bg-glass {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  
+  .dark .bg-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* 性能优化 */
+  .performance-layer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* 深色模式优化 */
+  .dark .animate-pulse-gentle {
+    opacity: 0.3;
+  }
+  
+  .dark .bg-glass {
+    background: rgba(31, 41, 55, 0.4);
+    border: 1px solid rgba(107, 114, 128, 0.2);
+  }
+
+  /* 新的全局背景样式 - 白色 + 淡蓝色径向渐变 */
+  .bg-soft-blue-radial {
+    background: #ffffff;
+    background-image: radial-gradient(circle at top center, rgba(59, 130, 246, 0.5), transparent 70%);
+  }
+  
+  /* 深色模式下的对应样式 */
+  .dark .bg-soft-blue-radial {
+    background: oklch(0.141 0.005 285.823);
+    background-image: radial-gradient(circle at top center, rgba(59, 130, 246, 0.3), transparent 70%);
   }
 }
 

@@ -9,6 +9,7 @@ type MixedContentProps = {
 
 type MixedContentImagesProps = {
   contents: MessageContent[]
+  canvasElementId?: string // 支持传递canvas元素ID
 }
 
 type MixedContentTextProps = {
@@ -17,24 +18,27 @@ type MixedContentTextProps = {
 }
 
 // 图片组件 - 独立显示在聊天框外
-export const MixedContentImages: React.FC<MixedContentImagesProps> = ({ contents }) => {
+export const MixedContentImages: React.FC<MixedContentImagesProps> = ({
+  contents,
+  canvasElementId,
+}) => {
   const images = contents.filter((content) => content.type === 'image_url')
-  
+
   if (images.length === 0) return null
 
   return (
-    <div className="px-4">
+    <div className='px-4'>
       {images.length === 1 ? (
         // 单张图片：保持长宽比，最大宽度限制
-        <div className="max-h-[512px] flex justify-end">
-          <MessageImage content={images[0]} />
+        <div className='max-h-[512px] flex justify-end'>
+          <MessageImage content={images[0]} canvasElementId={canvasElementId} />
         </div>
       ) : (
         // 多张图片：横向排布，第一张图靠右
-        <div className="flex gap-2 max-h-[512px] justify-end flex-row-reverse">
+        <div className='flex gap-2 max-h-[512px] justify-end flex-row-reverse'>
           {images.map((image, index) => (
-            <div key={index} className="max-h-[512px]">
-              <MessageImage content={image} />
+            <div key={index} className='max-h-[512px]'>
+              <MessageImage content={image} canvasElementId={canvasElementId} />
             </div>
           ))}
         </div>
@@ -56,27 +60,21 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
     .replace(/^\s*$/gm, '') // 移除空行
     .trim()
 
-  console.log('[debug] MixedContentText渲染:', {
-    role: message.role,
-    combinedText: combinedText.substring(0, 50) + '...',
-    willRenderAsUser: message.role === 'user'
-  })
-
   if (!combinedText) return null
 
   return (
     <>
       {message.role === 'user' ? (
-        <div className="flex justify-end mb-4">
-          <div className="bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit">
-            <div className="w-full">
+        <div className='flex justify-end mb-4'>
+          <div className='bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit'>
+            <div className='w-full'>
               <Markdown>{combinedText}</Markdown>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-gray-800 dark:text-gray-200 text-left items-start mb-4">
-          <div className="w-full">
+        <div className='text-gray-800 dark:text-gray-200 text-left items-start mb-4'>
+          <div className='w-full'>
             <Markdown>{combinedText}</Markdown>
           </div>
         </div>

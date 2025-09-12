@@ -10,9 +10,11 @@ type MessageImageProps = {
     }
     type: 'image_url'
   }
+  // 支持直接传递canvas元素ID (GPT生成的图片)
+  canvasElementId?: string
 }
 
-const MessageImage = ({ content }: MessageImageProps) => {
+const MessageImage = ({ content, canvasElementId }: MessageImageProps) => {
   const { excalidrawAPI } = useCanvas()
   const files = excalidrawAPI?.getFiles()
   const filesArray = Object.keys(files || {}).map((key) => ({
@@ -25,7 +27,9 @@ const MessageImage = ({ content }: MessageImageProps) => {
   const handleImagePositioning = (id: string) => {
     excalidrawAPI?.scrollToContent(id, { animate: true })
   }
-  const id = filesArray.find((file) =>
+  
+  // 优化定位逻辑：优先使用直接传递的canvas元素ID，其次通过URL匹配
+  const id = canvasElementId || filesArray.find((file) =>
     content.image_url.url?.includes(file.url)
   )?.id
 

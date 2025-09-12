@@ -5,7 +5,7 @@
   "insufficientBalanceDescription": "Your credits are depleted. Please recharge to continue.",
   "textarea": {
     "placeholder": "Enter your design requirements",
-    "selectModel": "Please select a text model! Go to Settings to set your API keys if you haven't done so.",
+    "selectModel": "Please select a model (text, image, or video)! Go to Settings to set your API keys if you haven't done so.",
     "selectTool": "Please go to settings to add image or video generation tools, or you won't be able to generate any images or videos!!",
     "enterPrompt": "Please enter a prompt",
     "quantity": "Image Quantity"
@@ -41,6 +41,11 @@
   "modelSelector": {
     "title": "Model",
     "auto": "Auto",
+    "singleSelectMode": "Single selection mode",
+    "globalSingleSelectMode": "Global single selection - only one model at a time",
+    "selected": "Selected",
+    "currentSelection": "Current",
+    "willReplace": "Will replace current selection",
     "tabs": {
       "image": "Image",
       "video": "Video",

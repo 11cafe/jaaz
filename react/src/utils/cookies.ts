@@ -123,19 +123,75 @@ export function setAuthCookie(name: string, value: string, expiresInDays: number
   }
   
   console.log(`🍪 Setting auth cookie: ${name}`)
+  
+  // 🔧 优化Cookie设置，提高跨窗口兼容性
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  
   setCookie(name, value, {
     expires: expiresInDays,
-    secure: location.protocol === 'https:' || process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/'
+    secure: location.protocol === 'https:' && !isLocalhost, // localhost下不强制HTTPS
+    sameSite: 'lax', // 保持lax以支持跨窗口访问
+    path: '/',
+    // 在localhost环境下不设置domain，让cookie对所有localhost端口生效
+    domain: isLocalhost ? undefined : location.hostname
   })
+  
+  // 🔄 同时在localStorage设置备份，防止cookie失效
+  try {
+    localStorage.setItem(`backup_${name}`, value)
+    localStorage.setItem(`backup_${name}_expires`, (Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toString())
+  } catch (error) {
+    console.warn('Failed to set localStorage backup:', error)
+  }
 }
 
 /**
  * 获取认证Cookie
  */
 export function getAuthCookie(name: string): string | null {
-  return getCookie(name)
+  // 🍪 首先尝试从cookie获取
+  let value = getCookie(name)
+  
+  if (value) {
+    return value
+  }
+  
+  // 🚨 检查是否在logout过程中，如果是则跳过localStorage恢复
+  const isLoggingOut = sessionStorage.getItem('is_logging_out')
+  const forceLogout = sessionStorage.getItem('force_logout')
+  
+  if (isLoggingOut === 'true' || forceLogout === 'true') {
+    console.log(`🚪 Logout in progress, skipping localStorage recovery for: ${name}`)
+    return null
+  }
+  
+  // 🔄 如果cookie中没有，尝试从localStorage备份恢复
+  try {
+    const backupValue = localStorage.getItem(`backup_${name}`)
+    const backupExpires = localStorage.getItem(`backup_${name}_expires`)
+    
+    if (backupValue && backupExpires) {
+      const expiresTime = parseInt(backupExpires)
+      
+      if (Date.now() < expiresTime) {
+        console.log(`🔄 Restoring auth data from localStorage backup: ${name}`)
+        
+        // 恢复到cookie
+        const daysUntilExpiry = Math.ceil((expiresTime - Date.now()) / (24 * 60 * 60 * 1000))
+        setAuthCookie(name, backupValue, daysUntilExpiry)
+        
+        return backupValue
+      } else {
+        // 备份已过期，清理
+        localStorage.removeItem(`backup_${name}`)
+        localStorage.removeItem(`backup_${name}_expires`)
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to restore from localStorage backup:', error)
+  }
+  
+  return null
 }
 
 /**
@@ -143,6 +199,14 @@ export function getAuthCookie(name: string): string | null {
  */
 export function deleteAuthCookie(name: string): void {
   deleteCookie(name, { path: '/' })
+  
+  // 🧹 同时清理localStorage备份
+  try {
+    localStorage.removeItem(`backup_${name}`)
+    localStorage.removeItem(`backup_${name}_expires`)
+  } catch (error) {
+    console.warn('Failed to clear localStorage backup:', error)
+  }
 }
 
 /**
@@ -152,5 +216,20 @@ export function clearAuthCookies(): void {
   Object.values(AUTH_COOKIES).forEach(cookieName => {
     deleteAuthCookie(cookieName)
   })
-  console.log('🧹 All auth cookies cleared')
+  
+  // 🧹 清理所有localStorage备份
+  try {
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('backup_jaaz_')) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
+  } catch (error) {
+    console.warn('Failed to clear localStorage backups:', error)
+  }
+  
+  console.log('🧹 All auth cookies and backups cleared')
 }
