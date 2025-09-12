@@ -591,8 +591,8 @@ function PricingPage() {
               </CardContent>
               
               <CardFooter className="pt-4">
-                {/* 🎯 Free计划完全不显示任何按钮 */}
-                {plan.key !== 'free' && (
+                {/* 🚨 临时隐藏所有支付按钮 - 等待支付认证通过 */}
+                {false && plan.key !== 'free' && (
                   <Button 
                     variant={buttonVariant} 
                     className="w-full"
