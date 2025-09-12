@@ -18,7 +18,7 @@ export default function TopMenu({
 
   return (
     <div
-      className="sticky top-0 z-50 flex w-full h-16 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md px-3 sm:px-6 items-center select-none border-b border-gray-200/30 dark:border-gray-700/30 shadow-sm relative"
+      className="sticky top-0 z-50 flex w-full h-16 px-3 sm:px-6 items-center select-none relative"
     >
       {/* 左侧区域 */}
       <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
@@ -28,7 +28,7 @@ export default function TopMenu({
         >
           <img src={LOGO_URL} alt="logo" className="size-6 sm:size-7 transition-transform duration-200 group-hover:rotate-12 shrink-0" draggable={false} />
           <div className="flex relative items-center text-base sm:text-lg md:text-2xl font-bold text-foreground min-w-0">
-            <span className="flex items-center whitespace-nowrap">
+            <span className="flex items-center whitespace-nowrap drop-shadow-sm">
               MagicArt
             </span>
           </div>
@@ -37,7 +37,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
             onClick={() => navigate({ to: '/templates' })}
           >
             {t('navigation.templates')}
@@ -45,7 +45,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-muted/60 transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
             onClick={() => navigate({ to: '/pricing' })}
           >
             {t('navigation.pricing')}
@@ -61,7 +61,7 @@ export default function TopMenu({
       )}
 
       {/* 右侧区域 */}
-      <div className="flex items-center gap-1 sm:gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 drop-shadow-sm">
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />

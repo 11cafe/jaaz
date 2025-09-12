@@ -168,28 +168,28 @@ export function UserMenu() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="end" className="w-64 bg-white/85 backdrop-blur-md border-white/40 shadow-xl">
             {/* User Profile Header */}
-            <div className="px-3 py-3 border-b">
+            <div className="px-3 py-3 border-b border-white/30">
               <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10 ring-2 ring-white/30">
                   <AvatarImage src={image_url} alt={username} />
-                  <AvatarFallback className="text-sm font-medium">{initials}</AvatarFallback>
+                  <AvatarFallback className="text-sm font-medium bg-white/60 text-slate-700">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-sm font-medium text-slate-800 truncate">
                     {username}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-slate-600 truncate">
                     {email || 'No email provided'}
                   </p>
                   {/* 🆕 显示用户计划信息 */}
                   <div className="flex items-center gap-1 mt-1">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-blue-500/20 text-blue-700 px-2 py-0.5 rounded-full font-medium backdrop-blur-sm border border-blue-400/30">
                       {levelInfo.name}
                     </span>
                     {levelInfo.period && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-slate-500">
                         ({levelInfo.period})
                       </span>
                     )}
@@ -200,26 +200,26 @@ export function UserMenu() {
             
             
             {/* Upgrade Button */}
-            <div className="px-3 py-3 border-b">
+            <div className="px-3 py-3 border-b border-white/30">
               <Button
                 onClick={() => navigate({ to: '/pricing' })}
-                className="w-full bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 text-white border border-stone-600 hover:border-amber-400/50 shadow-sm hover:shadow-md transition-all duration-200"
+                className="w-full bg-gradient-to-r from-slate-700/90 to-slate-800/90 hover:from-slate-600/90 hover:to-slate-700/90 text-white border border-white/20 hover:border-amber-400/40 shadow-lg hover:shadow-xl backdrop-blur-sm transition-all duration-300"
                 size="sm"
               >
-                <Crown className="w-4 h-4 mr-2" />
+                <Crown className="w-4 h-4 mr-2 text-amber-300" />
                 {levelInfo.isMax ? t('common:auth.managePlan') : t('common:auth.upgrade')}
               </Button>
             </div>
             
             {/* Credits 显示 */}
-            <div className="px-3 py-3 border-b">
+            <div className="px-3 py-3 border-b border-white/30">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{t('common:auth.currentPoints')}</span>
+                <span className="text-sm font-medium text-slate-700">{t('common:auth.currentPoints')}</span>
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-semibold text-slate-800">
                     {balanceLoading ? '...' : balanceError ? '--' : points}
                   </span>
-                  <span className="text-xs text-muted-foreground">{t('common:auth.left')}</span>
+                  <span className="text-xs text-slate-500">{t('common:auth.left')}</span>
                 </div>
               </div>
             </div>
@@ -229,10 +229,10 @@ export function UserMenu() {
               {/* 邀请码 */}
               <DropdownMenuItem 
                 onClick={() => setShowInviteDialog(true)} 
-                className="px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
+                className="px-3 py-2 cursor-pointer hover:bg-white/40 transition-colors text-slate-700 hover:text-slate-800"
               >
                 <div className="flex items-center space-x-3">
-                  <Gift className="w-4 h-4 text-green-600" />
+                  <Gift className="w-4 h-4 text-emerald-600" />
                   <span className="text-sm">{t('common:auth.inviteCode')}</span>
                 </div>
               </DropdownMenuItem>
@@ -240,7 +240,7 @@ export function UserMenu() {
               {/* 退出 */}
               <DropdownMenuItem 
                 onClick={handleLogout} 
-                className="px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-red-600 hover:text-red-700"
+                className="px-3 py-2 cursor-pointer hover:bg-red-500/10 transition-colors text-red-600 hover:text-red-700"
               >
                 <div className="flex items-center space-x-3">
                   <LogOut className="w-4 h-4" />

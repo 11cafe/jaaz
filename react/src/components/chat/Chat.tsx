@@ -986,7 +986,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className='flex flex-col h-screen relative'>
         {/* Chat messages */}
 
-        <header className='flex items-center px-2 py-2 absolute top-0 z-1 w-full'>
+        <header className='flex items-center p-4 absolute top-0 z-1 w-full'>
           <div className='flex-1 min-w-0'>
             <SessionSelector
               session={session}
@@ -995,25 +995,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onSelectSession={onSelectSession}
             />
           </div>
-
-          {/* Share Template Button */}
-          {/* {authStatus.is_logged_in && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-2 shrink-0"
-              onClick={() => setShowShareDialog(true)}
-            >
-              <Share2 className="h-4 w-4 mr-1" />
-            </Button>
-          )} */}
-
-          <Blur className='absolute top-0 left-0 right-0 h-full -z-1' />
         </header>
 
         <ScrollArea className='h-[calc(100vh-45px)]' viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className='flex flex-col flex-1 px-4 pb-50 pt-15'>
+            <div className='flex flex-col flex-1 px-4 pb-50 pt-20'>
               {/* Messages */}
               {messages.map((message, idx) => {
                 return (
@@ -1102,7 +1088,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {pending && sessionId && <ToolcallProgressUpdate sessionId={sessionId} />}
             </div>
           ) : (
-            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-16 select-none'>
+            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-24 select-none'>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

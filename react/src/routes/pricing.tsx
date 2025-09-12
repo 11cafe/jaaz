@@ -435,35 +435,35 @@ function PricingPage() {
   console.log('==================================================')
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-soft-blue-radial">
       <TopMenu />
       
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-6 py-20">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-20">
           <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             {t('subtitle')}
           </p>
           
           
-          {/* Monthly/Yearly Toggle */}
-          <div className="inline-flex items-center bg-muted p-1 rounded-lg">
+          {/* Monthly/Yearly Toggle - 玻璃拟态设计 */}
+          <div className="inline-flex items-center bg-white/20 backdrop-blur-md p-1.5 rounded-xl border border-white/30 shadow-lg">
             <button
-              className={`px-6 py-2 rounded-md font-medium transition-all ${
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 ${
                 billingPeriod === 'monthly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white/90 text-slate-800 shadow-md backdrop-blur-sm'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
               }`}
               onClick={() => setBillingPeriod('monthly')}
             >
               {t('monthlyYearly.monthly')}
             </button>
             <button
-              className={`px-6 py-2 rounded-md font-medium transition-all ${
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 ${
                 billingPeriod === 'yearly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white/90 text-slate-800 shadow-md backdrop-blur-sm'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
               }`}
               onClick={() => setBillingPeriod('yearly')}
             >
@@ -473,7 +473,7 @@ function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4">
           {plans.map((plan) => {
             
             // 🎯 动态计算按钮文本和变体，防止闪烁
@@ -525,16 +525,16 @@ function PricingPage() {
             const buttonText = getButtonText()
             const buttonVariant = getButtonVariant()
             
-            // 🎯 卡片样式：当前计划特殊样式，其他为普通样式
+            // 🎯 玻璃拟态卡片样式：当前计划特殊样式，其他为透明卡片
             const cardClassName = plan.isCurrent 
-              ? 'border-green-500 shadow-lg ring-2 ring-green-500/20' 
-              : 'border-border'
+              ? 'bg-white/95 backdrop-blur-md border-emerald-400/50 shadow-xl ring-2 ring-emerald-400/30' 
+              : 'bg-white/80 backdrop-blur-md border-white/40 shadow-lg hover:shadow-xl hover:bg-white/90'
             
             return (
-              <Card key={plan.key} id={plan.id} className={`relative flex flex-col ${cardClassName}`}>
-                {/* 🎯 只显示当前计划标签 */}
+              <Card key={plan.key} id={plan.id} className={`relative flex flex-col transition-all duration-300 ${cardClassName}`}>
+                {/* 🎯 当前计划标签 - 玻璃拟态设计 */}
                 {plan.isCurrent ? (
-                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1">
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-1.5 shadow-lg border border-emerald-400/30">
                     {t('currentPlan')}
                   </Badge>
                 ) : null}
@@ -634,24 +634,24 @@ function PricingPage() {
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-24 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">{t('faq.title')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">{t('faq.questions.cancel.question')}</h3>
-              <p className="text-muted-foreground">{t('faq.questions.cancel.answer')}</p>
+        <div className="mt-32 max-w-4xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-16">{t('faq.title')}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-white/40 shadow-lg">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">{t('faq.questions.cancel.question')}</h3>
+              <p className="text-slate-600">{t('faq.questions.cancel.answer')}</p>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">{t('faq.questions.trial.question')}</h3>
-              <p className="text-muted-foreground">{t('faq.questions.trial.answer')}</p>
+            <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-white/40 shadow-lg">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">{t('faq.questions.trial.question')}</h3>
+              <p className="text-slate-600">{t('faq.questions.trial.answer')}</p>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">{t('faq.questions.upgrade.question')}</h3>
-              <p className="text-muted-foreground">{t('faq.questions.upgrade.answer')}</p>
+            <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-white/40 shadow-lg">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">{t('faq.questions.upgrade.question')}</h3>
+              <p className="text-slate-600">{t('faq.questions.upgrade.answer')}</p>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">{t('faq.questions.enterprise.question')}</h3>
-              <p className="text-muted-foreground">{t('faq.questions.enterprise.answer')}</p>
+            <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-white/40 shadow-lg">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">{t('faq.questions.enterprise.question')}</h3>
+              <p className="text-slate-600">{t('faq.questions.enterprise.answer')}</p>
             </div>
           </div>
         </div>

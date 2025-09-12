@@ -134,12 +134,12 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
             const fileId = remoteFileIds[i]
             const file = files[fileId]
 
-            console.log(
-              `[CanvasMagicGenerator] 下载进度: ${i + 1}/${remoteFileIds.length} - ${file.dataURL}`
-            )
-            toast.loading(`下载图片 ${i + 1}/${remoteFileIds.length}...`, {
-              id: 'download-images',
-            })
+            // console.log(
+            //   `[CanvasMagicGenerator] 下载进度: ${i + 1}/${remoteFileIds.length} - ${file.dataURL}`
+            // )
+            // toast.loading(`下载图片 ${i + 1}/${remoteFileIds.length}...`, {
+            //   id: 'download-images',
+            // })
 
             const localDataURL = await downloadRemoteImage(file.dataURL)
             processedFiles[fileId] = {

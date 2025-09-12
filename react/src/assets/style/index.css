@@ -6,7 +6,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(1 0 0); /* 纯白色背景 */
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -189,6 +189,18 @@
   .dark .bg-glass {
     background: rgba(31, 41, 55, 0.4);
     border: 1px solid rgba(107, 114, 128, 0.2);
+  }
+
+  /* 新的全局背景样式 - 白色 + 淡蓝色径向渐变 */
+  .bg-soft-blue-radial {
+    background: #ffffff;
+    background-image: radial-gradient(circle at top center, rgba(59, 130, 246, 0.5), transparent 70%);
+  }
+  
+  /* 深色模式下的对应样式 */
+  .dark .bg-soft-blue-radial {
+    background: oklch(0.141 0.005 285.823);
+    background-image: radial-gradient(circle at top center, rgba(59, 130, 246, 0.3), transparent 70%);
   }
 }
 
