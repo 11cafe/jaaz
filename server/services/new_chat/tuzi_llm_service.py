@@ -339,6 +339,9 @@ class TuziLLMService:
         try:
             from services.config_service import get_user_files_dir
             
+            if model_name == "seedream-4.0":
+                model_name = "doubao-seedream-4-0-250828"
+                
             # 生成唯一文件名
             file_id = str(uuid.uuid4())
             
