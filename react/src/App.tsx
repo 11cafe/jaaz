@@ -12,7 +12,8 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { openDB } from 'idb'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
@@ -64,8 +65,47 @@ const queryClient = new QueryClient({
   },
 })
 
+// 支付成功处理组件
+function PaymentSuccessHandler() {
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    const handlePaymentSuccess = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const payment = urlParams.get('payment')
+      const points = urlParams.get('points')
+      const level = urlParams.get('level')
+      const orderId = urlParams.get('order_id')
+
+      if (payment === 'success') {
+        console.log('🎉 Payment success detected:', { points, level, orderId })
+        
+        // 显示成功通知
+        toast.success(t('common:toast.paymentSuccess'), {
+          description: `恭喜您获得 ${points} 积分，等级已升级为 ${level}`,
+          duration: 8000,
+        })
+
+        // 清理URL参数，避免刷新页面时重复显示
+        const newUrl = window.location.origin + window.location.pathname
+        window.history.replaceState({}, document.title, newUrl)
+
+        // 触发认证状态刷新，确保积分和等级更新
+        window.dispatchEvent(new CustomEvent('auth-force-refresh', {
+          detail: { source: 'payment-success' }
+        }))
+      }
+    }
+
+    handlePaymentSuccess()
+  }, [t])
+
+  return null
+}
+
 function App() {
   const { theme } = useTheme()
+  const { t } = useTranslation()
 
 
   // Auto-start ComfyUI on app startup
@@ -109,6 +149,9 @@ function App() {
           <ConfigsProvider>
             <div className="app-container">
               <RouterProvider router={router} />
+
+              {/* Payment Success Handler */}
+              <PaymentSuccessHandler />
 
               {/* Install ComfyUI Dialog */}
               {/* <InstallComfyUIDialog /> */}

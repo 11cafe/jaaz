@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from datetime import datetime
 import os
+from log import get_logger
+from services.db_service import db_service
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/privacy-html", response_class=HTMLResponse)

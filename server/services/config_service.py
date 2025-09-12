@@ -54,6 +54,13 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
         'url': 'https://api.tu-zi.com/v1',
         'api_key': 'sk-CRJTvndo8xN0nmzTe5fyij77T0tmT7ZMcjLZwMzZ0RmvkOP0',
     },
+    'doubao': {
+        'models': {
+            'seedream-4.0': {'type': 'image'}
+        },
+        'url': 'https://yunwu.ai/v1',
+        'api_key': 'sk-T5GzBCTpRm92Po9G9WU9B19w1p1pxHJ8qwfcAcZ47MdZCzEM',
+    },
 
 }
 

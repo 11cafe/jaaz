@@ -8,13 +8,18 @@ from services.migrations.v5_add_multi_user import V5AddMultiUser
 from services.migrations.v6_add_user_uuid import V6AddUserUuid
 from services.migrations.v7_rename_user_id_to_uuid import V7RenameUserIdToUuid
 from services.migrations.v8_add_invite_system import V8AddInviteSystem
+from services.migrations.v9_add_user_level import V9AddUserLevel
+from services.migrations.v10_add_payment_tables import V10AddPaymentTables
+from services.migrations.v11_upgrade_level_system import V11UpgradeLevelSystem
+from services.migrations.v12_add_product_sku import V12AddProductSku
+from services.migrations.v13_add_user_subscription_fields import V13AddUserSubscriptionFields
 from . import Migration
 from log import get_logger
 
 logger = get_logger(__name__)
 
 # Database version
-CURRENT_VERSION = 8
+CURRENT_VERSION = 13
 
 ALL_MIGRATIONS = [
     {
@@ -48,6 +53,26 @@ ALL_MIGRATIONS = [
     {
         'version': 8,
         'migration': V8AddInviteSystem,
+    },
+    {
+        'version': 9,
+        'migration': V9AddUserLevel,
+    },
+    {
+        'version': 10,
+        'migration': V10AddPaymentTables,
+    },
+    {
+        'version': 11,
+        'migration': V11UpgradeLevelSystem,
+    },
+    {
+        'version': 12,
+        'migration': V12AddProductSku,
+    },
+    {
+        'version': 13,
+        'migration': V13AddUserSubscriptionFields,
     },
 ]
 class MigrationManager:

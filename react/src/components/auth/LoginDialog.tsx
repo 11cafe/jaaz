@@ -28,9 +28,11 @@ export function LoginDialog() {
 
           {/* 标题和副标题 */}
           <div className='text-center space-y-3'>
-            <DialogTitle className='text-3xl font-bold text-foreground tracking-tight'>欢迎使用 MagicArt</DialogTitle>
+            <DialogTitle className='text-3xl font-bold text-foreground tracking-tight'>
+              {t('common:auth.loginDialog.welcomeTitle')}
+            </DialogTitle>
             <p className='text-base text-muted-foreground leading-relaxed max-w-sm'>
-              请登录以继续使用 AI 设计助手
+              {t('common:auth.loginDialog.subtitle')}
             </p>
           </div>
 
@@ -45,7 +47,7 @@ export function LoginDialog() {
               {isLoading ? (
                 <div className='flex items-center'>
                   <div className='w-5 h-5 mr-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin'></div>
-                  正在跳转...
+                  {t('common:auth.loginDialog.redirecting')}
                 </div>
               ) : (
                 <>
@@ -67,7 +69,7 @@ export function LoginDialog() {
                       d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z'
                     />
                   </svg>
-                  使用 Google 继续
+                  {t('common:auth.loginDialog.continueWithGoogle')}
                 </>
               )}
             </Button>
@@ -76,7 +78,7 @@ export function LoginDialog() {
           {/* 安全登录提示 */}
           <div className='flex items-center text-sm text-muted-foreground/80'>
             <div className='w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse'></div>
-            安全登录
+            {t('common:auth.loginDialog.secureLogin')}
           </div>
         </div>
       </DialogContent>

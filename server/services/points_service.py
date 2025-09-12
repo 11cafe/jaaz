@@ -9,6 +9,14 @@ logger = get_logger(__name__)
 
 DB_PATH = os.path.join(USER_DATA_DIR, "localmanus.db")
 
+class InsufficientPointsError(Exception):
+    """积分不足异常"""
+    def __init__(self, current_points: int, required_points: int, message: str = None):
+        self.current_points = current_points
+        self.required_points = required_points
+        self.message = message or f"积分不足，当前积分: {current_points}，需要积分: {required_points}"
+        super().__init__(self.message)
+
 class PointsService:
     """积分系统服务类"""
     
@@ -221,6 +229,155 @@ class PointsService:
                 'is_consistent': False,
                 'error': str(e)
             }
+
+    # ===== 画图积分管理专用方法 =====
+    
+    async def check_image_generation_points(self, user_id: int, user_uuid: str, required_points: int = 2) -> Dict[str, Any]:
+        """
+        检查用户是否有足够积分进行画图
+        
+        Args:
+            user_id: 用户ID
+            user_uuid: 用户UUID
+            required_points: 需要的积分数量，默认2分
+            
+        Returns:
+            Dict[str, Any]: {
+                'can_generate': bool,        # 是否可以画图
+                'current_points': int,       # 当前积分
+                'required_points': int,      # 需要积分
+                'message': str              # 提示信息
+            }
+        """
+        try:
+            current_points = await self.get_user_points_balance(user_uuid)
+            
+            can_generate = current_points >= required_points
+            
+            if can_generate:
+                message = f"积分充足，当前积分: {current_points}"
+            else:
+                message = f"积分不足，当前积分: {current_points}，需要积分: {required_points}"
+            
+            return {
+                'can_generate': can_generate,
+                'current_points': current_points,
+                'required_points': required_points,
+                'message': message
+            }
+            
+        except Exception as e:
+            logger.error(f"Error checking image generation points for user {user_id}: {e}")
+            return {
+                'can_generate': False,
+                'current_points': 0,
+                'required_points': required_points,
+                'message': f"检查积分时发生错误: {str(e)}"
+            }
+    
+    async def deduct_image_generation_points(self, user_id: int, user_uuid: str, 
+                                           session_id: str = None, 
+                                           deduction_points: int = 2) -> Dict[str, Any]:
+        """
+        扣除画图消耗的积分
+        
+        Args:
+            user_id: 用户ID
+            user_uuid: 用户UUID
+            session_id: 会话ID，用于记录
+            deduction_points: 扣除的积分数量，默认2分
+            
+        Returns:
+            Dict[str, Any]: {
+                'success': bool,            # 是否扣除成功
+                'points_deducted': int,     # 扣除的积分
+                'balance_after': int,       # 扣除后的余额
+                'message': str             # 操作信息
+            }
+        """
+        try:
+            # 构造交易描述
+            description = f"画图生成消耗积分"
+            if session_id:
+                description += f" (会话: {session_id})"
+            
+            # 使用负数表示扣除
+            success = await self.add_points(
+                user_id=user_id,
+                user_uuid=user_uuid,
+                points=-deduction_points,
+                transaction_type='spend',
+                description=description,
+                reference_id=session_id
+            )
+            
+            if success:
+                # 获取扣除后的余额
+                balance_after = await self.get_user_points_balance(user_uuid)
+                message = f"成功扣除 {deduction_points} 积分，剩余积分: {balance_after}"
+                
+                logger.info(f"Image generation points deducted: user={user_id}, points={deduction_points}, balance={balance_after}")
+                
+                return {
+                    'success': True,
+                    'points_deducted': deduction_points,
+                    'balance_after': balance_after,
+                    'message': message
+                }
+            else:
+                return {
+                    'success': False,
+                    'points_deducted': 0,
+                    'balance_after': 0,
+                    'message': f"扣除积分失败，可能是积分不足"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error deducting image generation points for user {user_id}: {e}")
+            return {
+                'success': False,
+                'points_deducted': 0,
+                'balance_after': 0,
+                'message': f"扣除积分时发生错误: {str(e)}"
+            }
+    
+    async def check_and_reserve_image_generation_points(self, user_id: int, user_uuid: str, 
+                                                      required_points: int = 2) -> None:
+        """
+        检查并预留画图积分，如果积分不足则抛出异常
+        这个方法专门用于画图前的积分检查
+        
+        Args:
+            user_id: 用户ID
+            user_uuid: 用户UUID
+            required_points: 需要的积分数量，默认2分
+            
+        Raises:
+            InsufficientPointsError: 积分不足时抛出异常
+        """
+        try:
+            current_points = await self.get_user_points_balance(user_uuid)
+            
+            if current_points < required_points:
+                raise InsufficientPointsError(
+                    current_points=current_points,
+                    required_points=required_points,
+                    message=f"积分不足无法生成图片，当前积分: {current_points}，需要积分: {required_points}"
+                )
+            
+            logger.info(f"Points check passed for user {user_id}: {current_points} >= {required_points}")
+            
+        except InsufficientPointsError:
+            # 重新抛出积分不足异常
+            raise
+        except Exception as e:
+            logger.error(f"Error checking points for user {user_id}: {e}")
+            # 其他错误也作为积分不足处理，确保系统安全
+            raise InsufficientPointsError(
+                current_points=0,
+                required_points=required_points,
+                message=f"检查积分时发生错误，暂时无法生成图片"
+            )
 
 # 创建单例实例
 points_service = PointsService()

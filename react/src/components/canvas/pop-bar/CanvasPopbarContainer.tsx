@@ -34,7 +34,7 @@ const CanvasPopbarContainer = ({
                 top: `${pos.y + 5}px`,
             }}
         >
-            <div className="flex items-center gap-1 bg-primary-foreground/75 backdrop-blur-lg rounded-lg p-1 shadow-[0_5px_10px_rgba(0,0,0,0.08)] border border-primary/10 pointer-events-auto">
+            <div className="flex items-center gap-1 bg-white/85 backdrop-blur-md rounded-xl p-1.5 shadow-lg border border-white/40 pointer-events-auto">
                 {showAddToChat && (
                     <CanvasPopbar selectedImages={selectedImages} />
                 )}

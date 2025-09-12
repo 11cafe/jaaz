@@ -216,13 +216,17 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                 mime_type, width, height, filename = output
                 file_id = generate_file_id()
 
-                # 使用重定向URL，通过重定向机制尝试获取腾讯云图片
-                url = f"/api/file/{filename}?redirect=true"
+                # 使用Canvas专用URL避免跨域污染
+                from utils.url_converter import get_canvas_image_url
+                url = get_canvas_image_url(filename)
 
+                # 🛡️ 确保Canvas安全：始终使用本地代理URL
+                canvas_safe_url = get_canvas_image_url(filename)
+                
                 file_data = {
                     "mimeType": mime_type,
                     "id": file_id,
-                    "dataURL": url,
+                    "dataURL": canvas_safe_url,  # 🛡️ Canvas专用本地代理URL
                     "created": int(time.time() * 1000),
                 }
 
@@ -251,8 +255,8 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                 canvas_data["data"]["elements"].append(new_element)
                 canvas_data["data"]["files"][file_id] = file_data
 
-                # 使用重定向URL，通过重定向机制尝试获取腾讯云图片
-                image_url = f"{BASE_URL}/api/file/{filename}?redirect=true"
+                # 使用Canvas专用URL避免跨域污染
+                image_url = get_canvas_image_url(filename)
 
                 generated_files_info.append(
                     {
@@ -292,14 +296,23 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                         },
                     )
 
-            # Create a markdown string for all the generated files
-            markdown_images = []
+            # 📝 [CHAT_DEBUG] 记录ComfyUI生成文件信息
+            from log import get_logger
+            logger = get_logger(__name__)
+            logger.info(f"🔧 [CHAT_DEBUG] ComfyUI工作流执行成功，生成了 {len(generated_files_info)} 个文件")
             for file_info in generated_files_info:
-                markdown_images.append(
-                    f"![id: {file_info['filename']}]({file_info['url']})"
-                )
+                logger.info(f"🔧 [CHAT_DEBUG] 文件: {file_info['filename']} -> {file_info['url']}")
 
-            return f"workflow executed successfully {', '.join(markdown_images)}"
+            # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+            # 为每个生成的文件创建markdown格式，在聊天中显示
+            file_links = []
+            for file_info in generated_files_info:
+                file_link = f"![{file_info['filename']}]({file_info['url']})"
+                file_links.append(file_link)
+            
+            # 聊天响应包含文件预览 + 提示文本
+            result_message = f"🔧 ComfyUI工作流执行成功，已生成 {len(generated_files_info)} 个文件并添加到画布\n\n" + "\n\n".join(file_links)
+            return result_message
 
         except Exception as e:
             print(f"Error generating image: {str(e)}")

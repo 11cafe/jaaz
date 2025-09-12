@@ -44,8 +44,8 @@ const CanvasViewMenu = () => {
   return (
     <div
       className={cn(
-        'absolute top-2 right-2 flex items-center gap-1 rounded-lg p-1 z-20 transition-all duration-300 select-none text-primary/70',
-        'hover:bg-primary-foreground/55 hover:backdrop-blur-lg hover:text-primary'
+        'absolute top-2 right-2 flex items-center gap-1 rounded-xl p-1.5 z-20 transition-all duration-300 select-none',
+        'bg-white/80 backdrop-blur-md border border-white/40 shadow-lg text-slate-700 hover:bg-white/90'
       )}
     >
       <Button

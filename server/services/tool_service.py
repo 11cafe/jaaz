@@ -52,6 +52,7 @@ from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_j
 from tools.generate_video_by_veo3_fast_jaaz import generate_video_by_veo3_fast_jaaz
 from tools.generate_image_by_midjourney_jaaz import generate_image_by_midjourney_jaaz
 from tools.generate_image_by_goolgle_nano_banana import generate_image_by_google_nano_banana
+from tools.generate_image_by_doubao_seedream_4 import generate_image_by_doubao_seedream_4_0
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -61,6 +62,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "image",
         "provider": "google",
         "tool_function": generate_image_by_google_nano_banana,
+    },
+     "generate_image_by_doubao_seedream_4_0": {
+        "display_name": "seedream-4.0",
+        "type": "image",
+        "provider": "doubao",
+        "tool_function": generate_image_by_doubao_seedream_4_0,
     },
     # "generate_image_by_imagen_4_jaaz": {
     #     "display_name": "Imagen 4",
@@ -286,6 +293,6 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
             print(
                 f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}"
             )
-            print(traceback.print_stack())
+            traceback.print_exc()
 
     return dynamic_comfy_tools

@@ -95,16 +95,51 @@ async def get_canvas(id: str, request: Request, current_user: Optional[CurrentUs
 
 @router.post("/{id}/save")
 async def save_canvas(id: str, request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
-    payload = await request.json()
-    data_str = json.dumps(payload['data'])
-    
-    # 🔍 获取用户UUID和邮箱
-    user_uuid = get_user_uuid_for_database_operations(current_user)
-    user_email = current_user.email if current_user else None
-    
-    # 💾 保存用户的canvas数据
-    await db_service.save_canvas_data(id, data_str, user_uuid=user_uuid, thumbnail=payload['thumbnail'], user_email=user_email)
-    return {"id": id }
+    try:
+        # 💾 [CANVAS_SAVE] 开始保存画布数据
+        logger.info(f"💾 [CANVAS_SAVE] 开始保存画布: {id}")
+        
+        payload = await request.json()
+        data_str = json.dumps(payload['data'])
+        
+        # 🔍 获取用户UUID和邮箱
+        user_uuid = get_user_uuid_for_database_operations(current_user)
+        user_email = current_user.email if current_user else None
+        
+        logger.info(f"💾 [CANVAS_SAVE] 用户信息: UUID={user_uuid}, Email={user_email}")
+        logger.info(f"💾 [CANVAS_SAVE] 数据大小: {len(data_str)} 字符")
+        
+        # 检查payload结构
+        if 'data' not in payload:
+            logger.error(f"❌ [CANVAS_SAVE] payload缺少data字段")
+            return {"error": "Missing data field in payload"}, 400
+            
+        if 'thumbnail' not in payload:
+            logger.warning(f"⚠️ [CANVAS_SAVE] payload缺少thumbnail字段，使用默认值")
+            payload['thumbnail'] = None
+        
+        # 💾 保存用户的canvas数据
+        await db_service.save_canvas_data(
+            id, 
+            data_str, 
+            user_uuid=user_uuid, 
+            thumbnail=payload['thumbnail'], 
+            user_email=user_email
+        )
+        
+        logger.info(f"✅ [CANVAS_SAVE] 画布保存成功: {id}")
+        return {"id": id}
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ [CANVAS_SAVE] JSON解析错误: {e}")
+        return {"error": "Invalid JSON format"}, 400
+        
+    except Exception as e:
+        logger.error(f"❌ [CANVAS_SAVE] 保存画布失败: {id}, 错误: {e}")
+        logger.error(f"❌ [CANVAS_SAVE] 错误类型: {type(e).__name__}")
+        import traceback
+        logger.error(f"❌ [CANVAS_SAVE] 错误堆栈:\n{traceback.format_exc()}")
+        return {"error": f"Failed to save canvas: {str(e)}"}, 500
 
 @router.post("/{id}/rename")
 async def rename_canvas(id: str, request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):

@@ -19,7 +19,9 @@ async def create_local_response(messages: List[Dict[str, Any]],
                                       session_id: str = "", 
                                       canvas_id: str = "",
                                       model_name: str = "gpt-4o",
-                                      user_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                                      user_info: Optional[Dict[str, Any]] = None,
+                                      user_language: str = 'en',
+                                      provider: str = 'openai') -> Dict[str, Any]:
     """
     本地的魔法生成功能
     实现和 magic_agent 相同的功能
@@ -38,7 +40,8 @@ async def create_local_response(messages: List[Dict[str, Any]],
 
         # 创建 LLM 服务实例
         try:
-            llm_service = TuziLLMService()
+            logger.info(f"🔍 创建 LLM 服务实例: {provider}")
+            llm_service = TuziLLMService(provider=provider)
         except ValueError as e:
             logger.error(f"❌ Tu-zi service configuration error: {e}")
             return {
@@ -78,12 +81,23 @@ async def create_local_response(messages: List[Dict[str, Any]],
         # 检查是否有错误
         if isinstance(result, dict) and result.get('error'):
             error_msg = result['error']
+            user_message = result.get('user_message')  # 获取用户友好的错误消息
+            
             logger.error(f"❌ Magic generation error: {error_msg}")
-            from utils.error_messages import get_user_friendly_error
-            return {
-                'role': 'assistant',
-                'content': get_user_friendly_error(error_msg)
-            }
+            
+            # 优先使用预设的用户友好消息，否则使用通用错误处理
+            if user_message:
+                logger.info(f"📝 使用预设的用户友好消息: {user_message}")
+                return {
+                    'role': 'assistant',
+                    'content': user_message
+                }
+            else:
+                from utils.error_messages import get_user_friendly_error
+                return {
+                    'role': 'assistant',
+                    'content': get_user_friendly_error(error_msg)
+                }
 
         # 检查是否是文本响应（GPT-4o等文本模型）
         if isinstance(result, dict) and result.get('type') == 'text' and result.get('text_content'):
@@ -146,18 +160,38 @@ async def create_local_response(messages: List[Dict[str, Any]],
                     logger.info(f"📁 腾讯云不可用，图片保存在本地: {filename}")
                     cos_url = None  # 确保cos_url为None，后续逻辑会使用本地URL
 
+                # 🔧 [CHAT_FIX_V2] 恢复画布保存逻辑，确保图片被正确保存和发送
                 # 保存图片到画布，传递已有的腾讯云URL避免重复上传
                 image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height, cos_url)
                 print(f"✨ 图片已保存到画布: {filename}")
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
 
-        # 使用腾讯云URL或者画布返回的URL
-        final_image_url = cos_url if cos_url else f"{BASE_URL}{image_url}"
+        # 📝 [CHAT_DEBUG] 记录图片URL信息
+        logger.info(f"🖼️ [CHAT_DEBUG] 图片处理完成: filename={filename}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 使用腾讯云: {cos_url is not None}")
         
+        # 🆕 [CHAT_DUAL_DISPLAY] + 🌐 [I18N] 实现聊天+画布双重显示 + 多语言支持
+        # 聊天中显示腾讯云图片，画布中显示完整图片元素
+        
+        # 使用统一的URL转换工具获取最优聊天显示URL
+        from utils.url_converter import get_chat_image_url
+        chat_image_url = get_chat_image_url(filename)
+        
+        # 🌐 [I18N] 获取多语言提示消息
+        from services.i18n_service import i18n_service
+        localized_message = i18n_service.get_image_generated_message(user_language)
+        
+        logger.info(f"🖼️ [CHAT_DUAL_DISPLAY] 图片双重显示:")
+        logger.info(f"   📱 聊天显示URL: {chat_image_url}")
+        logger.info(f"   🎨 画布已通过save_image_to_canvas显示")
+        logger.info(f"   ☁️ 使用腾讯云: {cos_url is not None}")
+        logger.info(f"   🌐 语言: {user_language}, 消息: {localized_message}")
+        
+        # 聊天响应包含图片预览 + 多语言提示文本
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({final_image_url})'
+            'content': f'{localized_message}\n\n![{filename}]({chat_image_url})'
         }
         
 

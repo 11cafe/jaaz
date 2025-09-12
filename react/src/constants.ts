@@ -20,7 +20,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'Claude',
     icon: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png',
   },
-  openai: { name: 'OpenAI', icon: 'https://openai.com/favicon.ico' },
+  openai: {
+    name: 'OpenAI',
+    icon: `${BASE_API_URL}/static/llm_icon/openai.png`,
+  },
   replicate: {
     name: 'Replicate',
     icon: 'https://images.seeklogo.com/logo-png/61/1/replicate-icon-logo-png_seeklogo-611690.png',
@@ -48,6 +51,10 @@ export const PROVIDER_NAME_MAPPING: {
   google: {
     name: 'Google',
     icon: 'https://www.gstatic.com/aistudio/ai_studio_favicon_2_32x32.png',
+  },
+  doubao: {
+    name: 'Doubao',
+    icon: `${BASE_API_URL}/static/llm_icon/doubao.png`,
   },
 }
 

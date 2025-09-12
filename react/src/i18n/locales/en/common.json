@@ -31,12 +31,40 @@
     "saved": "Saved successfully",
     "deleted": "Deleted successfully"
   },
-  "notifications": {
-    "title": "Notifications",
-    "clear": "Clear",
-    "markAllAsRead": "Mark all as read",
-    "allRead": "All read",
-    "newImageGenerated": "New image generated"
+  "points": {
+    "insufficientTitle": "Insufficient Credits",
+    "currentBalance": "Current Balance",
+    "required": "Required",
+    "credits": "credits",
+    "insufficientDescription": "Sorry, your account balance is insufficient to complete this image generation.",
+    "upgradeHint": "Upgrade your subscription plan to get more credits and enjoy unlimited creativity!",
+    "upgradePlan": "Upgrade Plan",
+    "viewPricing": "View Pricing",
+    "upgradeFeatures": "After upgrading, you will get:",
+    "feature1": "More credits for image generation",
+    "feature2": "Priority processing and faster generation",
+    "feature3": "Advanced AI models and more features"
+  },
+  "toast": {
+    "loginExpired": "Login has expired, please login again",
+    "crossTabLogout": "You have been logged out in another tab",
+    "loginSuccess": "Login successful!",
+    "loginError": "Error occurred during login",
+    "loginFailed": "Login failed",
+    "paymentSuccess": "Payment successful!",
+    "paymentError": "Payment failed, please try again",
+    "subscriptionCancelled": "Subscription cancelled successfully!",
+    "subscriptionCancelError": "Failed to cancel subscription",
+    "imageUploadFailed": "Image upload failed",
+    "copySuccess": "Copied successfully!",
+    "copyError": "Copy failed",
+    "knowledgeListError": "Failed to get knowledge base list",
+    "knowledgeSettingsSaved": "Knowledge base settings saved",
+    "knowledgeSettingsError": "Failed to save knowledge base settings",
+    "fileReadError": "Failed to read file",
+    "networkError": "Network error",
+    "insufficientPoints": "Insufficient points to generate image",
+    "insufficientPointsWithDetails": "Insufficient points, current: {{current}}, required: {{required}}"
   },
   "navigation": {
     "home": "Home",
@@ -78,8 +106,24 @@
     "currentPoints": "Credits",
     "buyPoints": "Buy Points",
     "upgrade": "Upgrade",
+    "managePlan": "Manage Plan",
     "left": "left",
-    "inviteCode": "Invite Code"
+    "inviteCode": "Invite Code",
+    "loginDialog": {
+      "welcomeTitle": "Welcome to MagicArt",
+      "subtitle": "Please login to continue using AI design assistant",
+      "continueWithGoogle": "Continue with Google",
+      "redirecting": "Redirecting...",
+      "secureLogin": "Secure Login"
+    },
+    "levels": {
+      "free": "Free",
+      "base": "Basic",
+      "pro": "Pro", 
+      "max": "Enterprise",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    }
   },
   "invite": {
     "title": "Invite Friends",

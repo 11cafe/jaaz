@@ -3,24 +3,40 @@ import CanvasCard from '@/components/home/CanvasCard'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/contexts/AuthContext'
 
 const CanvasList: React.FC = () => {
   const { t } = useTranslation()
   const location = useLocation()
+  const { authStatus } = useAuth()
   const isHomePage = location.pathname === '/'
 
   const { data: canvases, refetch } = useQuery({
     queryKey: ['canvases'],
     queryFn: listCanvases,
-    enabled: isHomePage, // 每次进入首页时都重新查询
+    enabled: isHomePage && authStatus.is_logged_in, // 只有在首页且已登录时才查询
     refetchOnMount: 'always',
   })
+
+  // 🔄 监听认证状态变化，当登录/登出时刷新数据
+  useEffect(() => {
+    if (isHomePage && authStatus.is_logged_in) {
+      console.log('🔄 CanvasList: Auth status changed to logged in, refetching canvases')
+      refetch()
+    }
+  }, [authStatus.is_logged_in, isHomePage, refetch])
 
   const navigate = useNavigate()
   const handleCanvasClick = (id: string) => {
     navigate({ to: '/canvas/$id', params: { id } })
+  }
+
+  // 🚨 如果未登录，不显示项目列表
+  if (!authStatus.is_logged_in) {
+    console.log('🚫 CanvasList: User not logged in, not showing projects')
+    return null
   }
 
   return (

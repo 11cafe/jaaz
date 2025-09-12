@@ -140,14 +140,14 @@ function Canvas() {
   if (isLoading) {
     return (
       <CanvasProvider>
-        <div className='flex flex-col w-screen h-screen'>
+        <div className='flex flex-col w-screen h-screen bg-soft-blue-radial'>
           <CanvasHeader
             canvasName='加载中...'
             canvasId={id}
             onNameChange={() => {}}
             onNameSave={() => {}}
           />
-          <div className='flex items-center justify-center h-full bg-background/50'>
+          <div className='flex items-center justify-center h-full'>
             <div className='flex flex-col items-center gap-4'>
               <Loader2 className='w-8 h-8 animate-spin text-primary' />
               <p className='text-muted-foreground'>正在加载画布...</p>
@@ -161,14 +161,14 @@ function Canvas() {
   if (error) {
     return (
       <CanvasProvider>
-        <div className='flex flex-col w-screen h-screen'>
+        <div className='flex flex-col w-screen h-screen bg-soft-blue-radial'>
           <CanvasHeader
             canvasName='加载失败'
             canvasId={id}
             onNameChange={() => {}}
             onNameSave={() => {}}
           />
-          <div className='flex items-center justify-center h-full bg-background/50'>
+          <div className='flex items-center justify-center h-full'>
             <div className='flex flex-col items-center gap-4'>
               <p className='text-red-500'>加载失败: {error.message}</p>
               <button
@@ -186,7 +186,7 @@ function Canvas() {
 
   return (
     <CanvasProvider>
-      <div className='flex flex-col w-screen h-screen'>
+      <div className='flex flex-col w-screen h-screen bg-soft-blue-radial'>
         <CanvasHeader
           canvasName={canvasName}
           canvasId={id}
@@ -195,12 +195,12 @@ function Canvas() {
         />
         <ResizablePanelGroup
           direction='horizontal'
-          className='w-screen h-screen'
+          className='w-screen h-screen py-2'
           autoSaveId='jaaz-chat-panel'
         >
           <ResizablePanel className='relative' defaultSize={75}>
-            <div className='w-full h-full'>
-              <div className='relative w-full h-full'>
+            <div className='w-full h-full p-4 pr-2'>
+              <div className='relative w-full h-full bg-white rounded-2xl shadow-xl border border-white/50 backdrop-blur-sm'>
                 <CanvasExcali canvasId={id} initialData={canvas?.data} />
                 <CanvasMenu />
                 <CanvasPopbarWrapper />
@@ -208,16 +208,18 @@ function Canvas() {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle />
+          <ResizableHandle className="bg-transparent hover:bg-white/20 transition-colors duration-300 w-2" />
 
           <ResizablePanel defaultSize={25}>
-            <div className='flex-1 flex-grow bg-accent/50 w-full'>
-              <ChatInterface
-                canvasId={id}
-                sessionList={sessionList}
-                setSessionList={setSessionList}
-                sessionId={searchSessionId}
-              />
+            <div className='w-full h-full p-4 pl-2'>
+              <div className='w-full h-full bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-white/40'>
+                <ChatInterface
+                  canvasId={id}
+                  sessionList={sessionList}
+                  setSessionList={setSessionList}
+                  sessionId={searchSessionId}
+                />
+              </div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

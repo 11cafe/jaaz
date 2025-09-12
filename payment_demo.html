@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嵌入式支付演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .payment-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 0.5rem;
+        }
+        
+        .payment-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .payment-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 模态框样式 */
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            width: 90%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        
+        .close-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .iframe-container {
+            width: 100%;
+            height: calc(100% - 70px);
+            position: relative;
+        }
+        
+        #payment-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.1rem;
+            color: #666;
+        }
+        
+        .status-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">🚀 嵌入式支付演示</h1>
+        <p class="description">
+            点击下方按钮体验在当前窗口内完成支付，无需跳转到新页面！
+            支付页面将在弹窗中显示，完成后自动关闭。
+        </p>
+        
+        <button id="start-payment-btn" class="payment-button">
+            💰 开始支付 (Base Plan)
+        </button>
+        
+        <div id="status-message"></div>
+    </div>
+    
+    <!-- 支付模态框 -->
+    <div id="payment-modal" class="payment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">💳 安全支付</span>
+                <button id="close-modal-btn" class="close-button">&times;</button>
+            </div>
+            <div class="iframe-container">
+                <div id="loading-message" class="loading">
+                    🔄 正在加载支付页面...
+                </div>
+                <iframe id="payment-iframe" style="display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class EmbeddedPayment {
+            constructor() {
+                this.apiBaseUrl = 'http://localhost:8001';
+                this.modal = document.getElementById('payment-modal');
+                this.iframe = document.getElementById('payment-iframe');
+                this.loadingMessage = document.getElementById('loading-message');
+                this.statusMessage = document.getElementById('status-message');
+                
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                // 开始支付按钮
+                document.getElementById('start-payment-btn').addEventListener('click', () => {
+                    this.startPayment();
+                });
+                
+                // 关闭模态框
+                document.getElementById('close-modal-btn').addEventListener('click', () => {
+                    this.closeModal();
+                });
+                
+                // 点击背景关闭模态框
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) {
+                        this.closeModal();
+                    }
+                });
+                
+                // 监听来自iframe的消息
+                window.addEventListener('message', (event) => {
+                    this.handlePaymentMessage(event);
+                });
+                
+                // ESC键关闭模态框
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.modal.style.display === 'block') {
+                        this.closeModal();
+                    }
+                });
+            }
+            
+            async startPayment() {
+                try {
+                    this.showStatus('正在创建支付订单...', 'info');
+                    this.disablePaymentButton(true);
+                    
+                    // 调用后端API创建支付
+                    const response = await fetch(`${this.apiBaseUrl}/api/create_checkout`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && (data.proxy_url || data.checkout_url)) {
+                        this.showStatus('支付订单创建成功，正在打开支付页面...', 'success');
+                        
+                        // 优先使用代理URL，确保在当前窗口内显示
+                        const paymentUrl = data.use_proxy && data.proxy_url ? data.proxy_url : data.checkout_url;
+                        this.openPaymentModal(paymentUrl);
+                    } else {
+                        this.showStatus(`创建支付失败: ${data.error || '未知错误'}`, 'error');
+                        this.disablePaymentButton(false);
+                    }
+                } catch (error) {
+                    console.error('Payment creation error:', error);
+                    this.showStatus(`网络错误: ${error.message}`, 'error');
+                    this.disablePaymentButton(false);
+                }
+            }
+            
+            openPaymentModal(checkoutUrl) {
+                // 显示模态框
+                this.modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                
+                // 重置iframe状态
+                this.iframe.style.display = 'none';
+                this.loadingMessage.style.display = 'block';
+                this.loadingMessage.textContent = '🔄 正在加载支付页面...';
+                
+                // 设置iframe源
+                this.iframe.src = checkoutUrl;
+                
+                // iframe加载完成后显示
+                this.iframe.onload = () => {
+                    this.loadingMessage.style.display = 'none';
+                    this.iframe.style.display = 'block';
+                };
+                
+                // iframe加载错误处理
+                this.iframe.onerror = () => {
+                    this.loadingMessage.textContent = '❌ 支付页面加载失败，请重试';
+                };
+            }
+            
+            closeModal() {
+                this.modal.style.display = 'none';
+                document.body.style.overflow = '';
+                this.iframe.src = '';
+                this.disablePaymentButton(false);
+            }
+            
+            handlePaymentMessage(event) {
+                // 安全检查 - 只接受来自iframe的消息
+                if (!event.data || typeof event.data !== 'object') {
+                    return;
+                }
+                
+                const { type, data, action } = event.data;
+                
+                switch (type) {
+                    case 'PAYMENT_SUCCESS':
+                        this.handlePaymentSuccess(data);
+                        break;
+                    case 'PAYMENT_COMPLETE':
+                        if (action === 'close_iframe') {
+                            this.closeModal();
+                        }
+                        break;
+                    case 'PAYMENT_FAILED':
+                        this.handlePaymentFailure(data);
+                        break;
+                    case 'PAYMENT_REDIRECT_DETECTED':
+                        // 代理页面检测到支付跳转
+                        this.handlePaymentRedirect(event.data);
+                        break;
+                    case 'PAYMENT_FRAME_HEARTBEAT':
+                        // 心跳消息，确认支付页面仍在运行
+                        console.log('Payment frame heartbeat:', event.data.timestamp);
+                        break;
+                }
+            }
+            
+            handlePaymentSuccess(paymentData) {
+                console.log('Payment success:', paymentData);
+                
+                this.showStatus(
+                    `🎉 ${paymentData.message || '支付成功！'} 获得 ${paymentData.points_awarded} 积分`,
+                    'success'
+                );
+                
+                // 可以在这里更新页面其他部分，比如用户积分显示
+                this.updateUserInfo(paymentData);
+            }
+            
+            handlePaymentFailure(errorData) {
+                console.error('Payment failed:', errorData);
+                this.showStatus(`❌ 支付失败: ${errorData.message || '未知错误'}`, 'error');
+                this.closeModal();
+            }
+            
+            handlePaymentRedirect(redirectData) {
+                console.log('Payment redirect detected:', redirectData);
+                this.showStatus('🔄 检测到支付跳转，正在验证支付结果...', 'info');
+                
+                // 给用户一些时间看到消息，然后自动关闭
+                setTimeout(() => {
+                    this.closeModal();
+                    this.showStatus('✅ 支付流程已完成，请稍等系统处理...', 'success');
+                    
+                    // 可以在这里添加轮询检查支付状态的逻辑
+                    this.checkPaymentStatus();
+                }, 2000);
+            }
+            
+            async checkPaymentStatus() {
+                // 这里可以添加轮询检查支付状态的逻辑
+                // 比如每隔几秒钟调用一次 /api/check_payment_status
+                console.log('Checking payment status...');
+                
+                // 模拟状态检查
+                setTimeout(() => {
+                    this.showStatus('🎉 支付已完成！积分已到账', 'success');
+                    // 这里可以刷新页面或更新用户信息
+                }, 3000);
+            }
+            
+            updateUserInfo(paymentData) {
+                // 这里可以更新页面上的用户信息显示
+                // 比如积分余额、会员等级等
+                console.log('Updating user info with:', paymentData);
+            }
+            
+            showStatus(message, type = 'info') {
+                this.statusMessage.textContent = message;
+                this.statusMessage.className = `status-message status-${type}`;
+                this.statusMessage.style.display = 'block';
+                
+                // 5秒后自动隐藏成功和信息消息
+                if (type === 'success' || type === 'info') {
+                    setTimeout(() => {
+                        this.statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+            
+            disablePaymentButton(disabled) {
+                const button = document.getElementById('start-payment-btn');
+                button.disabled = disabled;
+                button.textContent = disabled ? '⏳ 处理中...' : '💰 开始支付 (Base Plan)';
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new EmbeddedPayment();
+        });
+    </script>
+</body>
+</html>

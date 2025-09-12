@@ -78,9 +78,9 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
                 template = next((t for t in TEMPLATES if t["id"] == template_id_int), None)
                 if template:
                     template_prompt = template.get("prompt", "")
-                    template_image = template.get("image", "")
-                    use_mask = template.get("use_mask", 0)
-                    is_image = template.get("is_image", 0)
+                    template_image = str(template.get("image", ""))
+                    use_mask = int(template.get("use_mask", 0) or 0)
+                    is_image = int(template.get("is_image", 0) or 0)
                     logger.info(f"✅ 找到模板prompt: {template_prompt}")
                 else:
                     logger.error(f"❌ 未找到模板ID: {template_id}")
@@ -90,8 +90,17 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
                 template_prompt = user_prompt  # 如果模板ID无效，使用用户输入
 
             
-            # 使用模板的prompt或用户的prompt，确保是字符串类型
-            final_prompt = str(template_prompt if template_prompt else user_prompt)
+            # 🎯 优先级逻辑：用户提示词 > 模版提示词
+            # 1. 如果用户提供了有效的提示词（非空且不只是空白字符），使用用户提示词  
+            # 2. 如果用户提示词为空，使用模版提示词作为后备
+            user_prompt_is_valid = user_prompt and user_prompt.strip()
+            
+            if user_prompt_is_valid:
+                final_prompt = str(user_prompt.strip())
+                logger.info(f"✅ 使用用户提示词: {final_prompt}")
+            else:
+                final_prompt = str(template_prompt if template_prompt else "")
+                logger.info(f"✅ 使用模版提示词: {final_prompt}")
             result = await magic_draw_service.generate_template_image(final_prompt, image_content, template_image, user_info, use_mask, is_image, session_id)
         if not result:
             return {
@@ -167,12 +176,32 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
             except Exception as e:
                 print(f"❌ 保存图片到画布失败: {e}")
 
-        # 使用腾讯云URL或者画布返回的URL
+        # 🔧 [CHAT_FIX] 使用腾讯云URL或者画布返回的URL，但不在聊天中显示图片
         final_image_url = cos_url if cos_url else f"{BASE_URL}{image_url}"
         
+        # 📝 [CHAT_DEBUG] 记录图片URL信息
+        logger.info(f"🖼️ [CHAT_DEBUG] Magic图片处理完成: filename={filename}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 最终图片URL: {final_image_url}")
+        logger.info(f"🖼️ [CHAT_DEBUG] 使用腾讯云: {cos_url is not None}")
+        
+        # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+        # 聊天中显示腾讯云图片，画布中显示完整图片元素
+        
+        # 🎯 Magic Generation专用：使用本地代理URL避免Canvas跨域污染
+        # Magic Generation主要用于Canvas，不是纯聊天，所以优先避免跨域问题
+        from utils.url_converter import get_canvas_image_url
+        display_image_url = get_canvas_image_url(filename)
+        
+        logger.info(f"🖼️ [MAGIC_GENERATION] Magic图片生成完成:")
+        logger.info(f"   🎨 显示URL: {display_image_url}")
+        logger.info(f"   🖼️ Canvas已通过save_image_to_canvas显示")
+        logger.info(f"   ☁️ 腾讯云备份: {cos_url is not None}")
+        logger.info(f"   🛡️ 使用代理URL避免Canvas跨域污染")
+        
+        # Magic Generation响应：使用代理URL避免Canvas跨域问题
         return {
             'role': 'assistant',
-            'content': f'✨ Image Generate Success\n\n![image_id: {filename}]({final_image_url})'
+            'content': f'🎨 图片已生成并添加到画布\n\n![{filename}]({display_image_url})'
         }
         
 

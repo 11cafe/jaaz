@@ -623,10 +623,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
+      
+      console.log('🔍 [DEBUG] handleAllMessages called:', {
+        sessionId,
+        currentMessagesCount: messages.length,
+        newMessagesCount: data.messages.length,
+        hasDisplayedInitialMessage,
+        firstNewMessage: data.messages[0]?.role,
+        currentMessages: messages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 50) : 'mixed' }))
+      })
+      
       const processedMessages = mergeToolCallResult(data.messages)
 
       // 如果已经显示了初始用户消息，且后端消息为空，则不覆盖
       if (hasDisplayedInitialMessage && processedMessages.length === 0 && messages.length > 0) {
+        console.log('🔍 [DEBUG] handleAllMessages: 保持当前消息，不覆盖空消息')
         return
       }
 
@@ -635,11 +646,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const hasUserMessage = processedMessages.some((msg) => msg.role === 'user')
         if (!hasUserMessage) {
           const mergedMessages = [...messages, ...processedMessages]
+          console.log('🔍 [DEBUG] handleAllMessages: 合并消息，当前消息数:', messages.length, '新消息数:', processedMessages.length, '合并后:', mergedMessages.length)
           setMessages(mergedMessages)
           scrollToBottom()
           return
         }
       }
+      
+      console.log('🔍 [DEBUG] handleAllMessages: 完全替换消息列表，从', messages.length, '条消息到', processedMessages.length, '条消息')
       setMessages(processedMessages)
       scrollToBottom()
     },
@@ -664,13 +678,51 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
-    setPending(false)
-    toast.error('Error: ' + data.error, {
-      closeButton: true,
-      duration: 3600 * 1000,
-      style: { color: 'red' },
+    console.log('🚨 [Chat] 收到Socket错误事件:', {
+      error_code: data.error_code,
+      current_points: data.current_points,
+      required_points: data.required_points,
+      session_id: data.session_id,
+      current_session_id: sessionId,
+      error: data.error
     })
-  }, [])
+    
+    setPending(false)
+    
+    // 特别处理积分不足错误
+    if (data.error_code === 'insufficient_points') {
+      console.log('💰 [Chat] 处理积分不足错误')
+      if (data.current_points !== undefined && data.required_points !== undefined) {
+        console.log('📊 [Chat] 显示详细积分不足提示', {
+          current: data.current_points,
+          required: data.required_points
+        })
+        toast.error(t('common:toast.insufficientPointsWithDetails', {
+          current: data.current_points,
+          required: data.required_points
+        }), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      } else {
+        console.log('📊 [Chat] 显示基本积分不足提示')
+        toast.error(t('common:toast.insufficientPoints'), {
+          closeButton: true,
+          duration: 5000,
+          style: { color: 'red' },
+        })
+      }
+    } else {
+      console.log('⚠️ [Chat] 处理其他类型错误:', data.error)
+      // 其他错误使用原有的显示方式
+      toast.error('Error: ' + data.error, {
+        closeButton: true,
+        duration: 3600 * 1000,
+        style: { color: 'red' },
+      })
+    }
+  }, [t, sessionId])
 
   const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
     toast.info(data.info, {
@@ -934,7 +986,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className='flex flex-col h-screen relative'>
         {/* Chat messages */}
 
-        <header className='flex items-center px-2 py-2 absolute top-0 z-1 w-full'>
+        <header className='flex items-center p-4 absolute top-0 z-1 w-full'>
           <div className='flex-1 min-w-0'>
             <SessionSelector
               session={session}
@@ -943,25 +995,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onSelectSession={onSelectSession}
             />
           </div>
-
-          {/* Share Template Button */}
-          {/* {authStatus.is_logged_in && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-2 shrink-0"
-              onClick={() => setShowShareDialog(true)}
-            >
-              <Share2 className="h-4 w-4 mr-1" />
-            </Button>
-          )} */}
-
-          <Blur className='absolute top-0 left-0 right-0 h-full -z-1' />
         </header>
 
         <ScrollArea className='h-[calc(100vh-45px)]' viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className='flex flex-col flex-1 px-4 pb-50 pt-15'>
+            <div className='flex flex-col flex-1 px-4 pb-50 pt-20'>
               {/* Messages */}
               {messages.map((message, idx) => {
                 return (
@@ -1050,7 +1088,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {pending && sessionId && <ToolcallProgressUpdate sessionId={sessionId} />}
             </div>
           ) : (
-            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-16 select-none'>
+            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-24 select-none'>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

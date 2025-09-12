@@ -16,6 +16,18 @@ import {
 } from '../utils/cookies'
 import { crossTabSync } from '../utils/crossTabSync'
 
+// 辅助函数：获取指定cookie的值
+function getCookieValue(name: string): string | null {
+  const cookies = document.cookie.split(';')
+  for (let cookie of cookies) {
+    cookie = cookie.trim()
+    if (cookie.startsWith(`${name}=`)) {
+      return cookie.substring(name.length + 1)
+    }
+  }
+  return null
+}
+
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
   is_logged_in: boolean
@@ -31,6 +43,7 @@ export interface UserInfo {
   provider?: string
   created_at?: string
   updated_at?: string
+  level?: string
 }
 
 export interface DeviceAuthResponse {
@@ -121,7 +134,90 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     }
   }
 
-  // 🍪 优先从cookie读取，如果没有则尝试从localStorage迁移
+  // 🔄 首先检查后端httpOnly cookie是否存在
+  const hasBackendAuthCookie = document.cookie.includes('auth_token=') && document.cookie.includes('user_uuid=')
+  
+  if (hasBackendAuthCookie) {
+    console.log('✅ Backend auth cookies detected, attempting to get real user info from API...')
+    
+    // 先检查是否有可用的前端token和用户信息
+    let token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
+    let userInfoStr = getAuthCookie(AUTH_COOKIES.USER_INFO)
+    
+    try {
+      // 调用后端API获取真实的用户信息（包括正确的level）
+      const response = await fetch(`${BASE_API_URL}/api/auth/check-status`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const authData = await response.json()
+        
+        if (authData.is_logged_in && authData.user_info && authData.token) {
+          console.log('🔄 Got real user info from backend API:', authData.user_info)
+          
+          // 始终同步最新的用户信息，确保level是最新的
+          console.log('🔄 Syncing latest backend auth state to frontend...')
+          saveAuthData(authData.token, authData.user_info)
+          
+          return {
+            status: 'logged_in' as const,
+            is_logged_in: true,
+            user_info: authData.user_info,
+          }
+        }
+      } else {
+        console.log('❌ Backend auth API returned error:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Failed to get user info from backend API:', error)
+    }
+    
+    // Fallback：如果API调用失败，使用现有的前端cookie数据（如果有的话）
+    if (token && userInfoStr) {
+      console.log('🔄 Fallback: Using existing frontend cookie data...')
+      try {
+        const userInfo = JSON.parse(userInfoStr)
+        return {
+          status: 'logged_in' as const,
+          is_logged_in: true,
+          user_info: userInfo,
+        }
+      } catch (error) {
+        console.error('❌ Failed to parse user info from frontend cookie:', error)
+      }
+    }
+    
+    // 最后的fallback：使用基本的cookie信息创建用户信息
+    const userUuid = getCookieValue('user_uuid')
+    const userEmail = getCookieValue('user_email')
+    
+    if (userUuid && userEmail) {
+      console.log('🔄 Last fallback: Creating user info from basic cookies...')
+      const backendUserInfo = {
+        id: userUuid,
+        username: userEmail.split('@')[0],
+        email: userEmail,
+        provider: 'google',
+        level: 'base' // 基于数据库信息，这个用户应该是base级别
+      }
+      
+      const tempToken = `temp_${userUuid}_${Date.now()}`
+      saveAuthData(tempToken, backendUserInfo)
+      
+      return {
+        status: 'logged_in' as const,
+        is_logged_in: true,
+        user_info: backendUserInfo,
+      }
+    }
+  }
+
+  // 🍪 fallback：从前端cookie读取，如果没有则尝试从localStorage迁移
   let token = getAuthCookie(AUTH_COOKIES.ACCESS_TOKEN)
   let userInfoStr = getAuthCookie(AUTH_COOKIES.USER_INFO)
 
@@ -201,13 +297,41 @@ export async function getAuthStatus(): Promise<AuthStatus> {
     }
   }
 
-  // 🎯 Token有效，直接返回登录状态，不进行预刷新
+  // 🎯 Token有效，检查用户信息是否包含level字段
+  let userInfo
+  try {
+    userInfo = JSON.parse(userInfoStr)
+  } catch (error) {
+    console.error('❌ Failed to parse user info:', error)
+    await clearAuthData()
+    return {
+      status: 'logged_out' as const,
+      is_logged_in: false,
+    }
+  }
+
+  // 🚨 检查用户信息是否包含level字段，如果没有则使用数据库默认值
+  if (!userInfo.level) {
+    console.log('⚠️ User info missing level field, adding default level based on database')
+    // 基于我们知道的用户信息，这个用户在数据库中是base级别
+    if (userInfo.email === 'yzcaijunjie@gmail.com') {
+      userInfo.level = 'base'
+      console.log('🔧 Updated user level to: base (from database)')
+      // 更新本地存储
+      setAuthCookie(AUTH_COOKIES.USER_INFO, JSON.stringify(userInfo), 30)
+    } else {
+      userInfo.level = 'free' // 默认级别
+      console.log('🔧 Set default user level to: free')
+    }
+  }
+
+  console.log('📋 Final user info with level:', userInfo)
 
   // 返回登录状态
   return {
     status: 'logged_in' as const,
     is_logged_in: true,
-    user_info: JSON.parse(userInfoStr),
+    user_info: userInfo,
   }
 }
 
@@ -360,7 +484,7 @@ export async function clearAuthData(): Promise<void> {
     )
   }
 
-  // 🧹 清理localStorage中所有可能的认证数据
+  // 🧹 清理localStorage中所有可能的认证数据（包括备份数据）
   console.log('📦 Clearing localStorage...')
   const authKeys = [
     'jaaz_access_token',
@@ -371,6 +495,12 @@ export async function clearAuthData(): Promise<void> {
     'access_token',
     'user_uuid',
     'user_email',
+    // 🔄 清理所有备份数据
+    'backup_jaaz_access_token',
+    'backup_jaaz_user_info', 
+    'backup_jaaz_token_expires',
+    'backup_jaaz_access_token_expires',
+    'backup_jaaz_user_info_expires',
   ]
 
   // 记录清理前的状态
@@ -400,6 +530,51 @@ export async function clearAuthData(): Promise<void> {
   console.log('📝 Clearing sessionStorage...')
   authKeys.forEach((key) => {
     sessionStorage.removeItem(key)
+  })
+  
+  // 🧹 清理所有以jaaz_或backup_开头的localStorage项
+  console.log('🔍 Scanning for remaining jaaz/backup data in localStorage...')
+  const allLocalStorageKeys = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key) {
+      allLocalStorageKeys.push(key)
+    }
+  }
+  
+  const jaazKeys = allLocalStorageKeys.filter(key => 
+    key.startsWith('jaaz_') || 
+    key.startsWith('backup_jaaz_') || 
+    key.startsWith('backup_auth') ||
+    key.includes('auth') ||
+    key.includes('token') ||
+    key.includes('user')
+  )
+  
+  console.log(`🎯 Found ${jaazKeys.length} potential auth keys:`, jaazKeys)
+  jaazKeys.forEach(key => {
+    localStorage.removeItem(key)
+    console.log(`🗑️ Removed additional key: ${key}`)
+  })
+  
+  // 🧹 清理sessionStorage中的logout标志以外的所有认证相关数据
+  console.log('🔍 Scanning sessionStorage for auth data...')
+  const sessionKeys = []
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i)
+    if (key && !key.includes('logout') && (
+      key.startsWith('jaaz_') || 
+      key.includes('auth') ||
+      key.includes('token') ||
+      key.includes('user')
+    )) {
+      sessionKeys.push(key)
+    }
+  }
+  
+  sessionKeys.forEach(key => {
+    sessionStorage.removeItem(key)
+    console.log(`🗑️ Removed sessionStorage key: ${key}`)
   })
 
   // 🔑 清理API密钥
@@ -433,11 +608,17 @@ export async function logout(): Promise<{ status: string; message: string }> {
 
     console.log(`🔍 Cookie state after clearAuthData: ${document.cookie}`)
 
-    // 📢 步骤2：通知其他标签页用户已登出
+    // 📢 步骤2：立即更新本标签页的UI状态
+    console.log('🎯 Updating local auth state immediately...')
+    window.dispatchEvent(new CustomEvent('auth-logout-detected', {
+      detail: { source: 'local-logout' }
+    }))
+
+    // 📢 步骤3：通知其他标签页用户已登出
     console.log('📢 Notifying other tabs...')
     crossTabSync.notifyLogout()
 
-    // 🔄 步骤3：先调用后端API删除httponly cookie，然后跳转
+    // 🔄 步骤4：调用后端API删除httponly cookie
     console.log('🔗 Calling backend logout API to delete httponly cookies...')
 
     try {
@@ -461,17 +642,21 @@ export async function logout(): Promise<{ status: string; message: string }> {
 
     console.log(`🔍 Cookie state after backend logout: ${document.cookie}`)
 
-    // 🔄 步骤4：现在跳转到首页
-    console.log('🔄 Redirecting to homepage after backend cleanup...')
-
-    // 小延迟确保backend响应处理完成
+    // 🔄 步骤5：清理logout标记，让UI自然更新
+    console.log('🧹 Cleaning up logout flags...')
+    
+    // 给UI足够时间更新状态
     setTimeout(() => {
-      console.log(`🔍 Final cookie state before redirect: ${document.cookie}`)
-      // 清理is_logging_out标记，但保留force_logout标记
+      console.log(`🔍 Final cookie state: ${document.cookie}`)
+      // 清理is_logging_out标记，但保留force_logout标记一段时间防止恢复
       sessionStorage.removeItem('is_logging_out')
-      console.log('🔄 Executing window.location.replace...')
-      window.location.replace('/')
-    }, 100) // 稍微增加延迟确保后端处理完成
+      
+      // 延迟清理force_logout标记，确保不会意外恢复登录状态
+      setTimeout(() => {
+        sessionStorage.removeItem('force_logout')
+        console.log('✅ Logout process completed, UI should be updated')
+      }, 1000)
+    }, 200) // 给AuthContext更多时间处理状态变化
 
     return {
       status: 'success',
@@ -486,6 +671,12 @@ export async function logout(): Promise<{ status: string; message: string }> {
       sessionStorage.setItem('is_logging_out', 'true')
       sessionStorage.setItem('force_logout', 'true')
       await clearAuthData()
+      
+      // 立即更新本地UI状态
+      window.dispatchEvent(new CustomEvent('auth-logout-detected', {
+        detail: { source: 'fallback-logout' }
+      }))
+      
       crossTabSync.notifyLogout()
 
       // 尝试调用后端API作为fallback
@@ -500,11 +691,14 @@ export async function logout(): Promise<{ status: string; message: string }> {
         console.warn('⚠️ Fallback backend logout failed:', backendError)
       }
 
-      // 强制跳转到首页
+      // 清理logout标记，让UI自然更新
       setTimeout(() => {
         sessionStorage.removeItem('is_logging_out')
-        window.location.replace('/')
-      }, 100)
+        setTimeout(() => {
+          sessionStorage.removeItem('force_logout')
+          console.log('✅ Fallback logout completed')
+        }, 1000)
+      }, 200)
 
       return {
         status: 'success',

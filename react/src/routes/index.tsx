@@ -56,29 +56,7 @@ function Home() {
   })
 
   return (
-    <div className='flex flex-col h-screen relative overflow-hidden'>
-      {/* 主背景渐变层 - 温暖米白色调 */}
-      <div className='absolute inset-0 bg-gradient-to-br from-stone-50 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-stone-900 dark:to-gray-900'></div>
-      
-      {/* 大型渐变装饰背景 - 微妙的暖色点缀 */}
-      <div className='absolute inset-0 overflow-hidden'>
-        <div className='absolute left-1/2 -translate-x-1/2 -top-20 w-[400%] sm:w-[200%] lg:w-[150%] aspect-square 
-                        opacity-30 animate-pulse-gentle'
-             style={{
-               background: 'radial-gradient(circle at center, rgba(255, 237, 213, 0.6) 0%, rgba(254, 243, 199, 0.4) 25%, rgba(245, 245, 244, 0.3) 50%, transparent 75%)',
-               mask: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
-               WebkitMask: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
-             }}>
-        </div>
-      </div>
-
-      {/* 微妙的纹理覆盖层 - 更细腻的网格 */}
-      <div className='absolute inset-0 opacity-20 dark:opacity-10'
-           style={{
-             backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23374151' fill-opacity='0.015'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3Cpath d='M20 20m-1 0a1 1 0 1 1 2 0a1 1 0 1 1-2 0'/%3E%3C/g%3E%3C/svg%3E")`,
-             backgroundSize: '40px 40px'
-           }}>
-      </div>
+    <div className='flex flex-col h-screen relative overflow-hidden bg-soft-blue-radial'>
 
       <ScrollArea className='h-full relative z-10'>
         <TopMenu />
@@ -158,6 +136,13 @@ function Home() {
                   className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
                 >
                   Terms of Service
+                </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a 
+                  href='mailto:support@magicart.cc' 
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Contact Support
                 </a>
               </div>
 

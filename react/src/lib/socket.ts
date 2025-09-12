@@ -40,6 +40,12 @@ export class SocketIOManager {
         console.log('✅ Socket.IO connected:', this.socket?.id)
         this.connected = true
         this.reconnectAttempts = 0
+        
+        // 🔗 连接成功后自动注册session
+        setTimeout(() => {
+          this.autoRegisterSessionFromURL()
+        }, 100) // 稍微延迟确保连接稳定
+        
         resolve(true)
       })
 
@@ -83,6 +89,14 @@ export class SocketIOManager {
 
     this.socket.on('pong', (data) => {
       console.log('🔗 Pong received:', data)
+    })
+
+    this.socket.on('session_registered', (data) => {
+      console.log('✅ [SOCKET_DEBUG] Session注册成功:', data)
+    })
+
+    this.socket.on('registration_failed', (data) => {
+      console.error('❌ [SOCKET_DEBUG] Session注册失败:', data)
     })
   }
 
@@ -152,6 +166,34 @@ export class SocketIOManager {
         break
       default:
         console.log('⚠️ Unknown session update type:', type)
+    }
+  }
+
+  registerSession(sessionId: string, canvasId?: string) {
+    if (this.socket && this.connected) {
+      console.log('🔗 [SOCKET_DEBUG] 注册session到WebSocket:', { sessionId, canvasId })
+      this.socket.emit('register_session', { session_id: sessionId, canvas_id: canvasId })
+    } else {
+      console.warn('⚠️ [SOCKET_DEBUG] 无法注册session: socket未连接')
+    }
+  }
+
+  autoRegisterSessionFromURL() {
+    try {
+      const url = new URL(window.location.href)
+      const sessionId = url.searchParams.get('sessionId')
+      const canvasId = url.pathname.includes('/canvas/') ? url.pathname.split('/canvas/')[1]?.split('?')[0] : undefined
+      
+      console.log('🔍 [SOCKET_DEBUG] 自动检测URL中的session信息:', { sessionId, canvasId, url: url.href })
+      
+      if (sessionId) {
+        this.registerSession(sessionId, canvasId)
+        console.log('✅ [SOCKET_DEBUG] 成功自动注册session')
+      } else {
+        console.log('ℹ️ [SOCKET_DEBUG] URL中没有sessionId，跳过自动注册')
+      }
+    } catch (error) {
+      console.error('❌ [SOCKET_DEBUG] 自动注册session失败:', error)
     }
   }
 

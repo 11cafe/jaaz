@@ -2,45 +2,75 @@
   "title": "Choose the Right Plan for You",
   "subtitle": "Whether you're an individual user or a business team, we have the right pricing plan to meet your needs",
   "mostPopular": "Most Popular",
+  "currentPlan": "Current Plan",
+  "monthlyYearly": {
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
   "plans": {
-    "starter": {
-      "name": "Starter",
-      "price": "$0",
-      "period": "Forever Free",
-      "description": "Perfect for individual users to experience",
+    "current": "Current Plan",
+    "free": {
+      "name": "Free",
+      "pricing": {
+        "monthly": { "price": "0", "period": "Forever Free" },
+        "yearly": { "price": "0", "period": "Forever Free" }
+      },
+      "description": "Perfect for individuals",
       "features": [
-        "~125 image generations",
-        "~100 seconds video generation",
-        "Access to all models",
-        "Commercial use allowed"
+        "Credits: 20",
+        "Images: 10",
+        "Basic features",
+        "Community support"
       ],
       "buttonText": "Get Started"
     },
-    "basic": {
-      "name": "Basic",
-      "price": "$9.9",
-      "period": "per month",
-      "description": "Perfect for individual creators and small teams",
+    "base": {
+      "name": "Base",
+      "pricing": {
+        "monthly": { "price": "$5.9", "period": "/Monthly" },
+        "yearly": { "price": "$59", "period": "/Yearly", "originalPrice": "$70.8" }
+      },
+      "description": "Perfect for individual creators",
       "features": [
-        "~375 image generations",
-        "~300 seconds video generation",
-        "Access to all models",
-        "Commercial use allowed"
+        "Credits: 300",
+        "Images: 150",
+        "All basic features",
+        "Email support"
       ],
-      "buttonText": "Get Started"
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Base"
     },
     "pro": {
-      "name": "Professional",
-      "price": "$29.9",
-      "period": "per month",
-      "description": "Perfect for professional creators and enterprises",
+      "name": "Pro",
+      "pricing": {
+        "monthly": { "price": "$9.9", "period": "/Monthly" },
+        "yearly": { "price": "$99", "period": "/Yearly", "originalPrice": "$118.8" }
+      },
+      "description": "Perfect for professional creators",
       "features": [
-        "~875 image generations",
-        "~700 seconds video generation",
-        "Access to all models",
-        "Commercial use allowed"
+        "Credits: 1000",
+        "Images: 500",
+        "All advanced features",
+        "Priority support"
       ],
-      "buttonText": "Get Started"
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Pro"
+    },
+    "max": {
+      "name": "Max",
+      "pricing": {
+        "monthly": { "price": "$29.9", "period": "/Monthly" },
+        "yearly": { "price": "$299", "period": "/Yearly", "originalPrice": "$358.8" }
+      },
+      "description": "Perfect for enterprises and teams",
+      "features": [
+        "Credits: 3000",
+        "Images: 1500",
+        "All enterprise features",
+        "Dedicated support"
+      ],
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Max"
     }
   },
   "faq": {
@@ -77,5 +107,8 @@
   "messages": {
     "paymentError": "Failed to create payment order",
     "paymentErrorRetry": "Failed to create payment order, please try again later"
+  },
+  "discount": {
+    "save": "Save {{percent}}%"
   }
 }

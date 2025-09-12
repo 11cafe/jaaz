@@ -37,7 +37,7 @@ function TemplatesPage() {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-soft-blue-radial">
       <TopMenu />
       
       <div className="container mx-auto px-4 py-8">
@@ -148,6 +148,28 @@ function TemplatesPage() {
             </p>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-16 pt-8 border-t border-border text-center">
+          <div className="flex items-center justify-center space-x-6 mb-4">
+            <a 
+              href='mailto:support@magicart.cc' 
+              className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+            >
+              Contact Support
+            </a>
+            <div className='w-px h-4 bg-border'></div>
+            <a 
+              href='/' 
+              className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+            >
+              Back to Home
+            </a>
+          </div>
+          <p className="text-muted-foreground">
+            © 2025 MagicArt AI Image Generator. All rights reserved.
+          </p>
+        </div>
 
       </div>
     </div>

@@ -2,45 +2,75 @@
   "title": "选择适合您的方案",
   "subtitle": "无论您是个人用户还是企业团队，我们都有合适的定价方案满足您的需求",
   "mostPopular": "最受欢迎",
+  "currentPlan": "当前方案",
+  "monthlyYearly": {
+    "monthly": "月付",
+    "yearly": "年付"
+  },
   "plans": {
-    "starter": {
-      "name": "入门版",
-      "price": "$0",
-      "period": "永久免费",
-      "description": "适合个人用户体验",
+    "current": "当前方案",
+    "free": {
+      "name": "免费版",
+      "pricing": {
+        "monthly": { "price": "0", "period": "永久免费" },
+        "yearly": { "price": "0", "period": "永久免费" }
+      },
+      "description": "适合个人用户",
       "features": [
-        "~125 张图片生成",
-        "~100 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "积分：20",
+        "图片：10",
+        "基础功能",
+        "社区支持"
       ],
       "buttonText": "立即开始"
     },
-    "basic": {
+    "base": {
       "name": "基础版",
-      "price": "$9.9",
-      "period": "每月",
-      "description": "适合个人创作者和小团队",
+      "pricing": {
+        "monthly": { "price": "$5.9", "period": "/月" },
+        "yearly": { "price": "$59", "period": "/年", "originalPrice": "$70.8" }
+      },
+      "description": "非常适合个人创作者",
       "features": [
-        "~375 张图片生成",
-        "~300 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "积分：300",
+        "图片：150",
+        "所有基础功能",
+        "邮件支持"
       ],
-      "buttonText": "立即开始"
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "获取基础版"
     },
     "pro": {
       "name": "专业版",
-      "price": "$29.9",
-      "period": "每月",
-      "description": "适合专业创作者和企业",
+      "pricing": {
+        "monthly": { "price": "$9.9", "period": "/月" },
+        "yearly": { "price": "$99", "period": "/年", "originalPrice": "$118.8" }
+      },
+      "description": "非常适合专业创作者",
       "features": [
-        "~875 张图片生成",
-        "~700 秒视频生成",
-        "使用所有模型",
-        "可商用"
+        "积分：1000",
+        "图片：500",
+        "所有高级功能",
+        "优先支持"
       ],
-      "buttonText": "立即开始"
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "获取专业版"
+    },
+    "max": {
+      "name": "企业版",
+      "pricing": {
+        "monthly": { "price": "$29.9", "period": "/月" },
+        "yearly": { "price": "$299", "period": "/年", "originalPrice": "$358.8" }
+      },
+      "description": "非常适合企业和团队",
+      "features": [
+        "积分：3000",
+        "图片：1500",
+        "所有企业功能",
+        "专属支持"
+      ],
+      "buttonText": "登录后购买",
+      "buttonTextLoggedIn": "获取企业版"
     }
   },
   "faq": {
@@ -77,5 +107,8 @@
   "messages": {
     "paymentError": "创建支付订单失败",
     "paymentErrorRetry": "创建支付订单失败，请稍后重试"
+  },
+  "discount": {
+    "save": "节省{{percent}}%"
   }
 }

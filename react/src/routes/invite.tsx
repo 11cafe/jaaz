@@ -71,9 +71,9 @@ function InviteCenter() {
     if (inviteCode?.code) {
       const success = copyToClipboard(inviteCode.code)
       if (success) {
-        toast.success('Invite code copied to clipboard!')
+        toast.success(t('common:toast.copySuccess'))
       } else {
-        toast.error('Failed to copy invite code')
+        toast.error(t('common:toast.copyError'))
       }
     }
   }
@@ -83,9 +83,9 @@ function InviteCenter() {
       const url = generateInviteUrl(inviteCode.code)
       const success = copyToClipboard(url)
       if (success) {
-        toast.success('Invite link copied to clipboard!')
+        toast.success(t('common:toast.copySuccess'))
       } else {
-        toast.error('Failed to copy invite link')
+        toast.error(t('common:toast.copyError'))
       }
     }
   }

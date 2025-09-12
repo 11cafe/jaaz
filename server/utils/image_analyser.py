@@ -48,12 +48,7 @@ class ImageAnalyser:
         self, 
         image_path: str, 
         prompt: str = """
-你是一个专业的图像处理专家，擅长分析图片，解析图片内容，并根据用户在图片中的标注进行意图理解，最终生成一段nana-banana模型使用的图片处理提示词
-
-# 图片处理约定
-1. 分析图片中的主体, 比如角色1，角色2，角色3等
-2. 分析图片中的文字部分，提取文字内容,并输出
-3. 用户需求的提示词，后面要加一段补充说明，最终只生成一张结果图，不要引用任何原文图片
+分析图片，提取里面的文字部分,如果没有文字，请分析下箭头，标记的含义，并输出
 
 # 输出约定
 返回json格式，比如:
@@ -166,6 +161,18 @@ class ImageAnalyser:
             Optional[str]: 分析结果文本，失败时返回None
         """
         try:
+            # 分析base64图片数据格式
+            logger.info(f"[Image Analyser] 开始分析base64图片: 长度={len(base64_image)}")
+            
+            if base64_image.startswith('data:image/'):
+                # 提取MIME类型
+                mime_part = base64_image.split(',')[0]
+                logger.info(f"[Image Analyser] 检测到完整data URL: {mime_part}")
+                image_url = base64_image
+            else:
+                logger.info(f"[Image Analyser] 检测到纯base64数据，添加JPEG头")
+                image_url = f"data:image/jpeg;base64,{base64_image}"
+            
             # 构建请求payload
             payload = {
                 "model": model,
@@ -184,7 +191,7 @@ class ImageAnalyser:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": base64_image if base64_image.startswith('data:image/') else f"data:image/jpeg;base64,{base64_image}"
+                                    "url": image_url
                                 }
                             }
                         ]
@@ -192,6 +199,8 @@ class ImageAnalyser:
                 ],
                 "max_tokens": max_tokens
             }
+            
+            logger.info(f"[Image Analyser] 准备发送请求: model={model}, max_tokens={max_tokens}")
 
             # 发送请求
             async with aiohttp.ClientSession() as session:
