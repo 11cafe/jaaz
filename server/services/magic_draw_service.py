@@ -45,6 +45,41 @@ class MagicDrawService:
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json"
         }
+    
+    def _extract_json_from_markdown(self, content: str) -> str:
+        """从markdown代码块中提取JSON内容"""
+        import re
+        
+        # 尝试匹配 ```json ... ``` 格式
+        json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+        if json_match:
+            return json_match.group(1).strip()
+        
+        # 尝试匹配 ``` ... ``` 格式（没有指定language）
+        code_match = re.search(r'```\s*(.*?)\s*```', content, re.DOTALL)
+        if code_match:
+            return code_match.group(1).strip()
+        
+        # 如果没有代码块，直接返回原内容
+        return content.strip()
+    
+    def _extract_prompt_fallback(self, content: str) -> str:
+        """当JSON解析失败时的后备prompt提取方法"""
+        import re
+        
+        # 尝试查找 "prompt": "..." 模式
+        prompt_match = re.search(r'"prompt"\s*:\s*"([^"]*)"', content)
+        if prompt_match:
+            return prompt_match.group(1)
+        
+        # 尝试查找可能的prompt描述文本
+        if 'detailed' in content.lower() and 'sketch' in content.lower():
+            # 如果包含详细描述，截取前200个字符作为prompt
+            clean_content = re.sub(r'[{}"\[\]`]', '', content)
+            return clean_content[:200].strip()
+        
+        # 如果都没找到，返回默认prompt
+        return "enhance the image with magical effects"
 
     async def create_magic_task(self, image_content: str) -> str:
         """
@@ -244,12 +279,15 @@ class MagicDrawService:
                     if analysis_result:
                         logger.info(f"[Magic Draw] 图片分析返回结果: {analysis_result[:200]}...")
                         try:
-                            result_json = json.loads(analysis_result)
+                            # 提取markdown代码块中的JSON内容
+                            json_content = self._extract_json_from_markdown(analysis_result)
+                            result_json = json.loads(json_content)
                             magic_prompt = result_json.get('prompt', 'enhance the image with magical effects')
-                            logger.info(f"[Magic Draw] 解析JSON成功，提取prompt: {magic_prompt}")
-                        except json.JSONDecodeError as json_error:
-                            logger.warning(f"[Magic Draw] JSON解析失败: {json_error}，使用原始结果")
-                            magic_prompt = analysis_result
+                            logger.info(f"[Magic Draw] 解析JSON成功，提取prompt: {magic_prompt[:100]}...")
+                        except (json.JSONDecodeError, ValueError) as json_error:
+                            logger.warning(f"[Magic Draw] JSON解析失败: {json_error}，尝试直接使用返回内容")
+                            # 如果JSON解析失败，尝试提取可能的prompt文本
+                            magic_prompt = self._extract_prompt_fallback(analysis_result)
                     else:
                         logger.warning(f"[Magic Draw] 图片分析返回空结果，使用默认prompt")
                         magic_prompt = "enhance the image with magical effects"
