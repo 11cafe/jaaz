@@ -623,46 +623,51 @@ function PricingPage() {
                   </CardContent>
 
                   <CardFooter className='pt-4'>
-                    {/* 🚨 临时隐藏所有支付按钮 - 等待支付认证通过 */}
-                    {false && plan.key !== 'free' && (
-                      <Button
-                        variant={buttonVariant}
-                        className='w-full'
-                        size='lg'
-                        onClick={(() => {
-                          // 🎯 简化的点击逻辑：只处理付费计划（Free已被排除）
-                          if (plan.isCurrent) {
-                            // 当前付费计划：取消订阅
-                            return () => handleCancelSubscription()
-                          } else {
-                            // 非当前付费计划：升级
-                            return () => handleUpgrade(plan.key)
-                          }
-                        })()}
-                        disabled={(() => {
-                          // 🎯 只有在当前按钮的操作进行时才禁用此按钮
-                          if (!apiDataLoaded) return true // API数据未加载时禁用
-                          if (plan.isCurrent && loadingOperation === 'cancel') return true // 当前计划取消中
-                          if (!plan.isCurrent && loadingOperation === `upgrade-${plan.key}`)
-                            return true // 升级到此计划中
-                          return false // 其他情况允许点击
-                        })()}
-                      >
-                        {(() => {
-                          // 🎯 只在当前操作的按钮上显示loading
-                          if (plan.isCurrent && loadingOperation === 'cancel') {
-                            return t('buttons.processing') // 当前计划取消订阅中
-                          } else if (
-                            !plan.isCurrent &&
-                            loadingOperation === `upgrade-${plan.key}`
-                          ) {
-                            return t('buttons.processing') // 升级到此计划中
-                          } else {
-                            return buttonText // 显示正常文本
-                          }
-                        })()}
-                      </Button>
-                    )}
+                    {/* 🎯 显示所有按钮 - 支付功能已恢复 */}
+                    <Button
+                      variant={buttonVariant}
+                      className='w-full'
+                      size='lg'
+                      onClick={(() => {
+                        // 🎯 Free计划处理
+                        if (plan.key === 'free') {
+                          // Free计划如果是当前计划，不做任何操作；否则可以考虑降级逻辑
+                          return () => console.log('Free plan selected')
+                        }
+                        // 🎯 付费计划处理（原有逻辑）
+                        if (plan.isCurrent) {
+                          // 当前付费计划：取消订阅
+                          return () => handleCancelSubscription()
+                        } else {
+                          // 非当前付费计划：升级
+                          return () => handleUpgrade(plan.key)
+                        }
+                      })()}
+                      disabled={(() => {
+                        // 🎯 Free计划如果是当前计划，禁用按钮
+                        if (plan.key === 'free' && plan.isCurrent) return true
+                        // 🎯 其他逻辑保持不变
+                        if (!apiDataLoaded) return true // API数据未加载时禁用
+                        if (plan.isCurrent && loadingOperation === 'cancel') return true // 当前计划取消中
+                        if (!plan.isCurrent && loadingOperation === `upgrade-${plan.key}`)
+                          return true // 升级到此计划中
+                        return false // 其他情况允许点击
+                      })()}
+                    >
+                      {(() => {
+                        // 🎯 只在当前操作的按钮上显示loading
+                        if (plan.isCurrent && loadingOperation === 'cancel') {
+                          return t('buttons.processing') // 当前计划取消订阅中
+                        } else if (
+                          !plan.isCurrent &&
+                          loadingOperation === `upgrade-${plan.key}`
+                        ) {
+                          return t('buttons.processing') // 升级到此计划中
+                        } else {
+                          return buttonText // 显示正常文本
+                        }
+                      })()}
+                    </Button>
                   </CardFooter>
                 </Card>
               )
