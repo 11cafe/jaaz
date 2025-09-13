@@ -49,7 +49,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
-  const { initCanvas, setInitCanvas } = useConfigs()
+  const { initCanvas, setInitCanvas, textModel } = useConfigs()
   const { authStatus } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
   const queryClient = useQueryClient()
@@ -927,23 +927,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const onClickNewChat = () => {
     console.log('[debug] 点击New Chat')
-    
+
+    // 计算新session的名称
+    const newSessionNumber = sessionList.length + 1
+    const newSessionName = `New Session ${newSessionNumber}`
+
     const newSession: Session = {
       id: nanoid(),
       title: generateChatSessionTitle(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      model: session?.model || 'gpt-4o',
-      provider: session?.provider || 'openai',
+      model: textModel?.model || session?.model || 'gpt-4o',
+      provider: textModel?.provider || session?.provider || 'openai',
+      name: newSessionName, // 设置明确的session名称
+      messages: []
     }
 
     // 🔥 关键修复：标记为新session，防止initChat加载历史消息
     isNewSessionRef.current = true
-    
+
     console.log('[debug] 创建新session:', newSession.id, '标记为新session')
-    
-    // 添加新session到列表并选择
-    setSessionList((prev) => [...prev, newSession])
+
+    // 添加新session到列表头部并选择（最新的在前面）
+    setSessionList((prev) => [newSession, ...prev])
     onSelectSession(newSession.id)
   }
 

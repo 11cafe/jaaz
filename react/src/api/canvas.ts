@@ -91,3 +91,18 @@ export async function deleteCanvas(id: string): Promise<void> {
   })
   return await response.json()
 }
+
+export async function renameSession(sessionId: string, title: string): Promise<void> {
+  const response = await fetch(`/api/canvas/session/${sessionId}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error || 'Failed to rename session')
+  }
+
+  return await response.json()
+}

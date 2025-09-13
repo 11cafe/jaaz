@@ -1,6 +1,19 @@
 {
   "newChat": "New Chat",
   "placeholder": "Type your message here...",
+  "sessionHistory": {
+    "title": "Session History",
+    "newChat": "New Chat",
+    "newChatDescription": "Start a new conversation",
+    "newSession": "New Chat",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "messagesCount": "{{count}} messages",
+    "noSessions": "No chat history",
+    "defaultSessionTitle": "New Chat"
+  },
   "insufficientBalance": "Insufficient Balance",
   "insufficientBalanceDescription": "Your credits are depleted. Please recharge to continue.",
   "textarea": {

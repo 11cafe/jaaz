@@ -154,6 +154,30 @@ async def rename_canvas(id: str, request: Request, current_user: Optional[Curren
     await db_service.rename_canvas(id, name, user_uuid=user_uuid, user_email=user_email)
     return {"id": id }
 
+@router.post("/session/{session_id}/rename")
+async def rename_session(session_id: str, request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
+    data = await request.json()
+    title = data.get('title')
+
+    if not title:
+        return {"error": "Title is required"}, 400
+
+    # 🔍 获取用户UUID和邮箱
+    user_uuid = get_user_uuid_for_database_operations(current_user)
+    user_email = current_user.email if current_user else None
+
+    try:
+        # ✏️ 重命名用户的session
+        await db_service.rename_session(session_id, title, user_uuid=user_uuid, user_email=user_email)
+        logger.info(f"✅ Session {session_id} renamed to '{title}' by user {user_uuid}")
+        return {"session_id": session_id, "title": title}
+    except ValueError as e:
+        logger.error(f"❌ Session rename failed: {str(e)}")
+        return {"error": str(e)}, 403
+    except Exception as e:
+        logger.error(f"❌ Session rename error: {str(e)}")
+        return {"error": "Internal server error"}, 500
+
 @router.delete("/{id}/delete")
 async def delete_canvas(id: str, request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
     # 🔍 获取用户UUID和邮箱

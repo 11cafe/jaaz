@@ -27,7 +27,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
   const { t } = useTranslation()
 
   return (
-    <div className="flex items-center gap-3 w-full p-3 bg-white/40 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
+    <div className="flex items-center gap-3 w-full p-3 bg-white/40 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm" style={{ display: 'none' }}>
       <Select
         value={session?.id}
         onValueChange={(value) => {

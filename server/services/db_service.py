@@ -223,6 +223,33 @@ class DatabaseService:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
+    async def rename_session(self, session_id: str, title: str, user_uuid: str = None, user_email: Optional[str] = None):
+        """Rename a chat session with user verification"""
+        # 如果没有提供user_uuid，使用匿名用户的UUID
+        if user_uuid is None:
+            anonymous_user = await self.get_user_by_id(1)
+            user_uuid = anonymous_user['uuid'] if anonymous_user else None
+
+        async with aiosqlite.connect(self.db_path) as db:
+            # 更新session的title，同时验证用户权限
+            await db.execute("""
+                UPDATE tb_chat_sessions
+                SET title = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                WHERE id = ? AND uuid = ?
+            """, (title, session_id, user_uuid))
+            await db.commit()
+
+            # 验证更新是否成功
+            cursor = await db.execute("""
+                SELECT id FROM tb_chat_sessions WHERE id = ? AND uuid = ?
+            """, (session_id, user_uuid))
+            row = await cursor.fetchone()
+
+            if not row:
+                raise ValueError(f"Session {session_id} not found or access denied")
+
+            logger.info(f"Session {session_id} renamed to '{title}' by user {user_uuid}")
+
     async def save_canvas_data(self, id: str, data: str, user_uuid: str = None, thumbnail: Optional[str] = None, user_email: Optional[str] = None):
         """Save canvas data with user email (preferred) or UUID verification"""
         async with aiosqlite.connect(self.db_path) as db:
