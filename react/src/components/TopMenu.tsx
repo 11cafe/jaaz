@@ -29,7 +29,7 @@ export default function TopMenu({
         >
           <img src={LOGO_URL} alt="logo" className="size-6 sm:size-7 shrink-0" draggable={false} />
           <div className="flex relative items-center text-base sm:text-lg md:text-2xl font-bold text-foreground min-w-0">
-            <span className="flex items-center whitespace-nowrap drop-shadow-sm">
+            <span className="flex items-center whitespace-nowrap">
               MagicArt
             </span>
           </div>
@@ -38,7 +38,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/templates' })}
           >
             {t('navigation.templates')}
@@ -46,7 +46,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base"
             onClick={() => navigate({ to: '/pricing' })}
           >
             {t('navigation.pricing')}
@@ -62,7 +62,7 @@ export default function TopMenu({
       )}
 
       {/* 右侧区域 */}
-      <div className="flex items-center gap-1 sm:gap-2 drop-shadow-sm">
+      <div className="flex items-center gap-1 sm:gap-2">
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />

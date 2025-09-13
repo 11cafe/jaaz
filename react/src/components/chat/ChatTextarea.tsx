@@ -468,9 +468,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         className
       )}
       style={{
-        boxShadow: isFocused
-          ? '0 0 0 4px color-mix(in oklab, var(--primary) 10%, transparent)'
-          : 'none',
+        boxShadow: 'none',
       }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

@@ -10,7 +10,7 @@ import {
 import { LOGO_URL } from '@/constants'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Home, FileText, Plus, Trash2, ImagePlus, Edit3 } from 'lucide-react'
+import { Home, FileText, Plus, Trash2, Edit3 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 interface FloatingProjectInfoProps {
@@ -97,7 +97,7 @@ export function FloatingProjectInfo({
             <Button
               variant="ghost"
               size="sm"
-              className="p-2 h-auto w-auto rounded-lg transition-none hover:bg-transparent hover:text-current dark:hover:bg-transparent"
+              className="p-2 h-auto w-auto rounded-lg transition-none hover:bg-transparent hover:text-current dark:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <img
                 src={LOGO_URL}
@@ -140,12 +140,6 @@ export function FloatingProjectInfo({
               <span>Delete Project</span>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator className="bg-white/30" />
-
-            <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors">
-              <ImagePlus className="w-4 h-4" />
-              <span>Import Images</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

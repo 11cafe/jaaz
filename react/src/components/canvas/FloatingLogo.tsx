@@ -9,7 +9,7 @@ import {
 import { LOGO_URL } from '@/constants'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Home, FileText, Plus, Trash2, ImagePlus } from 'lucide-react'
+import { Home, FileText, Plus, Trash2 } from 'lucide-react'
 
 export function FloatingLogo() {
   const navigate = useNavigate()
@@ -65,12 +65,6 @@ export function FloatingLogo() {
             <span>Delete Project</span>
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="bg-white/30" />
-
-          <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors">
-            <ImagePlus className="w-4 h-4" />
-            <span>Import Images</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
