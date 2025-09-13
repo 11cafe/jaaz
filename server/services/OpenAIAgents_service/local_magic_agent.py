@@ -11,6 +11,7 @@ from utils.cos_image_service import get_cos_image_service
 from common import DEFAULT_PORT, BASE_URL
 from ..magic_draw_service import MagicDrawService
 from routers.templates_router import TEMPLATES
+from services.i18n_service import i18n_service
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -199,9 +200,10 @@ async def create_local_magic_response(messages: List[Dict[str, Any]],
         logger.info(f"   🛡️ 使用代理URL避免Canvas跨域污染")
         
         # Magic Generation响应：使用代理URL避免Canvas跨域问题
+        generated_message = i18n_service.get_image_generated_message('en')
         return {
             'role': 'assistant',
-            'content': f'🎨 图片已生成并添加到画布\n\n![{filename}]({display_image_url})'
+            'content': f'{generated_message}\n\n![{filename}]({display_image_url})'
         }
         
 

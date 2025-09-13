@@ -29,6 +29,7 @@ import ModelSelectorV2 from './ModelSelectorV2'
 import ModelSelectorV3 from './ModelSelectorV3'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBalance } from '@/hooks/use-balance'
+import { useTypingPlaceholder } from '@/hooks/use-typing-placeholder'
 import { BASE_API_URL } from '@/constants'
 import {
   DropdownMenu,
@@ -65,6 +66,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const { authStatus } = useAuth()
   const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
   const { balance } = useBalance()
+  const dynamicPlaceholder = useTypingPlaceholder({
+    typingSpeed: 80,
+    deletingSpeed: 40,
+    pauseBetweenWords: 800,
+    pauseAfterComplete: 2500
+  })
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -461,9 +468,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         className
       )}
       style={{
-        boxShadow: isFocused
-          ? '0 0 0 4px color-mix(in oklab, var(--primary) 10%, transparent)'
-          : 'none',
+        boxShadow: 'none',
       }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -558,7 +563,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       <Textarea
         ref={textareaRef}
         className='w-full h-full border-none outline-none resize-none'
-        placeholder={t('chat:textarea.placeholder')}
+        placeholder={prompt ? '' : dynamicPlaceholder}
         value={prompt}
         autoSize
         onChange={(e) => setPrompt(e.target.value)}

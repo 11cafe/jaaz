@@ -21,9 +21,12 @@ const LanguageSwitcher = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size={'sm'}
-          variant={'ghost'}>
-          <Languages size={30} />
+        <Button
+          size={'sm'}
+          variant={'ghost'}
+          className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-3 sm:py-2 sm:text-base drop-shadow-sm"
+        >
+          <Languages size={18} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

@@ -337,10 +337,17 @@ class TuziLLMService:
     async def _handle_image_editing(self, model_name: str, user_prompt: str, image_content: str, user_info: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """处理图片编辑流程"""
         try:
+            logger.info(f"🔍 [DEBUG] _handle_image_editing 开始")
+            logger.info(f"🔍 [DEBUG] 输入参数: model_name='{model_name}', user_prompt='{user_prompt[:100]}...', image_content='{image_content[:50] if image_content else 'None'}...'")
+
             from services.config_service import get_user_files_dir
-            
-            if model_name == "seedream-4.0":
-                model_name = "doubao-seedream-4-0-250828"
+
+            # 注释掉错误的模型映射，直接使用用户选择的模型
+            # original_model = model_name
+            # if model_name == "seedream-4.0":
+            #     model_name = "doubao-seedream-4-0-250828"
+            #     logger.info(f"🔍 [DEBUG] 模型名称映射: '{original_model}' -> '{model_name}'")
+            logger.info(f"🔍 [DEBUG] 使用模型: '{model_name}' (无映射)")
                 
             # 生成唯一文件名
             file_id = str(uuid.uuid4())
@@ -426,13 +433,21 @@ class TuziLLMService:
 
     def _get_image_generation_model(self, user_model: str) -> str:
         """获取图片生成模型，如果用户选择的不是画图模型则使用默认模型"""
-        image_models = ["gemini-2.5-flash-image", "gpt-4o", "seedream-4.0"]
-        
-        if user_model in image_models:
-            logger.info(f"✅ 用户选择的模型 {user_model} 支持图片生成")
+        # 已验证可用的图像编辑模型
+        supported_image_edit_models = ["gemini-2.5-flash-image", "gpt-4o"]
+
+        # 不支持的模型（已知会报错）
+        unsupported_models = ["seedream-4.0", "gemini-2.5-pro-all"]
+
+        logger.info(f"🔍 [DEBUG] _get_image_generation_model 输入参数: user_model='{user_model}'")
+        logger.info(f"🔍 [DEBUG] 支持图像编辑的模型: {supported_image_edit_models}")
+        logger.info(f"🔍 [DEBUG] 不支持的模型: {unsupported_models}")
+
+        if user_model in supported_image_edit_models:
+            logger.info(f"✅ 用户选择的模型 '{user_model}' 支持图片编辑")
             return user_model
         else:
-            logger.info(f"⚠️ 用户选择的模型 {user_model} 不支持图片生成，使用默认模型 gemini-2.5-flash-image")
+            logger.info(f"⚠️ 用户选择的模型 '{user_model}' 不支持图片编辑，使用默认模型 'gemini-2.5-flash-image'")
             return "gemini-2.5-flash-image"
 
     async def _handle_image_generation(self, model_name: str, user_prompt: str, user_info: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -441,8 +456,10 @@ class TuziLLMService:
             logger.info(f"🎨 开始图片生成流程: model={model_name}")
             
             # 调用带重试机制的图片生成
-            if model_name == "seedream-4.0":
-                model_name = "doubao-seedream-4-0-250828"
+            # 注释掉错误的模型映射，直接使用用户选择的模型
+            # if model_name == "seedream-4.0":
+            #     model_name = "doubao-seedream-4-0-250828"
+            logger.info(f"🔍 [DEBUG] _handle_image_generation 使用模型: '{model_name}' (无映射)")
             result = await self.gemini_generate_by_tuzi(user_prompt, model_name)
             
             if result:
@@ -623,6 +640,12 @@ class TuziLLMService:
         Returns:
             Optional[Dict[str, str]]: 包含 result_url 或 image_base64 的字典，失败时返回None
         """
+        logger.info(f"🎯 [DEBUG] gemini_edit_image_by_tuzi 函数开始")
+        logger.info(f"🎯 [DEBUG] 接收到的模型参数: model='{model}'")
+        logger.info(f"🎯 [DEBUG] 接收到的其他参数: file_path={file_path}, prompt='{prompt[:100]}...', response_format='{response_format}'")
+        logger.info(f"🎯 [DEBUG] self.api_url={self.api_url}")
+        logger.info(f"🎯 [DEBUG] self.api_token={self.api_token}")
+
         try:
             # 参数验证
             if not file_path or len(file_path) == 0:
@@ -655,16 +678,38 @@ class TuziLLMService:
             logger.info(f"   api_key: {self.api_token[:10]}***") 
             logger.info(f"🚀 [DEBUG] 调用 client.images.edit...")
 
-            prompt = f"""
-According to user needs, read the image content and complete the new image output
-User needs: {prompt}
-"""
+#             prompt = f"""
+# According to user needs, read the image content and complete the new image output
+# User needs: {prompt}
+# """
            
             # 根据文件数量决定调用方式
             if len(file_path) == 1:
                 # 只有目标图片，不使用模板
                 logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
+                # 检查文件大小
+                try:
+                    file_size = os.path.getsize(file_path[0])
+                    logger.info(f"🎯 [DEBUG]   file_size: {file_size} bytes")
+                except Exception as e:
+                    logger.error(f"🎯 [DEBUG]   file_size_error: {e}")
+
+                prompt = f"""
+Generate images based on user input
+user input: {prompt}
+"""
                 with open(file_path[0], 'rb') as image_file:
+                    # 检查是否需要其他参数
+                    edit_params = {
+                        'model': model,
+                        'image': image_file,
+                        'prompt': prompt,
+                        'response_format': response_format,
+                        'base_url': self.api_url,
+                        'api_key': self.api_token
+                    }
+                    logger.info(f"🎯 [DEBUG] 完整调用参数: {edit_params}")
+
                     result = await client.images.edit(
                         model=model,
                         image=image_file,
@@ -674,9 +719,35 @@ User needs: {prompt}
             else:
                 # 同时使用目标图片和模板
                 logger.info(f"📝 [DEBUG] 使用模板模式")
-                logger.info(f"   - 目标图片 (image): {file_path[0]}")
-                logger.info(f"   - 模板图片 (mask): {file_path[1]}")
+
+                # 检查两个文件的大小
+                try:
+                    image_size = os.path.getsize(file_path[0])
+                    mask_size = os.path.getsize(file_path[1])
+                    logger.info(f"🎯 [DEBUG]   image_size: {image_size} bytes")
+                    logger.info(f"🎯 [DEBUG]   mask_size: {mask_size} bytes")
+                except Exception as e:
+                    logger.error(f"🎯 [DEBUG]   file_size_error: {e}")
+
+                prompt = f"""
+Generate images based on user input
+user input: {prompt}
+"""
+
                 with open(file_path[0], 'rb') as image_file, open(file_path[1], 'rb') as mask_file:
+
+                    # 检查是否需要其他参数
+                    edit_params = {
+                        'model': model,
+                        'image': image_file,
+                        'mask': mask_file,
+                        'prompt': prompt,
+                        'response_format': response_format,
+                        'base_url': self.api_url,
+                        'api_key': self.api_token
+                    }
+                    logger.info(f"🎯 [DEBUG] 完整调用参数 (带mask): {list(edit_params.keys())}")
+
                     result = await client.images.edit(
                         model=model,
                         image=image_file,
@@ -730,7 +801,24 @@ User needs: {prompt}
             logger.error(f"❌ 文件权限不足: {e}")
             return None
         except Exception as e:
-            logger.error(f"❌ 图片编辑失败: {type(e).__name__}: {e}")
+            error_msg = str(e)
+            logger.error(f"❌ 图片编辑失败: {type(e).__name__}: {error_msg}")
+
+            # 如果是模型不支持的错误，尝试使用备用模型
+            if "not supported model" in error_msg.lower() and model != "gemini-2.5-flash-image":
+                logger.warning(f"⚠️ 模型 '{model}' 不支持图片编辑，尝试使用备用模型 'gemini-2.5-flash-image'")
+                try:
+                    # 递归调用，使用备用模型
+                    return await self.gemini_edit_image_by_tuzi(
+                        file_path=file_path,
+                        prompt=prompt,
+                        model="gemini-2.5-flash-image",
+                        response_format=response_format
+                    )
+                except Exception as fallback_error:
+                    logger.error(f"❌ 备用模型也失败: {fallback_error}")
+                    return None
+
             return None
 
     async def gemini_generate_by_tuzi(
@@ -891,12 +979,31 @@ User needs: {prompt}
                     if "401" in error_msg or "403" in error_msg or "invalid" in error_msg.lower():
                         logger.error(f"🚫 认证或配置错误，不再重试: {error_msg}")
                         return None
-                    
+
+                    # 如果是模型不支持的错误，尝试使用备用模型
+                    if "not supported model" in error_msg.lower() and model != "gemini-2.5-flash-image":
+                        logger.warning(f"⚠️ 模型 '{model}' 不支持图片生成，尝试使用备用模型 'gemini-2.5-flash-image'")
+                        try:
+                            # 递归调用，使用备用模型
+                            return await self.gemini_generate_by_tuzi(prompt, "gemini-2.5-flash-image")
+                        except Exception as fallback_error:
+                            logger.error(f"❌ 备用模型也失败: {fallback_error}")
+                            return None
+
                     wait_time = 2 ** attempt  # 指数退避
                     logger.info(f"⏳ 等待 {wait_time} 秒后重试...")
                     await asyncio.sleep(wait_time)
                     continue
                 else:
+                    # 最后一次尝试失败，检查是否可以使用备用模型
+                    if "not supported model" in error_msg.lower() and model != "gemini-2.5-flash-image":
+                        logger.warning(f"⚠️ 所有重试都失败，模型 '{model}' 不支持图片生成，最后尝试备用模型 'gemini-2.5-flash-image'")
+                        try:
+                            return await self.gemini_generate_by_tuzi(prompt, "gemini-2.5-flash-image")
+                        except Exception as fallback_error:
+                            logger.error(f"❌ 备用模型也失败: {fallback_error}")
+                            return None
+
                     logger.error(f"💥 所有重试尝试都失败了，放弃生成")
                     return None
         

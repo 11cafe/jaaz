@@ -67,38 +67,38 @@ function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.21, 1.11, 0.81, 0.99] }}
-            className='w-full max-w-4xl mx-auto backdrop-blur-sm bg-white/60 dark:bg-gray-800/40 rounded-3xl p-8 sm:p-12 shadow-lg border border-stone-200/50 dark:border-gray-700/50'
+            className='w-full max-w-4xl mx-auto p-8 sm:p-12'
           >
-            <h1 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-center 
-                           bg-gradient-to-br from-gray-900 via-gray-700 to-stone-600 
-                           dark:from-white dark:via-gray-200 dark:to-stone-300 
-                           bg-clip-text text-transparent leading-tight'>
+            <h1 className='text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center
+                           text-gray-800 dark:text-white drop-shadow-sm leading-tight'>
               {t('home:title')}
             </h1>
-            
-            <p className='text-sm sm:text-base md:text-lg lg:text-xl text-stone-600 dark:text-stone-300 
-                          mb-8 sm:mb-10 text-center px-2 sm:px-4 leading-relaxed font-medium'>
+
+            <p className='text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 dark:text-gray-200
+                          mb-10 text-center px-2 sm:px-4 leading-relaxed font-medium'>
               {t('home:subtitle')}
             </p>
 
-            <div className='w-full max-w-xl mx-auto'>
-              <ChatTextarea
-                className='w-full'
-                messages={[]}
-                onSendMessages={(messages, configs) => {
-                  createCanvasMutation({
-                    name: t('home:newCanvas'),
-                    canvas_id: nanoid(),
-                    messages: messages,
-                    session_id: nanoid(),
-                    text_model: configs.textModel,
-                    tool_list: configs.toolList,
-                    model_name: configs.modelName,
-                    system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
-                  })
-                }}
-                pending={isPending}
-              />
+            <div className='w-full max-w-2xl mx-auto'>
+              <div className='bg-white/95 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-white/20'>
+                <ChatTextarea
+                  className='w-full border-0 bg-transparent'
+                  messages={[]}
+                  onSendMessages={(messages, configs) => {
+                    createCanvasMutation({
+                      name: t('home:newCanvas'),
+                      canvas_id: nanoid(),
+                      messages: messages,
+                      session_id: nanoid(),
+                      text_model: configs.textModel,
+                      tool_list: configs.toolList,
+                      model_name: configs.modelName,
+                      system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
+                    })
+                  }}
+                  pending={isPending}
+                />
+              </div>
             </div>
           </motion.div>
         </div>

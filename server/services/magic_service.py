@@ -12,6 +12,7 @@ from services.OpenAIAgents_service import create_local_magic_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from services.points_service import points_service, InsufficientPointsError
+from services.i18n_service import i18n_service
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -245,10 +246,27 @@ async def _process_magic_generation(
         # 原来是基于云端生成
         # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
         ai_response = await create_local_magic_response(messages, session_id, canvas_id, template_id=template_id, user_info=user_info)
-        
-        # 🎯 画图成功后扣除积分
-        if user_info and user_info.get('id') and user_info.get('uuid'):
-            logger.info(f"🎯 [DEBUG] 魔法画图成功，开始积分扣除流程: user_id={user_info.get('id')}")
+
+        # 🔍 检查Magic Generation是否真正成功
+        is_generation_successful = False
+        if ai_response and isinstance(ai_response, dict):
+            content = ai_response.get('content', '')
+            # 获取成功消息的中英文版本进行检查
+            chinese_success_msg = i18n_service.get_image_generated_message('zh')
+            english_success_msg = i18n_service.get_image_generated_message('en')
+
+            # 只有包含成功标识的响应才被认为是成功
+            if chinese_success_msg in content or english_success_msg in content:
+                is_generation_successful = True
+                logger.info(f"✅ [DEBUG] Magic Generation成功检测: 图片已生成")
+            else:
+                logger.warning(f"❌ [DEBUG] Magic Generation失败检测: content={content[:100]}...")
+        else:
+            logger.error(f"❌ [DEBUG] Magic Generation返回异常响应: {type(ai_response)}")
+
+        # 🎯 只有在画图真正成功时才扣除积分
+        if is_generation_successful and user_info and user_info.get('id') and user_info.get('uuid'):
+            logger.info(f"🎯 [DEBUG] 魔法画图成功确认，开始积分扣除流程: user_id={user_info.get('id')}")
             try:
                 deduction_result = await points_service.deduct_image_generation_points(
                     user_id=user_info.get('id'),
@@ -265,15 +283,24 @@ async def _process_magic_generation(
                         'message': f"画图完成，扣除{deduction_result['points_deducted']}积分，剩余{deduction_result['balance_after']}积分"
                     }
                     logger.info(f"📡 [DEBUG] 准备发送魔法画图积分扣除通知: {notification_message}")
-                    
+
                     await send_to_websocket(session_id, notification_message)
                     logger.info(f"📡 [DEBUG] 魔法画图积分扣除通知已发送到session: {session_id}")
                 else:
                     logger.error(f"❌ 魔法画图积分扣除失败: {deduction_result['message']}")
             except Exception as e:
                 logger.error(f"❌ 扣除魔法画图积分时发生错误: {e}")
+        elif not is_generation_successful:
+            logger.warning(f"💸 [DEBUG] Magic Generation失败，跳过积分扣除，避免错误收费")
+            # 通知用户图片生成失败，没有扣除积分
+            if user_info and user_info.get('id'):
+                await send_to_websocket(session_id, {
+                    'type': 'generation_failed',
+                    'message': '图片生成失败，未扣除积分',
+                    'reason': '图片生成服务暂时不可用，请稍后重试'
+                })
         else:
-            logger.warning(f"⚠️ [DEBUG] 魔法画图完成但用户信息不完整，跳过积分扣除: user_info={user_info}")
+            logger.warning(f"⚠️ [DEBUG] 用户信息不完整，跳过积分扣除: user_info={user_info}")
         
         # 🔥 发送完成通知
         await send_to_websocket(session_id, {

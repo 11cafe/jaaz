@@ -311,7 +311,7 @@ function TemplateUsePage() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className='min-h-screen bg-background'>
+      <div className='min-h-screen bg-soft-blue-radial'>
         <TopMenu />
         <div className='flex items-center justify-center min-h-[400px]'>
           <Loader2 className='h-8 w-8 animate-spin' />
@@ -323,7 +323,7 @@ function TemplateUsePage() {
   // 错误状态
   if (error || !template) {
     return (
-      <div className='min-h-screen bg-background'>
+      <div className='min-h-screen bg-soft-blue-radial'>
         <TopMenu />
         <div className='container mx-auto px-4 py-8'>
           <div className='text-center py-12'>
@@ -340,22 +340,29 @@ function TemplateUsePage() {
   }
 
   return (
-    <div className='min-h-screen bg-background'>
+    <div className='min-h-screen bg-soft-blue-radial'>
       <TopMenu />
 
       {/* Breadcrumb/Navigation */}
       <div className='container mx-auto px-4 py-4'>
-        <Button variant='ghost' size='sm' onClick={() => navigate({ to: '/templates' })}>
-          <ArrowLeft className='h-4 w-4 mr-2' />
-          {t('navigation.back')}
-        </Button>
+        <div className='inline-flex bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-lg p-1'>
+          <Button variant='ghost' size='sm' onClick={() => navigate({ to: '/templates' })}>
+            <ArrowLeft className='h-4 w-4 mr-2' />
+            {t('navigation.back')}
+          </Button>
+        </div>
       </div>
 
-      <div className='container mx-auto px-4 py-6'>
+      <motion.div
+        className='container mx-auto px-4 py-6'
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.21, 1.11, 0.81, 0.99] }}
+      >
         <div className='flex gap-6 items-start h-[600px]'>
           {/* Left side - Template preview */}
           <div className='flex-1 h-full'>
-            <div className='h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden relative'>
+            <div className='h-full rounded-2xl overflow-hidden relative'>
               {template.image ? (
                 <img
                   src={template.image.startsWith('http') ? template.image : `${BASE_API_URL}${template.image}`}
@@ -383,8 +390,8 @@ function TemplateUsePage() {
           <div className='flex-1 h-full flex flex-col'>
             {/* Header - 模版信息 */}
             <div className='mb-6'>
-              <h2 className='text-2xl font-bold mb-2'>{template.title}</h2>
-              <p className='text-muted-foreground mb-4'>{template.description}</p>
+              <h2 className='text-2xl font-bold mb-2 text-gray-800 dark:text-white'>{template.title}</h2>
+              <p className='text-gray-600 dark:text-gray-300 mb-4'>{template.description}</p>
             </div>
 
 
@@ -392,14 +399,10 @@ function TemplateUsePage() {
             <div className='flex-1'>
               <motion.div
                 className={cn(
-                  'w-full h-full flex flex-col border border-primary/20 rounded-2xl p-4 hover:border-primary/40 transition-all duration-300 cursor-text gap-4 bg-background/80 backdrop-blur-xl relative',
-                  isFocused && 'border-primary/40'
+                  'w-full h-full flex flex-col border border-primary/20 rounded-2xl p-4 hover:border-primary/40 transition-all duration-300 cursor-text gap-4 bg-white/85 dark:bg-gray-800/85 backdrop-blur-xl relative',
+                  isFocused && 'border-primary/40 bg-white/90 dark:bg-gray-800/90'
                 )}
-                style={{
-                  boxShadow: isFocused
-                    ? '0 0 0 4px color-mix(in oklab, var(--primary) 10%, transparent)'
-                    : 'none',
-                }}
+                style={{}}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, ease: 'linear' }}
@@ -533,7 +536,7 @@ function TemplateUsePage() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
