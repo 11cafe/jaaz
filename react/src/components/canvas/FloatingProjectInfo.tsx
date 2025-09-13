@@ -17,6 +17,7 @@ import { nanoid } from 'nanoid'
 import { useConfigs } from '@/contexts/configs'
 import { toast } from 'sonner'
 import ProjectDeleteDialog from './ProjectDeleteDialog'
+import { useCanvas } from '@/contexts/canvas'
 
 interface FloatingProjectInfoProps {
   projectName: string
@@ -33,6 +34,7 @@ export function FloatingProjectInfo({
   const { t } = useTranslation('common')
   const { id } = useParams({ from: '/canvas/$id' })
   const { textModel, selectedTools } = useConfigs()
+  const { excalidrawAPI } = useCanvas()
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState(projectName)
   const [isSaving, setIsSaving] = useState(false)
@@ -102,6 +104,23 @@ export function FloatingProjectInfo({
   const handleNewProject = async () => {
     try {
       setIsCreating(true)
+
+      // 🔧 在创建新项目前，清空当前画布状态
+      if (excalidrawAPI) {
+        console.log('🧹 清空当前画布状态，准备创建新项目')
+        // 清空画布内容
+        excalidrawAPI.updateScene({
+          elements: [],
+          appState: {
+            ...excalidrawAPI.getAppState(),
+            selectedElementIds: {},
+            selectedGroupIds: {},
+          }
+        })
+        // 清空文件数据
+        excalidrawAPI.addFiles([])
+      }
+
       const newCanvas = await createCanvas({
         name: t('home:newCanvas'),
         canvas_id: nanoid(),

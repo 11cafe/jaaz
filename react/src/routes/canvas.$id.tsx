@@ -124,6 +124,10 @@ function Canvas() {
         const startTime = performance.now()
         setIsLoading(true)
         setError(null)
+
+        // 🔧 清空之前的画布数据，防止新项目继承老项目的数据
+        setCanvas(null)
+
         const data = await getCanvas(id)
         const endTime = performance.now()
         
@@ -193,6 +197,17 @@ function Canvas() {
     return () => {
       mounted = false
     }
+  }, [id])
+
+  // 🔧 监听路由参数变化，在切换到新画布时立即清空数据
+  useEffect(() => {
+    console.log('🔄 Canvas ID 变化，清空当前数据，准备加载新画布:', id)
+    setCanvas(null)
+    setSessionList([])
+    setProjectName('')
+    setCanvasName('')
+    setOriginalCanvasName('')
+    setCurrentSessionTitle('')
   }, [id])
 
   // 监听session变化，更新当前session标题
