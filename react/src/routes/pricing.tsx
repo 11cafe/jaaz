@@ -623,7 +623,8 @@ function PricingPage() {
                   </CardContent>
 
                   <CardFooter className='pt-4'>
-                    {/* 🎯 显示所有按钮 - 支付功能已恢复 */}
+                    {/* 🚨 临时隐藏支付按钮 - 支付功能暂未开通 */}
+                    {false && (
                     <Button
                       variant={buttonVariant}
                       className='w-full'
@@ -668,6 +669,7 @@ function PricingPage() {
                         }
                       })()}
                     </Button>
+                    )}
                   </CardFooter>
                 </Card>
               )
