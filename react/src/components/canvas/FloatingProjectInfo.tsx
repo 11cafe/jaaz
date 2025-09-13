@@ -7,11 +7,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LOGO_URL } from '@/constants'
-import { useNavigate } from '@tanstack/react-router'
+import { LOGO_URL, DEFAULT_SYSTEM_PROMPT } from '@/constants'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Home, FileText, Plus, Trash2, Edit3 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { createCanvas, deleteCanvas } from '@/api/canvas'
+import { nanoid } from 'nanoid'
+import { useConfigs } from '@/contexts/configs'
+import { toast } from 'sonner'
+import ProjectDeleteDialog from './ProjectDeleteDialog'
 
 interface FloatingProjectInfoProps {
   projectName: string
@@ -26,9 +31,14 @@ export function FloatingProjectInfo({
 }: FloatingProjectInfoProps) {
   const navigate = useNavigate()
   const { t } = useTranslation('common')
+  const { id } = useParams({ from: '/canvas/$id' })
+  const { textModel, selectedTools } = useConfigs()
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState(projectName)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // 同步外部的projectName到内部状态
@@ -88,6 +98,62 @@ export function FloatingProjectInfo({
     }
   }
 
+  // 创建新项目
+  const handleNewProject = async () => {
+    try {
+      setIsCreating(true)
+      const newCanvas = await createCanvas({
+        name: t('home:newCanvas'),
+        canvas_id: nanoid(),
+        messages: [],
+        session_id: nanoid(),
+        text_model: textModel,
+        tool_list: selectedTools,
+        system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
+      })
+
+      // 跳转到新创建的canvas
+      const newSessionId = nanoid()
+      navigate({
+        to: '/canvas/$id',
+        params: { id: newCanvas.id },
+        search: { sessionId: newSessionId }
+      })
+
+      toast.success(t('canvas:messages.projectCreated'))
+    } catch (error) {
+      console.error('创建新项目失败:', error)
+      toast.error(t('canvas:messages.failedToCreateProject'))
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  // 显示删除确认对话框
+  const handleShowDeleteDialog = () => {
+    setShowDeleteDialog(true)
+  }
+
+  // 确认删除项目
+  const handleConfirmDelete = async () => {
+    if (!id) return
+
+    try {
+      setIsDeleting(true)
+      await deleteCanvas(id)
+
+      // 删除成功后跳转到首页
+      navigate({ to: '/' })
+      toast.success(t('canvas:messages.projectDeleted'))
+    } catch (error) {
+      console.error('删除项目失败:', error)
+      toast.error(t('canvas:messages.failedToDeleteProject'))
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
   return (
     <div className="absolute top-4 left-4 z-50">
       <div className="flex items-center gap-3">
@@ -117,7 +183,7 @@ export function FloatingProjectInfo({
               className="flex items-center gap-3 cursor-pointer hover:bg-white/60"
             >
               <Home className="w-4 h-4" />
-              <span>Home</span>
+              <span>{t('canvas:menu.home')}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -125,19 +191,27 @@ export function FloatingProjectInfo({
               className="flex items-center gap-3 cursor-pointer hover:bg-white/60"
             >
               <FileText className="w-4 h-4" />
-              <span>Templates</span>
+              <span>{t('canvas:menu.templates')}</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator className="bg-white/30" />
 
-            <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors">
+            <DropdownMenuItem
+              onClick={handleNewProject}
+              disabled={isCreating}
+              className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors"
+            >
               <Plus className="w-4 h-4" />
-              <span>New Project</span>
+              <span>{isCreating ? t('canvas:messages.creating') : t('canvas:menu.newProject')}</span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-red-500/10 text-red-600 hover:text-red-700">
+            <DropdownMenuItem
+              onClick={handleShowDeleteDialog}
+              disabled={isDeleting}
+              className="flex items-center gap-3 cursor-pointer hover:bg-red-500/10 text-red-600 hover:text-red-700"
+            >
               <Trash2 className="w-4 h-4" />
-              <span>Delete Project</span>
+              <span>{isDeleting ? t('canvas:messages.deleting') : t('canvas:menu.deleteProject')}</span>
             </DropdownMenuItem>
 
           </DropdownMenuContent>
@@ -174,6 +248,15 @@ export function FloatingProjectInfo({
           )}
         </div>
       </div>
+
+      {/* 项目删除确认对话框 */}
+      <ProjectDeleteDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+        projectName={projectName}
+      />
     </div>
   )
 }

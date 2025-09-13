@@ -22,13 +22,32 @@
     "nothingSelected": "未选择任何素材",
     "exportingAssets": "导出素材中...",
     "failedToExportImages": "导出图片失败",
-    "gptImagePermissionRequired": "您必须启用 gpt-image-1 模型权限才能使用此功能！"
+    "gptImagePermissionRequired": "您必须启用 gpt-image-1 模型权限才能使用此功能！",
+    "projectCreated": "新项目创建成功",
+    "projectDeleted": "项目删除成功",
+    "failedToCreateProject": "创建项目失败",
+    "failedToDeleteProject": "删除项目失败",
+    "creating": "创建中...",
+    "deleting": "删除中..."
   },
   "deleteDialog": {
     "title": "删除画布",
     "description": "您确定要删除此画布吗？此操作无法撤销。",
     "cancel": "取消",
     "delete": "删除"
+  },
+  "projectDeleteDialog": {
+    "title": "删除项目",
+    "description": "您确定要删除此项目吗？此操作无法撤销，所有项目数据将被永久删除。",
+    "cancel": "取消",
+    "delete": "删除",
+    "projectNameLabel": "项目名称"
+  },
+  "menu": {
+    "newProject": "新建项目",
+    "deleteProject": "删除项目",
+    "home": "首页",
+    "templates": "模板"
   },
   "tool": {
     "hand": "手",
