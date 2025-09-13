@@ -9,6 +9,10 @@ from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
 from common import DEFAULT_PORT, BASE_URL
 from ..jaaz_service import JaazService
+from services.i18n_service import i18n_service
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str = "", canvas_id: str = "") -> Dict[str, Any]:
@@ -140,9 +144,10 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
         logger.info(f"   ☁️ 使用本地URL")
         
         # 聊天响应包含图片预览 + 提示文本
+        generated_message = i18n_service.get_image_generated_message('en')
         return {
             'role': 'assistant',
-            'content': f'🎨 图片已生成并添加到画布\n\n![{filename}]({chat_image_url})'
+            'content': f'{generated_message}\n\n![{filename}]({chat_image_url})'
         }
 
     except (asyncio.TimeoutError, Exception) as e:

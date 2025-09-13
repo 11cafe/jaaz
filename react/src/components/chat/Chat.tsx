@@ -565,7 +565,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content: [
           {
             type: 'text',
-            text: '🎨 图片已生成并添加到画布',
+            text: '🎨 Image generated and added to canvas',
           },
           {
             type: 'image_url',

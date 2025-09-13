@@ -12,6 +12,7 @@ from services.OpenAIAgents_service import create_local_magic_response
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from services.points_service import points_service, InsufficientPointsError
+from services.i18n_service import i18n_service
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -250,8 +251,12 @@ async def _process_magic_generation(
         is_generation_successful = False
         if ai_response and isinstance(ai_response, dict):
             content = ai_response.get('content', '')
+            # 获取成功消息的中英文版本进行检查
+            chinese_success_msg = i18n_service.get_image_generated_message('zh')
+            english_success_msg = i18n_service.get_image_generated_message('en')
+
             # 只有包含成功标识的响应才被认为是成功
-            if '🎨 图片已生成并添加到画布' in content:
+            if chinese_success_msg in content or english_success_msg in content:
                 is_generation_successful = True
                 logger.info(f"✅ [DEBUG] Magic Generation成功检测: 图片已生成")
             else:

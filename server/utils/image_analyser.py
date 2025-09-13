@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 
 # 添加父目录到路径以便导入 services 模块
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import log
 from services.config_service import config_service
 
 
@@ -270,6 +271,10 @@ class ImageAnalyser:
             if images["mask"] == "" and images["image"] != "":
                 # 只有目标图片，不使用模板
                 logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
+                logger.info(f"   - 提示词 (prompt): {prompt}")
+                logger.info(f"   - {self.api_url}")
+                logger.info(f"   - {self.api_token}")
+                logger.info(f"   - {model}")
                 # 异步读取文件
                 with open(images["image"], 'rb') as image_file:
                     result = await client.images.edit(

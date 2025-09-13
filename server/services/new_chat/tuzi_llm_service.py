@@ -678,21 +678,15 @@ class TuziLLMService:
             logger.info(f"   api_key: {self.api_token[:10]}***") 
             logger.info(f"🚀 [DEBUG] 调用 client.images.edit...")
 
-            prompt = f"""
-According to user needs, read the image content and complete the new image output
-User needs: {prompt}
-"""
+#             prompt = f"""
+# According to user needs, read the image content and complete the new image output
+# User needs: {prompt}
+# """
            
             # 根据文件数量决定调用方式
             if len(file_path) == 1:
                 # 只有目标图片，不使用模板
                 logger.info(f"📝 [DEBUG] 使用单图片模式（无模板）")
-                logger.info(f"🎯 [DEBUG] 即将调用 client.images.edit，参数如下:")
-                logger.info(f"🎯 [DEBUG]   model: '{model}' (type: {type(model)})")
-                logger.info(f"🎯 [DEBUG]   prompt: '{prompt}' (type: {type(prompt)})")
-                logger.info(f"🎯 [DEBUG]   response_format: '{response_format}' (type: {type(response_format)})")
-                logger.info(f"🎯 [DEBUG]   image_file: '{file_path[0]}' (exists: {os.path.exists(file_path[0])})")
-
                 # 检查文件大小
                 try:
                     file_size = os.path.getsize(file_path[0])
@@ -700,25 +694,21 @@ User needs: {prompt}
                 except Exception as e:
                     logger.error(f"🎯 [DEBUG]   file_size_error: {e}")
 
-                # 检查客户端配置
-                logger.info(f"🎯 [DEBUG] 客户端配置:")
-                logger.info(f"🎯 [DEBUG]   client.base_url: '{client.base_url}'")
-                logger.info(f"🎯 [DEBUG]   client.api_key: '{client.api_key[:15]}...' (length: {len(client.api_key)})")
-                logger.info(f"🎯 [DEBUG]   client.timeout: {client.timeout}")
-
+                prompt = f"""
+Generate images based on user input
+user input: {prompt}
+"""
                 with open(file_path[0], 'rb') as image_file:
-                    # 额外打印文件对象信息
-                    logger.info(f"🎯 [DEBUG]   image_file.name: '{image_file.name}'")
-                    logger.info(f"🎯 [DEBUG]   image_file.mode: '{image_file.mode}'")
-
                     # 检查是否需要其他参数
                     edit_params = {
                         'model': model,
                         'image': image_file,
                         'prompt': prompt,
-                        'response_format': response_format
+                        'response_format': response_format,
+                        'base_url': self.api_url,
+                        'api_key': self.api_token
                     }
-                    logger.info(f"🎯 [DEBUG] 完整调用参数: {list(edit_params.keys())}")
+                    logger.info(f"🎯 [DEBUG] 完整调用参数: {edit_params}")
 
                     result = await client.images.edit(
                         model=model,
@@ -729,12 +719,6 @@ User needs: {prompt}
             else:
                 # 同时使用目标图片和模板
                 logger.info(f"📝 [DEBUG] 使用模板模式")
-                logger.info(f"🎯 [DEBUG] 即将调用 client.images.edit (带mask)，参数如下:")
-                logger.info(f"🎯 [DEBUG]   model: '{model}' (type: {type(model)})")
-                logger.info(f"🎯 [DEBUG]   prompt: '{prompt}' (type: {type(prompt)})")
-                logger.info(f"🎯 [DEBUG]   response_format: '{response_format}' (type: {type(response_format)})")
-                logger.info(f"🎯 [DEBUG]   image_file: '{file_path[0]}' (exists: {os.path.exists(file_path[0])})")
-                logger.info(f"🎯 [DEBUG]   mask_file: '{file_path[1]}' (exists: {os.path.exists(file_path[1])})")
 
                 # 检查两个文件的大小
                 try:
@@ -745,10 +729,12 @@ User needs: {prompt}
                 except Exception as e:
                     logger.error(f"🎯 [DEBUG]   file_size_error: {e}")
 
+                prompt = f"""
+Generate images based on user input
+user input: {prompt}
+"""
+
                 with open(file_path[0], 'rb') as image_file, open(file_path[1], 'rb') as mask_file:
-                    # 额外打印文件对象信息
-                    logger.info(f"🎯 [DEBUG]   image_file.name: '{image_file.name}'")
-                    logger.info(f"🎯 [DEBUG]   mask_file.name: '{mask_file.name}'")
 
                     # 检查是否需要其他参数
                     edit_params = {
@@ -756,7 +742,9 @@ User needs: {prompt}
                         'image': image_file,
                         'mask': mask_file,
                         'prompt': prompt,
-                        'response_format': response_format
+                        'response_format': response_format,
+                        'base_url': self.api_url,
+                        'api_key': self.api_token
                     }
                     logger.info(f"🎯 [DEBUG] 完整调用参数 (带mask): {list(edit_params.keys())}")
 

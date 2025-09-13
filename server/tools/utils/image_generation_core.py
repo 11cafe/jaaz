@@ -21,7 +21,11 @@ from .image_canvas_utils import (
     save_image_to_canvas,
 )
 from utils.url_converter import get_chat_image_url
+from services.i18n_service import i18n_service
+from log import get_logger
 import time
+
+logger = get_logger(__name__)
 
 IMAGE_PROVIDERS: dict[str, ImageProviderBase] = {
     "jaaz": JaazImageProvider(),
@@ -117,4 +121,5 @@ async def generate_image_with_provider(
     logger.info(f"   🎨 画布已通过save_image_to_canvas显示")
     
     # 聊天响应包含图片预览 + 提示文本
-    return f"🎨 图片已生成并添加到画布\n\n![{filename}]({chat_image_url})"
+    generated_message = i18n_service.get_image_generated_message('en')
+    return f"{generated_message}\n\n![{filename}]({chat_image_url})"
