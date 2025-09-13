@@ -23,10 +23,10 @@ export default function TopMenu({
       {/* 左侧区域 */}
       <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
         <div
-          className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-200 hover:scale-105 min-w-0"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0"
           onClick={() => navigate({ to: '/' })}
         >
-          <img src={LOGO_URL} alt="logo" className="size-6 sm:size-7 transition-transform duration-200 group-hover:rotate-12 shrink-0" draggable={false} />
+          <img src={LOGO_URL} alt="logo" className="size-6 sm:size-7 shrink-0" draggable={false} />
           <div className="flex relative items-center text-base sm:text-lg md:text-2xl font-bold text-foreground min-w-0">
             <span className="flex items-center whitespace-nowrap drop-shadow-sm">
               MagicArt
@@ -37,7 +37,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
             onClick={() => navigate({ to: '/templates' })}
           >
             {t('navigation.templates')}
@@ -45,7 +45,7 @@ export default function TopMenu({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm transition-all duration-200 hover:scale-105 sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base drop-shadow-sm"
             onClick={() => navigate({ to: '/pricing' })}
           >
             {t('navigation.pricing')}

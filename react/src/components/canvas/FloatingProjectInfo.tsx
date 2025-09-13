@@ -97,7 +97,7 @@ export function FloatingProjectInfo({
             <Button
               variant="ghost"
               size="sm"
-              className="p-2 h-auto w-auto rounded-lg hover:bg-black/10 transition-colors duration-200"
+              className="p-2 h-auto w-auto rounded-lg transition-none hover:bg-transparent hover:text-current dark:hover:bg-transparent"
             >
               <img
                 src={LOGO_URL}
@@ -110,11 +110,11 @@ export function FloatingProjectInfo({
           <DropdownMenuContent
             align="start"
             side="bottom"
-            className="w-56 bg-white/95 backdrop-blur-lg border-white/50 shadow-xl"
+            className="w-56 bg-white/95 backdrop-blur-lg border-white/50"
           >
             <DropdownMenuItem
               onClick={() => navigate({ to: '/' })}
-              className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors"
+              className="flex items-center gap-3 cursor-pointer hover:bg-white/60"
             >
               <Home className="w-4 h-4" />
               <span>Home</span>
@@ -122,7 +122,7 @@ export function FloatingProjectInfo({
 
             <DropdownMenuItem
               onClick={() => navigate({ to: '/templates' })}
-              className="flex items-center gap-3 cursor-pointer hover:bg-white/60 transition-colors"
+              className="flex items-center gap-3 cursor-pointer hover:bg-white/60"
             >
               <FileText className="w-4 h-4" />
               <span>Templates</span>
@@ -135,7 +135,7 @@ export function FloatingProjectInfo({
               <span>New Project</span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-red-500/10 text-red-600 hover:text-red-700 transition-colors">
+            <DropdownMenuItem className="flex items-center gap-3 cursor-pointer hover:bg-red-500/10 text-red-600 hover:text-red-700">
               <Trash2 className="w-4 h-4" />
               <span>Delete Project</span>
             </DropdownMenuItem>
@@ -162,12 +162,12 @@ export function FloatingProjectInfo({
               }}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyDown}
-              className="h-8 text-lg font-medium bg-white/90 border-gray-300 focus:border-gray-500 transition-colors rounded-md"
+              className="h-8 text-lg font-medium bg-white/90 border-gray-300 focus:border-gray-500 rounded-md"
               placeholder="输入项目名称..."
             />
           ) : (
             <div
-              className="cursor-pointer group flex items-center gap-2 hover:bg-black/5 rounded-md px-2 py-1 transition-colors"
+              className="cursor-pointer group flex items-center gap-2 hover:bg-black/5 rounded-md px-2 py-1"
               onClick={handleStartEdit}
               title="点击编辑项目名称"
             >
@@ -175,7 +175,7 @@ export function FloatingProjectInfo({
                 {projectName || '未命名项目'}
                 {isSaving && <span className="text-sm text-gray-500 ml-2">(保存中...)</span>}
               </span>
-              <Edit3 className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Edit3 className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100" />
             </div>
           )}
         </div>

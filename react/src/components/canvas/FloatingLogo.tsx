@@ -22,12 +22,12 @@ export function FloatingLogo() {
           <Button
             variant="ghost"
             size="sm"
-            className="p-2 h-auto w-auto rounded-full bg-white/90 backdrop-blur-md border border-gray-200/50 shadow-lg hover:bg-white hover:scale-105 transition-all duration-200 group"
+            className="p-2 h-auto w-auto rounded-full bg-white/90 backdrop-blur-md border border-gray-200/50 shadow-lg hover:bg-white group"
           >
             <img
               src={LOGO_URL}
               alt="MagicArt"
-              className="w-8 h-8 transition-transform duration-200 group-hover:rotate-12"
+              className="w-8 h-8"
               draggable={false}
             />
           </Button>
