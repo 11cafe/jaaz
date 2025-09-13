@@ -78,5 +78,10 @@
   "modifiedTime": "Modified time",
   "dimensions": "Dimensions",
   "filePath": "File path",
-  "pngMetadata": "PNG Metadata"
+  "pngMetadata": "PNG Metadata",
+  "loading": "Loading canvas...",
+  "newChat": "New Chat",
+  "loadingFailed": "Loading failed:",
+  "retry": "Retry",
+  "newChatWithNumber": "New Chat {{number}}"
 }

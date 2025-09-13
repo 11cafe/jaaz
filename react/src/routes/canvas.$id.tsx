@@ -14,6 +14,7 @@ import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { generateChatSessionTitle } from '@/utils/formatDate'
+import { useTranslation } from 'react-i18next'
 
 // 检测是否是图片文件
 function isImageUrl(url: string): boolean {
@@ -88,6 +89,7 @@ function Canvas() {
   const { id } = useParams({ from: '/canvas/$id' })
   const navigate = useNavigate()
   const { textModel } = useConfigs()
+  const { t } = useTranslation('canvas')
   const [canvas, setCanvas] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -105,16 +107,16 @@ function Canvas() {
   // 获取当前session的标题用于功能栏显示
   const getCurrentSessionTitle = () => {
     if (!searchSessionId || sessionList.length === 0) {
-      return '新对话'
+      return t('newChat')
     }
 
     const currentSession = sessionList.find(s => s.id === searchSessionId)
     if (!currentSession) {
-      return '新对话'
+      return t('newChat')
     }
 
     // 使用session的title字段
-    return currentSession.title || '新对话'
+    return currentSession.title || t('newChat')
   }
   useEffect(() => {
     let mounted = true
@@ -146,7 +148,7 @@ function Canvas() {
               // 如果session没有标题，设置默认标题
               return {
                 ...session,
-                title: index === 0 ? '新对话 1' : `新对话 ${index + 1}`
+                title: index === 0 ? t('newChatWithNumber', { number: 1 }) : t('newChatWithNumber', { number: index + 1 })
               }
             }
             return session
@@ -257,7 +259,7 @@ function Canvas() {
 
     // 计算新session的名称
     const newSessionNumber = sessionList.length + 1
-    const newSessionName = `新对话 ${newSessionNumber}`
+    const newSessionName = t('newChatWithNumber', { number: newSessionNumber })
 
     // 创建新的session对象，使用当前选择的模型
     const newSession: Session = {
@@ -329,7 +331,7 @@ function Canvas() {
         <div className='flex items-center justify-center w-screen h-screen bg-white'>
           <div className='flex flex-col items-center gap-4'>
             <Loader2 className='w-8 h-8 animate-spin text-primary' />
-            <p className='text-muted-foreground'>正在加载画布...</p>
+            <p className='text-muted-foreground'>{t('loading')}</p>
           </div>
         </div>
       </CanvasProvider>
@@ -341,12 +343,12 @@ function Canvas() {
       <CanvasProvider>
         <div className='flex items-center justify-center w-screen h-screen bg-white'>
           <div className='flex flex-col items-center gap-4'>
-            <p className='text-red-500'>加载失败: {error.message}</p>
+            <p className='text-red-500'>{t('loadingFailed')} {error.message}</p>
             <button
               onClick={() => window.location.reload()}
               className='px-4 py-2 bg-primary text-primary-foreground rounded'
             >
-              重试
+              {t('retry')}
             </button>
           </div>
         </div>

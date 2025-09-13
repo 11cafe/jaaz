@@ -78,5 +78,10 @@
   "modifiedTime": "修改时间",
   "dimensions": "尺寸",
   "filePath": "文件路径",
-  "pngMetadata": "PNG 元数据"
+  "pngMetadata": "PNG 元数据",
+  "loading": "正在加载画布...",
+  "newChat": "新对话",
+  "loadingFailed": "加载失败:",
+  "retry": "重试",
+  "newChatWithNumber": "新对话 {{number}}"
 }
