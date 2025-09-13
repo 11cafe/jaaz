@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next'
 import { exportToCanvas, exportToBlob, exportToSvg } from '@excalidraw/excalidraw'
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
 import { toast } from 'sonner'
+import { useUserInfo } from '@/hooks/use-user-info'
+import { processRemoteImage } from '@/utils/remoteImageProcessor'
 
 type CanvasMagicGeneratorProps = {
   selectedImages: TCanvasAddImagesToChatEvent
@@ -18,6 +20,7 @@ type CanvasMagicGeneratorProps = {
 const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicGeneratorProps) => {
   const { t } = useTranslation()
   const { excalidrawAPI } = useCanvas()
+  const { userInfo } = useUserInfo()
 
   const handleMagicGenerate = async () => {
     console.log('[CanvasMagicGenerator] 开始Magic Generation流程...')
@@ -86,35 +89,6 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
         fileIds: fileIds.slice(0, 3), // 只显示前3个文件ID
       })
 
-      // 实现远程图片预下载功能
-      const downloadRemoteImage = async (url: string): Promise<string> => {
-        try {
-          console.log(`[CanvasMagicGenerator] 开始下载远程图片: ${url}`)
-
-          const response = await fetch(url, {
-            mode: 'cors',
-            credentials: 'omit',
-          })
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-          }
-
-          const blob = await response.blob()
-          console.log(`[CanvasMagicGenerator] 图片下载成功: ${blob.size} bytes, type: ${blob.type}`)
-
-          // 转换为base64
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(blob)
-          })
-        } catch (error) {
-          console.error(`[CanvasMagicGenerator] 下载图片失败: ${url}`, error)
-          throw error
-        }
-      }
 
       // 预处理所有远程图片
       const processedFiles = { ...files }
@@ -134,24 +108,14 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
             const fileId = remoteFileIds[i]
             const file = files[fileId]
 
-            // console.log(
-            //   `[CanvasMagicGenerator] 下载进度: ${i + 1}/${remoteFileIds.length} - ${file.dataURL}`
-            // )
-            // toast.loading(`下载图片 ${i + 1}/${remoteFileIds.length}...`, {
-            //   id: 'download-images',
-            // })
-
-            const localDataURL = await downloadRemoteImage(file.dataURL)
+            const localDataURL = await processRemoteImage(file.dataURL, userInfo)
             processedFiles[fileId] = {
               ...file,
-              dataURL: localDataURL,
+              dataURL: localDataURL as typeof file.dataURL,
             }
             console.log(`[CanvasMagicGenerator] 远程图片已转换为本地: ${fileId}`)
           }
 
-          // toast.success(`${remoteFileIds.length} 个图片下载完成`, {
-          //     id: 'download-images'
-          // });
           console.log(`[CanvasMagicGenerator] 所有远程图片已下载完成，开始导出Canvas`)
         } catch (error) {
           console.error(`[CanvasMagicGenerator] 批量下载远程图片失败:`, error)
