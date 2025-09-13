@@ -4,6 +4,7 @@ import TopMenu from '@/components/TopMenu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Search, Eye, Play, Loader2 } from 'lucide-react'
 import { getTemplates, type Template, type TemplateSearchParams } from '@/api/templates'
 import { useQuery } from '@tanstack/react-query'
@@ -37,30 +38,39 @@ function TemplatesPage() {
 
 
   return (
-    <div className="min-h-screen bg-soft-blue-radial">
-      <TopMenu />
-      
-      <div className="container mx-auto px-4 py-8">
+    <div className='flex flex-col h-screen relative overflow-hidden bg-soft-blue-radial'>
+      <ScrollArea className='h-full relative z-10'>
+        <TopMenu />
+
+        <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
+        <div className="mb-8 pt-8">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-800 dark:text-white drop-shadow-sm">
+              {t('title')}
+            </h1>
+            <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-200 font-medium">
+              {t('subtitle')}
+            </p>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input 
-              placeholder={t('search.placeholder')} 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-              }}
-            />
+        <div className="mb-12">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-white/20">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                <Input
+                  placeholder={t('search.placeholder')}
+                  className="pl-12 pr-4 py-3 text-lg border-0 bg-transparent focus:ring-0 focus:outline-none"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -88,7 +98,8 @@ function TemplatesPage() {
 
         {/* Templates Grid */}
         {!isLoading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {templates.map((template) => (
             <Card key={template.id} className="group hover:shadow-lg hover:shadow-purple-100/40 dark:hover:shadow-purple-900/20 transition-all duration-300 overflow-hidden p-0 border-slate-200/40 dark:border-slate-700/40 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm">
               <div className="relative overflow-hidden">
@@ -137,6 +148,7 @@ function TemplatesPage() {
               
             </Card>
             ))}
+            </div>
           </div>
         )}
 
@@ -149,29 +161,56 @@ function TemplatesPage() {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-border text-center">
-          <div className="flex items-center justify-center space-x-6 mb-4">
-            <a 
-              href='mailto:support@magicart.cc' 
-              className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
-            >
-              Contact Support
-            </a>
-            <div className='w-px h-4 bg-border'></div>
-            <a 
-              href='/' 
-              className='text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
-            >
-              Back to Home
-            </a>
-          </div>
-          <p className="text-muted-foreground">
-            © 2025 MagicArt AI Image Generator. All rights reserved.
-          </p>
         </div>
 
-      </div>
+        {/* Footer */}
+        <footer className='relative z-10 mt-16 sm:mt-20 border-t border-stone-200/50 dark:border-gray-700/50'>
+          <div className='max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12'>
+            <div className='flex flex-col items-center space-y-6'>
+              {/* Logo和标题 */}
+              <div className='text-center'>
+                <h3 className='text-lg sm:text-xl font-semibold bg-gradient-to-r from-gray-900 via-gray-700 to-stone-600 dark:from-white dark:via-gray-200 dark:to-stone-300 bg-clip-text text-transparent'>
+                  MagicArt AI Image Generator
+                </h3>
+                <p className='mt-2 text-sm text-stone-600 dark:text-stone-400'>
+                  Unleash your creativity with AI-powered image generation
+                </p>
+              </div>
+
+              {/* 链接区域 */}
+              <div className='flex items-center space-x-8'>
+                <a
+                  href='/privacy'
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Privacy Policy
+                </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a
+                  href='/terms'
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Terms of Service
+                </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a
+                  href='mailto:support@magicart.cc'
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Contact Support
+                </a>
+              </div>
+
+              {/* 版权信息 */}
+              <div className='text-center pt-4 border-t border-stone-200/30 dark:border-gray-700/30 w-full max-w-md'>
+                <p className='text-xs text-stone-500 dark:text-stone-500'>
+                  © 2025 MagicArt AI Image Generator. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </ScrollArea>
     </div>
   )
 }

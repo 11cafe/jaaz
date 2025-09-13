@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import ThemeButton from '@/components/theme/ThemeButton'
 import { LOGO_URL } from '@/constants'
 import LanguageSwitcher from './common/LanguageSwitcher'
 import { UserMenu } from './auth/UserMenu'
+import InviteButton from './common/InviteButton'
+import PointsBadge from './common/PointsBadge'
 
 export default function TopMenu({
   middle,
@@ -65,7 +66,9 @@ export default function TopMenu({
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />
-        <ThemeButton />
+        <InviteButton />
+        <PointsBadge />
+        {/* <ThemeButton /> */}
         <UserMenu />
       </div>
     </div>

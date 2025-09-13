@@ -13,7 +13,7 @@ import { useUserInfo } from '@/hooks/use-user-info'
 import { useConfigs } from '@/contexts/configs'
 import { useCanvas } from '@/contexts/canvas'
 import { useTranslation } from 'react-i18next'
-import { Coins, Minus, Plus } from 'lucide-react'
+import { Zap, Minus, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export function FloatingUserInfo() {
@@ -83,8 +83,8 @@ export function FloatingUserInfo() {
 
           {/* 积分显示 */}
           <div className="flex items-center gap-2 text-slate-700">
-            <div className="p-1 rounded-full bg-amber-100">
-              <Coins className="w-3.5 h-3.5 text-amber-600" />
+            <div className="p-1 rounded-full bg-gray-100">
+              <Zap className="w-3.5 h-3.5 text-gray-800" />
             </div>
             <span className="text-sm font-semibold">
               {balanceLoading ? '...' : balanceError ? '--' : points}
