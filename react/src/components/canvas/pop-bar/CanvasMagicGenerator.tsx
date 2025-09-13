@@ -98,31 +98,71 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
       })
 
       if (remoteFileIds.length > 0) {
-        console.log(`[CanvasMagicGenerator] 检测到 ${remoteFileIds.length} 个远程图片，开始下载...`)
-        toast.loading(`正在下载 ${remoteFileIds.length} 个远程图片...`, {
-          id: 'download-images',
-        })
+        console.log(`[CanvasMagicGenerator] 检测到 ${remoteFileIds.length} 个远程图片，开始智能处理...`)
 
-        try {
-          for (let i = 0; i < remoteFileIds.length; i++) {
-            const fileId = remoteFileIds[i]
-            const file = files[fileId]
+        // 首先快速检查哪些文件真的需要下载
+        const filesToDownload: string[] = []
 
-            const localDataURL = await processRemoteImage(file.dataURL, userInfo)
-            processedFiles[fileId] = {
-              ...file,
-              dataURL: localDataURL as typeof file.dataURL,
+        for (const fileId of remoteFileIds) {
+          const file = files[fileId]
+          const { extractFileIdentifier, checkLocalFile } = await import('@/utils/remoteImageProcessor')
+          const filename = extractFileIdentifier(file.dataURL)
+          const localUrl = await checkLocalFile(filename, userInfo)
+
+          if (!localUrl) {
+            filesToDownload.push(fileId)
+          } else {
+            console.log(`[CanvasMagicGenerator] 文件已存在本地，直接使用: ${filename}`)
+            // 直接从本地URL获取数据
+            try {
+              const response = await fetch(localUrl, { credentials: 'include' })
+              const blob = await response.blob()
+              const reader = new FileReader()
+              const dataURL = await new Promise<string>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+
+              processedFiles[fileId] = {
+                ...file,
+                dataURL: dataURL as typeof file.dataURL,
+              }
+            } catch (error) {
+              console.warn(`[CanvasMagicGenerator] 读取本地文件失败，将重新下载: ${filename}`, error)
+              filesToDownload.push(fileId)
             }
-            console.log(`[CanvasMagicGenerator] 远程图片已转换为本地: ${fileId}`)
           }
+        }
 
-          console.log(`[CanvasMagicGenerator] 所有远程图片已下载完成，开始导出Canvas`)
-        } catch (error) {
-          console.error(`[CanvasMagicGenerator] 批量下载远程图片失败:`, error)
-          toast.error(`图片下载失败: ${error instanceof Error ? error.message : '未知错误'}`, {
+        // 只有真正需要下载的文件才显示下载提示
+        if (filesToDownload.length > 0) {
+          console.log(`[CanvasMagicGenerator] 需要下载 ${filesToDownload.length} 个远程图片`)
+          toast.loading(`正在下载 ${filesToDownload.length} 个远程图片...`, {
             id: 'download-images',
           })
-          return
+
+          try {
+            for (const fileId of filesToDownload) {
+              const file = files[fileId]
+              const localDataURL = await processRemoteImage(file.dataURL, userInfo)
+              processedFiles[fileId] = {
+                ...file,
+                dataURL: localDataURL as typeof file.dataURL,
+              }
+              console.log(`[CanvasMagicGenerator] 远程图片已转换为本地: ${fileId}`)
+            }
+
+            console.log(`[CanvasMagicGenerator] 所有需要的图片已准备完成，开始导出Canvas`)
+          } catch (error) {
+            console.error(`[CanvasMagicGenerator] 批量下载远程图片失败:`, error)
+            toast.error(`图片下载失败: ${error instanceof Error ? error.message : '未知错误'}`, {
+              id: 'download-images',
+            })
+            return
+          }
+        } else {
+          console.log(`[CanvasMagicGenerator] 所有图片都已存在本地，无需下载`)
         }
       } else {
         console.log(`[CanvasMagicGenerator] 未检测到远程图片，直接进行Canvas导出`)

@@ -20,14 +20,31 @@ export function extractFileIdentifier(url: string): string {
     const pathname = urlObj.pathname
     const filename = pathname.split('/').pop() || ''
 
-    // 如果是常见的文件服务URL格式，提取文件ID
-    if (pathname.includes('/api/file/')) {
+    // 如果是常见的文件服务URL格式，直接提取文件名
+    if (pathname.includes('/api/file/') || pathname.includes('/files/')) {
       return filename
     }
 
-    // 对于其他URL，生成一个基于URL的哈希ID
+    // 对于magicart.cc等域名，直接使用文件名
+    if (urlObj.hostname.includes('magicart.cc') && filename) {
+      return filename
+    }
+
+    // 对于腾讯云COS URL，提取文件名
+    if (urlObj.hostname.includes('cos.') && filename) {
+      // 移除查询参数获取纯文件名
+      return filename.split('?')[0]
+    }
+
+    // 对于其他URL，生成一个基于URL路径的ID
+    if (filename && filename.includes('.')) {
+      // 如果URL最后部分包含扩展名，直接使用
+      return filename.split('?')[0] // 移除查询参数
+    }
+
+    // 最后的备选方案：生成哈希ID
     const hash = btoa(url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)
-    const extension = filename.includes('.') ? filename.split('.').pop() : 'png'
+    const extension = 'png' // 默认扩展名
     return `remote_${hash}.${extension}`
   } catch {
     // 如果URL解析失败，生成一个简单的ID
@@ -40,24 +57,23 @@ export function extractFileIdentifier(url: string): string {
  * 检查本地文件是否存在
  */
 export async function checkLocalFile(filename: string, userInfo?: UserInfo): Promise<string | null> {
-  if (!userInfo?.user_info?.email) {
-    console.log('[RemoteImageProcessor] 用户未登录，跳过本地文件检查')
-    return null
-  }
-
   try {
-    const email = userInfo.user_info.email.replace('@', '_at_').replace(/\./g, '_dot_')
-    const localUrl = `${BASE_API_URL}/user_data/users/${email}/files/${filename}`
+    const localUrl = `${BASE_API_URL}/api/file/${filename}`
 
     console.log(`[RemoteImageProcessor] 检查本地文件: ${localUrl}`)
 
-    const response = await fetch(localUrl, { method: 'HEAD' })
+    // 使用GET请求检查文件是否存在，如果存在就能直接使用这个URL
+    const response = await fetch(localUrl, {
+      method: 'GET',
+      credentials: 'include' // 包含认证信息
+    })
+
     if (response.ok) {
       console.log(`[RemoteImageProcessor] 本地文件存在: ${filename}`)
       return localUrl
     }
 
-    console.log(`[RemoteImageProcessor] 本地文件不存在: ${filename}`)
+    console.log(`[RemoteImageProcessor] 本地文件不存在: ${filename} (状态码: ${response.status})`)
     return null
   } catch (error) {
     console.log(`[RemoteImageProcessor] 本地文件检查失败: ${filename}`, error)
@@ -88,27 +104,30 @@ export async function downloadAndSaveRemoteImage(
     const blob = await response.blob()
     console.log(`[RemoteImageProcessor] 图片下载成功: ${blob.size} bytes, type: ${blob.type}`)
 
-    // 如果用户已登录，尝试保存到服务器
+    // 如果用户已登录，尝试使用upload_image_fast API保存到服务器
     if (userInfo?.user_info?.email) {
       try {
         const formData = new FormData()
         formData.append('file', blob, filename)
 
-        const saveResponse = await fetch(`${BASE_API_URL}/api/file/save`, {
+        const saveResponse = await fetch(`${BASE_API_URL}/api/upload_image_fast`, {
           method: 'POST',
           body: formData,
           credentials: 'include'
         })
 
         if (saveResponse.ok) {
-          const email = userInfo.user_info.email.replace('@', '_at_').replace(/\./g, '_dot_')
-          const localUrl = `${BASE_API_URL}/user_data/users/${email}/files/${filename}`
-          console.log(`[RemoteImageProcessor] 图片已保存到服务器: ${localUrl}`)
+          const result = await saveResponse.json()
+          console.log(`[RemoteImageProcessor] 图片已保存到服务器: ${result.file_id}`)
 
-          // 返回本地URL的base64
-          const localResponse = await fetch(localUrl)
-          const localBlob = await localResponse.blob()
-          return blobToBase64(localBlob)
+          // 使用保存后的proxy_url获取base64
+          const localResponse = await fetch(result.proxy_url, {
+            credentials: 'include'
+          })
+          if (localResponse.ok) {
+            const localBlob = await localResponse.blob()
+            return blobToBase64(localBlob)
+          }
         }
       } catch (saveError) {
         console.warn(`[RemoteImageProcessor] 保存图片到服务器失败，使用临时base64:`, saveError)

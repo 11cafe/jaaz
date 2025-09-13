@@ -52,7 +52,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'gemini-2.5-pro-all': {'type': 'text'},
         },
         'url': 'https://api.tu-zi.com/v1',
-        'api_key': 'sk-CRJTvndo8xN0nmzTe5fyij77T0tmT7ZMcjLZwMzZ0RmvkOP0',
+        'api_key': 'sk-xNyBtMDiP435GMO6e2opXYiSpkNbcVwMK93Vz8joVIPTXuzV',
     },
     'doubao': {
         'models': {
