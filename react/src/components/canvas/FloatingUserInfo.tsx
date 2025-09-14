@@ -72,21 +72,21 @@ export function FloatingUserInfo() {
 
     return (
       <div className="absolute top-16 left-4 md:bottom-5 md:top-auto z-30">
-        <div className="flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-white/30 rounded-lg px-1.5 py-1 shadow-none transition-all duration-200 hover:bg-white/90">
+        <div className="flex items-center gap-2 bg-white/85 backdrop-blur-md border border-white/30 rounded-lg px-2 py-1 shadow-none transition-all duration-200 hover:bg-white/90">
           {/* 用户头像 */}
-          <Avatar className="h-5 w-5 ring-1 ring-blue-200/30">
+          <Avatar className="h-7 w-7 ring-1 ring-blue-200/30">
             <AvatarImage src={image_url} alt={username} />
-            <AvatarFallback className="text-[8px] font-medium bg-gradient-to-br from-blue-100 to-indigo-100 text-slate-600">
+            <AvatarFallback className="text-[10px] font-medium bg-gradient-to-br from-blue-100 to-indigo-100 text-slate-600">
               {initials}
             </AvatarFallback>
           </Avatar>
 
           {/* 积分显示 */}
-          <div className="flex items-center gap-1 text-slate-600">
-            <div className="p-0.5 rounded-full bg-gray-100">
-              <Zap className="w-2.5 h-2.5 text-gray-700" />
+          <div className="flex items-center gap-1.5 text-slate-600">
+            <div className="p-1 rounded-full bg-gray-100">
+              <Zap className="w-3 h-3 text-gray-700" />
             </div>
-            <span className="text-[10px] font-medium">
+            <span className="text-[11px] font-medium">
               {balanceLoading ? '...' : balanceError ? '--' : points}
             </span>
           </div>
