@@ -16,6 +16,7 @@ type MixedContentImagesProps = {
 type MixedContentTextProps = {
   message: Message
   contents: MessageContent[]
+  hideTimestamp?: boolean
 }
 
 // 图片组件 - 独立显示在聊天框外
@@ -49,7 +50,7 @@ export const MixedContentImages: React.FC<MixedContentImagesProps> = ({
 }
 
 // 文本组件 - 显示在聊天框内
-export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, contents }) => {
+export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, contents, hideTimestamp = false }) => {
   const textContents = contents.filter((content) => content.type === 'text')
 
   // 过滤掉文本中的图片引用，只保留纯文本
@@ -66,12 +67,14 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
   return (
     <>
       {message.role === 'user' ? (
-        <div className='mb-4'>
-          {/* 用户混合内容消息时间戳 - 右对齐 */}
-          <Timestamp
-            timestamp={message.timestamp}
-            align="right"
-          />
+        <div className={hideTimestamp ? '' : 'mb-4'}>
+          {/* 用户混合内容消息时间戳 - 右对齐 - 根据hideTimestamp参数决定是否显示 */}
+          {!hideTimestamp && (
+            <Timestamp
+              timestamp={message.timestamp}
+              align="right"
+            />
+          )}
           <div className='flex justify-end'>
             <div className='bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit'>
               <div className='w-full'>
@@ -81,12 +84,14 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
           </div>
         </div>
       ) : (
-        <div className='mb-4'>
-          {/* 助手混合内容消息时间戳 - 左对齐 */}
-          <Timestamp
-            timestamp={message.timestamp}
-            align="left"
-          />
+        <div className={hideTimestamp ? '' : 'mb-4'}>
+          {/* 助手混合内容消息时间戳 - 左对齐 - 根据hideTimestamp参数决定是否显示 */}
+          {!hideTimestamp && (
+            <Timestamp
+              timestamp={message.timestamp}
+              align="left"
+            />
+          )}
           <div className='text-gray-800 dark:text-gray-200 text-left items-start'>
             <div className='w-full'>
               <Markdown>{combinedText}</Markdown>

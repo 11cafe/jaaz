@@ -32,6 +32,7 @@ import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import MixedContent, { MixedContentImages, MixedContentText } from './Message/MixedContent'
+import Timestamp from './Message/Timestamp'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -138,19 +139,56 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     const checkAndDisplayInitialMessage = () => {
       const initialMessageData = localStorage.getItem('initial_user_message')
+      console.log('🔍 检查初始用户消息', {
+        initialMessageData: !!initialMessageData,
+        hasDisplayedInitialMessage,
+        searchSessionId
+      })
+
       if (initialMessageData && !hasDisplayedInitialMessage) {
         try {
-          const { sessionId: storedSessionId, message, timestamp } = JSON.parse(initialMessageData)
+          const { sessionId: storedSessionId, message, timestamp, canvasId } = JSON.parse(initialMessageData)
+          console.log('📄 解析初始消息数据', {
+            storedSessionId,
+            searchSessionId,
+            canvasId,
+            messageContent: message?.content?.length > 0 ? '有内容' : '无内容',
+            timestamp: new Date(timestamp).toLocaleString()
+          })
 
-          // 检查timestamp是否在5分钟内，更宽松的session匹配
-          if (Date.now() - timestamp < 5 * 60 * 1000) {
-            // 如果searchSessionId匹配或者还没有sessionId，就显示消息
-            if (!searchSessionId || storedSessionId === searchSessionId) {
+          // 检查timestamp是否在5分钟内
+          const isWithinTimeLimit = Date.now() - timestamp < 5 * 60 * 1000
+          console.log('⏰ 时间检查', {
+            isWithinTimeLimit,
+            timeDiff: Math.floor((Date.now() - timestamp) / 1000) + '秒'
+          })
+
+          if (isWithinTimeLimit) {
+            // 🔧 放宽sessionId匹配条件：
+            // 1. 如果存储的sessionId和当前的sessionId匹配
+            // 2. 或者还没有searchSessionId（刚跳转过来）
+            // 3. 或者是同一个canvas下的消息（即使session不同）
+            const shouldDisplayMessage = (
+              !searchSessionId ||
+              storedSessionId === searchSessionId ||
+              (canvasId && window.location.pathname.includes(canvasId))
+            )
+
+            console.log('🎯 SessionId匹配检查', {
+              shouldDisplayMessage,
+              条件1_无当前SessionId: !searchSessionId,
+              条件2_SessionId匹配: storedSessionId === searchSessionId,
+              条件3_同一Canvas: canvasId && window.location.pathname.includes(canvasId)
+            })
+
+            if (shouldDisplayMessage) {
+              console.log('✅ 显示初始用户消息')
               setMessages([message])
               setHasDisplayedInitialMessage(true)
 
               // 延迟显示等待状态，让用户先看到自己的消息
               pendingTimeoutRef.current = setTimeout(() => {
+                console.log('⏳ 设置pending状态为text')
                 setPending('text')
               }, 300)
 
@@ -161,14 +199,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
               // 延迟清除localStorage，给后端推送时间
               setTimeout(() => {
+                console.log('🗑️ 清除localStorage中的初始消息')
                 localStorage.removeItem('initial_user_message')
               }, 2000)
               return true
+            } else {
+              console.log('❌ SessionId不匹配，不显示消息')
             }
           } else {
+            console.log('⏰ 消息已过期，清除localStorage')
             localStorage.removeItem('initial_user_message')
           }
         } catch (error) {
+          console.error('❌ 解析初始消息失败', error)
           localStorage.removeItem('initial_user_message')
         }
       }
@@ -181,6 +224,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // 如果没有显示，等待一小段时间再检查一次（防止sessionId延迟）
     if (!displayed && !hasDisplayedInitialMessage) {
       const timeoutId = setTimeout(() => {
+        console.log('🔄 延迟重新检查初始消息')
         checkAndDisplayInitialMessage()
       }, 200)
 
@@ -192,16 +236,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     if (!hasDisplayedInitialMessage && sessionId) {
       const initialMessageData = localStorage.getItem('initial_user_message')
+      console.log('🔄 SessionId变化时检查初始消息', {
+        sessionId,
+        hasInitialMessage: !!initialMessageData,
+        hasDisplayedInitialMessage
+      })
+
       if (initialMessageData) {
         try {
-          const { sessionId: storedSessionId, message, timestamp } = JSON.parse(initialMessageData)
+          const { sessionId: storedSessionId, message, timestamp, canvasId } = JSON.parse(initialMessageData)
+          console.log('📄 SessionId变化时解析数据', {
+            storedSessionId,
+            currentSessionId: sessionId,
+            canvasId,
+            timeDiff: Math.floor((Date.now() - timestamp) / 1000) + '秒'
+          })
 
-          if (storedSessionId === sessionId && Date.now() - timestamp < 5 * 60 * 1000) {
+          // 🔧 同样放宽匹配条件
+          const isWithinTimeLimit = Date.now() - timestamp < 5 * 60 * 1000
+          const shouldDisplayMessage = (
+            storedSessionId === sessionId ||
+            (canvasId && window.location.pathname.includes(canvasId))
+          )
+
+          console.log('🎯 SessionId变化时匹配检查', {
+            isWithinTimeLimit,
+            shouldDisplayMessage,
+            sessionMatch: storedSessionId === sessionId,
+            canvasMatch: canvasId && window.location.pathname.includes(canvasId)
+          })
+
+          if (shouldDisplayMessage && isWithinTimeLimit) {
+            console.log('✅ SessionId变化时显示初始消息')
             setMessages([message])
             setHasDisplayedInitialMessage(true)
 
             // 延迟显示等待状态，让用户先看到自己的消息
             pendingTimeoutRef.current = setTimeout(() => {
+              console.log('⏳ SessionId变化时设置pending状态')
               setPending('text')
             }, 300)
 
@@ -211,10 +283,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             // 延迟清除localStorage，给后端推送时间
             setTimeout(() => {
+              console.log('🗑️ SessionId变化时清除localStorage')
               localStorage.removeItem('initial_user_message')
             }, 2000)
           }
         } catch (error) {
+          console.error('❌ SessionId变化时解析失败', error)
           setTimeout(() => {
             localStorage.removeItem('initial_user_message')
           }, 1000)
@@ -222,6 +296,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     }
   }, [sessionId, hasDisplayedInitialMessage, forceScrollToBottom])
+
+  // 🔧 增加兜底检查 - 如果前面的逻辑都没有显示消息，则更积极地尝试
+  useEffect(() => {
+    if (!hasDisplayedInitialMessage) {
+      const timeoutId = setTimeout(() => {
+        const initialMessageData = localStorage.getItem('initial_user_message')
+        if (initialMessageData) {
+          try {
+            const { message, timestamp } = JSON.parse(initialMessageData)
+
+            // 如果消息还在有效期内，无论sessionId如何，都显示
+            if (Date.now() - timestamp < 30 * 1000) { // 30秒内的消息
+              console.log('🚨 兜底显示初始消息（忽略sessionId检查）')
+              setMessages([message])
+              setHasDisplayedInitialMessage(true)
+
+              pendingTimeoutRef.current = setTimeout(() => {
+                console.log('⏳ 兜底设置pending状态')
+                setPending('text')
+              }, 300)
+
+              setTimeout(() => forceScrollToBottom(), 100)
+              setTimeout(() => forceScrollToBottom(), 300)
+
+              setTimeout(() => {
+                localStorage.removeItem('initial_user_message')
+              }, 2000)
+            }
+          } catch (error) {
+            console.error('❌ 兜底解析失败', error)
+          }
+        }
+      }, 1000) // 1秒后检查
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [hasDisplayedInitialMessage, forceScrollToBottom])
 
   // 监听messages变化，确保用户消息显示后立即滚动
   useEffect(() => {
@@ -998,14 +1109,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       // 字符串内容消息
                       <MessageRegular message={message} content={message.content} />
                     ) : Array.isArray(message.content) ? (
-                      // 混合内容消息（文本+图片）
-                      <>
-                        <MixedContentImages
-                          contents={message.content}
-                          canvasElementId={(message as any).canvas_element_id}
+                      // 混合内容消息（文本+图片）- 时间戳显示在最上方
+                      <div className="mb-4">
+                        {/* 混合内容消息的时间戳 - 使用统一的Timestamp组件 */}
+                        <Timestamp
+                          timestamp={message.timestamp}
+                          align={message.role === 'user' ? 'right' : 'left'}
                         />
-                        <MixedContentText message={message} contents={message.content} />
-                      </>
+                        {/* 混合内容区域 */}
+                        <div className="mb-3">
+                          <MixedContentImages
+                            contents={message.content}
+                            canvasElementId={(message as any).canvas_element_id}
+                          />
+                        </div>
+                        <MixedContentText message={message} contents={message.content} hideTimestamp={true} />
+                      </div>
                     ) : null}
 
                     {/* Tool calls for assistant messages */}
