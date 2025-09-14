@@ -12,7 +12,7 @@ from services.db_service import db_service
 from services.db_optimization_service import get_db_optimization_service
 from services.config_service import USER_DATA_DIR, DEFAULT_PROVIDERS_CONFIG
 from services.langgraph_service import langgraph_multi_agent
-from services.websocket_service import send_to_websocket
+from services.websocket_service import send_to_websocket, send_ai_thinking_status
 from services.stream_service import add_stream_task, remove_stream_task
 from models.config_model import ModelInfo
 from log import get_logger
@@ -210,6 +210,11 @@ async def handle_chat(data: Dict[str, Any]) -> None:
                 'type': 'all_messages',
                 'messages': messages  # 发送包含用户消息的完整列表
             })
+
+            # 发送AI思考状态（让用户知道AI正在处理）
+            logger.info(f"🧠 [THINKING_DEBUG] 即将发送AI思考状态: session_id={session_id}, canvas_id={canvas_id}")
+            await send_ai_thinking_status(session_id, canvas_id)
+            logger.info(f"🧠 [THINKING_DEBUG] AI思考状态发送调用完成")
 
     # Create and start langgraph_agent task for chat processing
     task_start = time.time()

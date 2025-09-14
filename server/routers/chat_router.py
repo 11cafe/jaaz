@@ -7,10 +7,16 @@ from services.i18n_service import i18n_service
 from utils.auth_utils import get_current_user_optional, CurrentUser
 from typing import Dict, Optional
 from log import get_logger
+import asyncio
+import time
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api")
+
+# 防重复机制 - 存储正在处理的session_id和最后请求时间
+_active_magic_sessions = set()
+_session_last_request = {}
 
 @router.post("/chat")
 async def chat(request: Request, current_user: Optional[CurrentUser] = Depends(get_current_user_optional)):
@@ -103,11 +109,36 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
     """
     try:
         logger.info("[Backend Magic] 接收到Magic Generation请求")
-        
+
         # 解析请求数据
         data = await request.json()
-        logger.info(f"[Backend Magic] 请求数据解析成功: session_id={data.get('session_id', 'N/A')}, canvas_id={data.get('canvas_id', 'N/A')}, messages_count={len(data.get('messages', []))}")
-        
+        session_id = data.get('session_id', '')
+
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+
+        logger.info(f"[Backend Magic] 请求数据解析成功: session_id={session_id}, canvas_id={data.get('canvas_id', 'N/A')}, messages_count={len(data.get('messages', []))}")
+
+        # 🛡️ 防重复机制检查
+        current_time = time.time()
+
+        # 检查是否已有相同session正在处理
+        if session_id in _active_magic_sessions:
+            logger.warning(f"[Backend Magic] Session {session_id} 正在处理中，拒绝重复请求")
+            return {"status": "already_processing", "message": "Another magic generation is already in progress for this session"}
+
+        # 检查请求频率限制（2秒内不允许重复请求）
+        if session_id in _session_last_request:
+            time_diff = current_time - _session_last_request[session_id]
+            if time_diff < 2.0:  # 2秒内不允许重复请求
+                logger.warning(f"[Backend Magic] Session {session_id} 请求过于频繁 (间隔: {time_diff:.2f}s)，拒绝请求")
+                return {"status": "rate_limited", "message": "Requests too frequent, please wait"}
+
+        # 标记session为正在处理
+        _active_magic_sessions.add(session_id)
+        _session_last_request[session_id] = current_time
+        logger.info(f"[Backend Magic] Session {session_id} 已标记为处理中")
+
         # 🔍 添加用户信息到请求数据中
         if current_user:
             data['user_info'] = {
@@ -119,11 +150,10 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
             logger.info(f"[Backend Magic] 用户信息已添加: user_id={current_user.id}, email={current_user.email}")
         else:
             logger.warning("[Backend Magic] 无用户信息")
-        
+
         # 立即启动异步magic生成任务，不等待完成
         # 这样前端可以立即得到响应，不会被阻塞
-        import asyncio
-        
+
         # 添加错误处理包装，确保异步任务中的错误不会影响API响应
         async def safe_handle_magic():
             try:
@@ -134,17 +164,21 @@ async def magic(request: Request, current_user: Optional[CurrentUser] = Depends(
                 logger.error(f"[Backend Magic] Async magic generation failed: {e}")
                 logger.error(f"[Backend Magic] 错误详情: {type(e).__name__}: {str(e)}")
                 # 通过WebSocket通知前端错误
-                session_id = data.get('session_id', '')
                 if session_id:
                     from services.websocket_service import send_to_websocket
                     await send_to_websocket(session_id, {
                         'type': 'error',
                         'error': f'Magic generation failed: {str(e)}'
                     })
-        
+            finally:
+                # 无论成功或失败，都要清理session状态
+                if session_id in _active_magic_sessions:
+                    _active_magic_sessions.remove(session_id)
+                    logger.info(f"[Backend Magic] Session {session_id} 已从活跃列表中移除")
+
         logger.info("[Backend Magic] 创建异步任务")
         asyncio.create_task(safe_handle_magic())
-        
+
         logger.info("[Backend Magic] 返回状态started")
         return {"status": "started"}
         

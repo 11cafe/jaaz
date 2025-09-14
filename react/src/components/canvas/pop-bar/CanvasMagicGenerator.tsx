@@ -4,7 +4,7 @@ import { useCanvas } from '@/contexts/canvas'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
 import { useKeyPress } from 'ahooks'
 import { motion } from 'motion/react'
-import { memo } from 'react'
+import { memo, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { exportToCanvas, exportToBlob, exportToSvg } from '@excalidraw/excalidraw'
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
@@ -22,12 +22,37 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
   const { excalidrawAPI } = useCanvas()
   const { userInfo } = useUserInfo()
 
+  // 防重复机制
+  const [isGenerating, setIsGenerating] = useState(false)
+  const lastGenerateTimeRef = useRef<number>(0)
+
   const handleMagicGenerate = async () => {
     console.log('[CanvasMagicGenerator] 开始Magic Generation流程...')
+
+    // 防重复检查 - 防止短时间内重复点击
+    const currentTime = Date.now()
+    const timeDiff = currentTime - lastGenerateTimeRef.current
+
+    if (isGenerating) {
+      console.warn('[CanvasMagicGenerator] 正在生成中，忽略重复请求')
+      toast.warning('正在生成中，请稍候...')
+      return
+    }
+
+    if (timeDiff < 2000) { // 2秒内不允许重复点击
+      console.warn('[CanvasMagicGenerator] 点击过于频繁，忽略请求')
+      toast.warning('请不要频繁点击')
+      return
+    }
+
+    // 更新状态和时间戳
+    setIsGenerating(true)
+    lastGenerateTimeRef.current = currentTime
 
     if (!excalidrawAPI) {
       console.error('[CanvasMagicGenerator] excalidrawAPI不可用')
       toast.error('Canvas API不可用，请刷新页面重试')
+      setIsGenerating(false)
       return
     }
 
@@ -41,6 +66,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
       if (Object.keys(selectedIds).length === 0) {
         console.warn('[CanvasMagicGenerator] 没有选中任何元素')
         toast.error('请先选中要生成的元素')
+        setIsGenerating(false)
         return
       }
 
@@ -159,6 +185,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
             toast.error(`图片下载失败: ${error instanceof Error ? error.message : '未知错误'}`, {
               id: 'download-images',
             })
+            setIsGenerating(false)
             return
           }
         } else {
@@ -348,14 +375,18 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
         error instanceof Error ? error.stack : '无堆栈信息'
       )
       toast.error('Magic Generation失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    } finally {
+      // 无论成功还是失败，都要重置生成状态
+      setIsGenerating(false)
+      console.log('[CanvasMagicGenerator] 重置生成状态')
     }
   }
 
   useKeyPress(['meta.b', 'ctrl.b'], handleMagicGenerate)
 
   return (
-    <Button variant='ghost' size='sm' onClick={handleMagicGenerate}>
-      {t('canvas:popbar.magicGenerate')} <Hotkey keys={['⌘', 'B']} />
+    <Button variant='ghost' size='sm' onClick={handleMagicGenerate} disabled={isGenerating}>
+      {isGenerating ? '生成中...' : t('canvas:popbar.magicGenerate')} <Hotkey keys={['⌘', 'B']} />
     </Button>
   )
 }

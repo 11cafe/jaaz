@@ -65,6 +65,18 @@ export const sendMagicGenerate = async (payload: {
     
     const data = await response.json()
     console.log('[API Magic] 请求成功，响应数据:', data);
+
+    // 处理防重复机制的响应
+    if (data.status === 'already_processing') {
+      console.warn('[API Magic] 检测到重复请求，正在处理中');
+      throw new Error('正在生成中，请稍候...');
+    }
+
+    if (data.status === 'rate_limited') {
+      console.warn('[API Magic] 请求频率过高');
+      throw new Error('请求过于频繁，请稍后再试');
+    }
+
     return data as Message[]
   } catch (error) {
     console.error('[API Magic] 请求过程中发生错误:', error);

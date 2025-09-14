@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 from services.db_service import db_service
 # from services.OpenAIAgents_service import create_jaaz_response
 from services.OpenAIAgents_service import create_local_magic_response
-from services.websocket_service import send_to_websocket  # type: ignore
+from services.websocket_service import send_to_websocket, send_ai_thinking_status, send_generation_status  # type: ignore
 from services.stream_service import add_stream_task, remove_stream_task
 from services.points_service import points_service, InsufficientPointsError
 from services.i18n_service import i18n_service
@@ -55,6 +55,14 @@ async def handle_magic(data: Dict[str, Any]) -> None:
     # Extract user information
     user_uuid = user_info.get('uuid') if user_info else None
     user_id = user_info.get('id') if user_info else None
+
+    # 🧠 发送AI思考状态（让用户知道Magic Generation正在开始）
+    logger.info(f"🧠 [MAGIC_THINKING_DEBUG] 发送Magic Generation思考状态: session_id={session_id}, canvas_id={canvas_id}")
+    try:
+        await send_ai_thinking_status(session_id=session_id, canvas_id=canvas_id)
+        logger.info(f"✅ [MAGIC_THINKING_DEBUG] Magic思考状态发送成功: session_id={session_id}")
+    except Exception as e:
+        logger.error(f"❌ [MAGIC_THINKING_DEBUG] Magic思考状态发送失败: session_id={session_id}, error={e}")
 
     # 🎯 积分检查：画图前检查是否有足够积分
     if user_id and user_uuid:
@@ -230,18 +238,22 @@ async def _process_magic_generation(
     """
     try:
         # 🔥 发送开始生成通知
-        await send_to_websocket(session_id, {
-            'type': 'generation_progress',
-            'status': 'starting',
-            'message': '🎨 正在生成魔法图片...'
-        })
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='progress',
+            message='🎨 正在生成魔法图片...',
+            progress=0.3
+        )
         
         # 🔥 发送图像处理通知
-        await send_to_websocket(session_id, {
-            'type': 'generation_progress', 
-            'status': 'processing',
-            'message': '📝 正在分析和处理图像...'
-        })
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='progress',
+            message='📝 正在分析和处理图像...',
+            progress=0.6
+        )
         
         # 原来是基于云端生成
         # ai_response = await create_jaaz_response(messages, session_id, canvas_id)
@@ -303,20 +315,24 @@ async def _process_magic_generation(
             logger.warning(f"⚠️ [DEBUG] 用户信息不完整，跳过积分扣除: user_info={user_info}")
         
         # 🔥 发送完成通知
-        await send_to_websocket(session_id, {
-            'type': 'generation_progress',
-            'status': 'completed', 
-            'message': '✨ 魔法生成完成！'
-        })
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='complete',
+            message='✨ 魔法生成完成！',
+            progress=1.0
+        )
         
     except Exception as e:
         logger.error(f"❌ 魔法生成失败: {e}")
-        # 🔥 发送错误通知 
-        await send_to_websocket(session_id, {
-            'type': 'generation_progress',
-            'status': 'error',
-            'message': f'❌ 生成失败: {str(e)}'
-        })
+        # 🔥 发送错误通知
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='error',
+            message=f'❌ 生成失败: {str(e)}',
+            progress=0.0
+        )
         # 重新抛出异常以保持原有错误处理逻辑
         raise
 

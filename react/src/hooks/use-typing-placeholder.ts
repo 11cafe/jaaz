@@ -20,19 +20,10 @@ export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => 
   const [currentPlaceholder, setCurrentPlaceholder] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Define different placeholder texts
-  const placeholderTexts = [
-    t('chat:textarea.placeholder'),
-    '生成一个可爱的猫咪图片',
-    'Create a modern website design',
-    '帮我设计一个Logo',
-    'Generate beautiful artwork',
-    '创建一个科幻场景',
-    'Design a mobile app interface',
-    '画一幅抽象艺术作品'
-  ]
+  // Get placeholder texts from i18n
+  const placeholderTexts = t('chat:textarea.placeholderTexts', { returnObjects: true }) as string[]
 
   useEffect(() => {
     const currentText = placeholderTexts[currentIndex]
