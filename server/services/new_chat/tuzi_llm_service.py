@@ -406,18 +406,17 @@ class TuziLLMService:
 回答:"""
 
             logger.info(f"🤖 使用大模型进行意图理解...")
-            logger.info(f"🤖 使用大模型进行意图理解... {self.api_url} {self.api_token}")
             intent_client = AsyncOpenAI(
-                api_key=self.api_token,
-                base_url=self.api_url,
+                api_key="sk-T5GzBCTpRm92Po9G9WU9B19w1p1pxHJ8qwfcAcZ47MdZCzEM",
+                base_url="https://yunwu.ai/v1",
                 timeout=30.0,
                 max_retries=0
             )
             
             intent_completion = await intent_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5-2025-08-07",
                 messages=[{"role": "user", "content": intent_prompt}],
-                max_tokens=2000,
+                max_tokens=3000,
                 temperature=0.1
             )
             
