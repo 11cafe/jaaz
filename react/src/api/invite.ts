@@ -193,7 +193,7 @@ export async function getPointsStats(): Promise<PointsStats> {
 // 工具方法
 export function generateInviteUrl(code: string): string {
   const baseUrl = window.location.origin
-  return `${baseUrl}/invite/${code}`
+  return `${baseUrl}/join/${code}`
 }
 
 export function copyToClipboard(text: string): boolean {

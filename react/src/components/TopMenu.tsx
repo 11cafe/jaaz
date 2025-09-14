@@ -6,6 +6,7 @@ import LanguageSwitcher from './common/LanguageSwitcher'
 import { UserMenu } from './auth/UserMenu'
 import InviteButton from './common/InviteButton'
 import PointsBadge from './common/PointsBadge'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function TopMenu({
   middle,
@@ -16,6 +17,7 @@ export default function TopMenu({
 }) {
   const navigate = useNavigate()
   const { t } = useTranslation('common')
+  const { authStatus } = useAuth()
 
   return (
     <div
@@ -66,8 +68,9 @@ export default function TopMenu({
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />
-        <InviteButton />
-        <PointsBadge />
+        {/* 只有登录用户才显示邀请按钮 */}
+        {authStatus.is_logged_in && <InviteButton />}
+        {authStatus.is_logged_in && <PointsBadge />}
         {/* <ThemeButton /> */}
         <UserMenu />
       </div>
