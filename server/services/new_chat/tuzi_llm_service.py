@@ -434,10 +434,10 @@ class TuziLLMService:
     def _get_image_generation_model(self, user_model: str) -> str:
         """获取图片生成模型，如果用户选择的不是画图模型则使用默认模型"""
         # 已验证可用的图像编辑模型
-        supported_image_edit_models = ["gemini-2.5-flash-image", "gpt-4o"]
+        supported_image_edit_models = ["gemini-2.5-flash-image", "gpt-4o", "seedream-4.0"]
 
         # 不支持的模型（已知会报错）
-        unsupported_models = ["seedream-4.0", "gemini-2.5-pro-all"]
+        unsupported_models = ["gemini-2.5-pro-all"]
 
         logger.info(f"🔍 [DEBUG] _get_image_generation_model 输入参数: user_model='{user_model}'")
         logger.info(f"🔍 [DEBUG] 支持图像编辑的模型: {supported_image_edit_models}")
@@ -457,8 +457,8 @@ class TuziLLMService:
             
             # 调用带重试机制的图片生成
             # 注释掉错误的模型映射，直接使用用户选择的模型
-            # if model_name == "seedream-4.0":
-            #     model_name = "doubao-seedream-4-0-250828"
+            if model_name == "seedream-4.0":
+                model_name = "doubao-seedream-4-0-250828"
             logger.info(f"🔍 [DEBUG] _handle_image_generation 使用模型: '{model_name}' (无映射)")
             result = await self.gemini_generate_by_tuzi(user_prompt, model_name)
             
