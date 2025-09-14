@@ -68,9 +68,9 @@ export default function TopMenu({
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />
-        {/* 只有登录用户才显示邀请按钮 */}
-        {authStatus.is_logged_in && <InviteButton />}
-        {authStatus.is_logged_in && <PointsBadge />}
+        {/* 只有登录用户才显示邀请按钮 - 移动端隐藏 */}
+        {authStatus.is_logged_in && <InviteButton className="hidden sm:flex" />}
+        {authStatus.is_logged_in && <PointsBadge className="hidden sm:flex" />}
         {/* <ThemeButton /> */}
         <UserMenu />
       </div>

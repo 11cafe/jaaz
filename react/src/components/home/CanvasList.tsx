@@ -53,7 +53,7 @@ const CanvasList: React.FC = () => {
       )}
 
       <AnimatePresence>
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 w-full pb-6 sm:pb-10 px-2 sm:px-0">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 w-full pb-6 sm:pb-10 px-1 sm:px-0">
           {canvases?.map((canvas, index) => (
             <CanvasCard
               key={canvas.id}
