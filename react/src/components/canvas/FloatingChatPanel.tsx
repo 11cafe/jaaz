@@ -61,8 +61,8 @@ export function FloatingChatPanel({
       <div
         className={cn(
           'hidden md:block absolute top-4 right-4 bottom-4 z-40 transition-all duration-300 ease-in-out',
-          isOpen ? 'w-[25vw] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full',
-          'min-w-[320px] max-w-[480px]' // 设置最小和最大宽度限制
+          isOpen ? 'w-[min(25vw,400px)] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full',
+          'min-w-[280px] max-w-[400px]' // 减小最小宽度，限制最大宽度
         )}
       >
         <div className="relative w-full h-full bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden flex flex-col">
@@ -90,7 +90,7 @@ export function FloatingChatPanel({
 
       {/* 移动端适配：小屏幕时的全屏模式 */}
       {isOpen && (
-        <div className="md:hidden absolute inset-0 z-40 bg-white flex flex-col">
+        <div className="md:hidden absolute inset-0 z-40 bg-white flex flex-col pt-16">
           {/* 移动端功能栏 */}
           <ChatPanelHeader
             sessionList={sessionList}

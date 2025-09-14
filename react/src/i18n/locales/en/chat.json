@@ -3,6 +3,7 @@
   "placeholder": "Type your message here...",
   "sessionHistory": {
     "title": "Session History",
+    "historyTitle": "History",
     "newChat": "New Chat",
     "newChatDescription": "Start a new conversation",
     "newSession": "New Chat",
@@ -12,6 +13,9 @@
     "daysAgo": "{{count}} days ago",
     "messagesCount": "{{count}} messages",
     "noSessions": "No chat history",
+    "noSessionsYet": "No sessions yet",
+    "startNewConversation": "Start a new conversation to create your first session",
+    "selectSession": "Select session",
     "defaultSessionTitle": "New Chat"
   },
   "insufficientBalance": "Insufficient Balance",
@@ -50,6 +54,25 @@
     "creating": "Creating...",
     "success": "Template created successfully!",
     "error": "Failed to create template"
+  },
+  "toolCall": {
+    "requiresConfirmation": "Requires Confirmation",
+    "cancelled": "Tool call cancelled",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "generation": {
+    "starting": "Starting generation...",
+    "completed": "✨ Generation completed!",
+    "imageGenerated": "🎨 Image generated and added to canvas"
+  },
+  "welcome": {
+    "greeting": "Hello, MagicArt!",
+    "question": "What would you like to design?",
+    "newSession": "💡 This is a new chat session",
+    "autoSave": "• The session will be automatically saved when you send the first message",
+    "persistent": "• The session will be retained when you close the window and can be continued next time",
+    "management": "• You can create new sessions at any time to categorize and manage different design tasks"
   },
   "modelSelector": {
     "title": "Model",

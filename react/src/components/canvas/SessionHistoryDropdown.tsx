@@ -11,6 +11,7 @@ import { Session } from '@/types/types'
 import { History, MessageSquare, Clock, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getSessionDisplayName } from '@/utils/sessionUtils'
+import { useLanguage } from '@/hooks/use-language'
 
 interface SessionHistoryDropdownProps {
   sessionList: Session[]
@@ -26,12 +27,13 @@ export function SessionHistoryDropdown({
   onNewSession
 }: SessionHistoryDropdownProps) {
   const { t } = useTranslation(['chat', 'common'])
+  const { currentLanguage } = useLanguage()
 
   // 格式化创建时间
   const formatCreatedTime = (session: Session) => {
     try {
       const date = new Date(session.created_at)
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString(currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -68,7 +70,7 @@ export function SessionHistoryDropdown({
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">History</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('chat:sessionHistory.historyTitle')}</h2>
         </div>
 
         {/* Session List */}
@@ -99,8 +101,8 @@ export function SessionHistoryDropdown({
               <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100/60 rounded-full">
                 <MessageSquare className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-sm text-gray-500 mb-1">No sessions yet</p>
-              <p className="text-xs text-gray-400">Start a new conversation to create your first session</p>
+              <p className="text-sm text-gray-500 mb-1">{t('chat:sessionHistory.noSessionsYet')}</p>
+              <p className="text-xs text-gray-400">{t('chat:sessionHistory.startNewConversation')}</p>
             </div>
           )}
         </div>

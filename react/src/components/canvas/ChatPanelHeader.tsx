@@ -33,7 +33,7 @@ export function ChatPanelHeader({
     }
   }
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
+    <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
       {/* 左侧：Session名称 */}
       <div className="flex-1 min-w-0">
         <EditableTitle
@@ -41,21 +41,21 @@ export function ChatPanelHeader({
           onSave={handleSessionNameSave}
           placeholder="新对话"
           maxLength={100}
-          className="min-w-0"
+          className="min-w-0 text-sm md:text-base"
         />
       </div>
 
       {/* 右侧：功能按钮 */}
-      <div className="flex items-center gap-1 ml-2">
+      <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
         {/* 新建按钮 */}
         <Button
           onClick={onNewSession}
           size="sm"
           variant="ghost"
-          className="p-1.5 h-auto w-auto rounded-md hover:bg-gray-100/80 transition-colors"
+          className="p-1 md:p-1.5 h-auto w-auto rounded-md hover:bg-gray-100/80 transition-colors"
           title="新建对话"
         >
-          <Plus className="w-4 h-4 text-gray-600" />
+          <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" />
         </Button>
 
         {/* 历史会话下拉菜单 */}
@@ -71,10 +71,10 @@ export function ChatPanelHeader({
           onClick={onClose}
           size="sm"
           variant="ghost"
-          className="p-1.5 h-auto w-auto rounded-md hover:bg-gray-100/80 transition-colors ml-1"
+          className="p-1 md:p-1.5 h-auto w-auto rounded-md hover:bg-gray-100/80 transition-colors ml-0.5 md:ml-1"
           title="Hide Chat"
         >
-          <Minimize2 className="w-4 h-4 text-gray-600" />
+          <Minimize2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" />
         </Button>
       </div>
     </div>

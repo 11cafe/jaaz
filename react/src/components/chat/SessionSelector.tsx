@@ -24,7 +24,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
   onSelectSession,
   onClickNewChat,
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['chat', 'common'])
 
   return (
     <div className="flex items-center gap-3 w-full p-3 bg-white/40 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm" style={{ display: 'none' }}>
@@ -35,7 +35,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         }}
       >
         <SelectTrigger className="flex-1 min-w-0 bg-white/60 backdrop-blur-sm border-white/40 rounded-lg shadow-sm hover:bg-white/80 transition-all duration-200">
-          <SelectValue placeholder={session ? formatSessionTitle(session) : "选择会话"} />
+          <SelectValue placeholder={session ? formatSessionTitle(session) : t('chat:sessionHistory.selectSession')} />
         </SelectTrigger>
         <SelectContent>
           {sessionList
