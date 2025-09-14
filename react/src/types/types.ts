@@ -26,15 +26,21 @@ export type ToolResultMessage = {
   role: 'tool'
   tool_call_id: string
   content: string
+  timestamp?: number
+  message_id?: string
 }
 export type AssistantMessage = {
   role: 'assistant'
   tool_calls?: ToolCall[]
   content?: MessageContent[] | string
+  timestamp?: number
+  message_id?: string
 }
 export type UserMessage = {
   role: 'user'
   content: MessageContent[] | string
+  timestamp?: number
+  message_id?: string
 }
 export type Message = UserMessage | AssistantMessage | ToolResultMessage
 

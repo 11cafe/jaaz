@@ -97,7 +97,7 @@ async def broadcast_init_done():
 
 
 async def send_generation_status(
-    session_id: str, 
+    session_id: str,
     canvas_id: Optional[str] = None,
     status: Literal['started', 'progress', 'complete', 'error'] = 'progress',
     message: str = '',
@@ -106,7 +106,7 @@ async def send_generation_status(
 ):
     """
     发送生成状态更新
-    
+
     Args:
         session_id: 会话ID
         canvas_id: 画布ID
@@ -115,6 +115,7 @@ async def send_generation_status(
         progress: 进度 (0.0-1.0)
         data: 额外数据
     """
+    logger.info(f"📤 [GENERATION_DEBUG] 准备发送生成状态: session_id={session_id}, status={status}, message={message}, progress={progress}")
     try:
         event_data = {
             'type': f'generation_{status}',
@@ -124,15 +125,18 @@ async def send_generation_status(
             'progress': progress,
             'timestamp': int(time.time() * 1000)
         }
-        
+
         if data:
             event_data['data'] = data
-            
+
+        logger.info(f"📋 [GENERATION_DEBUG] 构建的事件数据: {event_data}")
+
         await broadcast_session_update(session_id, canvas_id, event_data)
-        logger.info(f"📤 发送生成状态: {session_id} - {status} ({progress:.1%}) - {message}")
-        
+        logger.info(f"✅ [GENERATION_DEBUG] 生成状态发送成功: {session_id} - {status} ({progress:.1%}) - {message}")
+
     except Exception as e:
-        logger.error(f"Error sending generation status: {e}")
+        logger.error(f"❌ [GENERATION_DEBUG] 发送生成状态失败: session_id={session_id}, error={e}")
+        logger.error(f"❌ [GENERATION_DEBUG] 错误详情: {type(e).__name__}: {e}")
         traceback.print_exc()
 
 
@@ -165,13 +169,20 @@ async def send_user_message_confirmation(
 
 async def send_ai_thinking_status(session_id: str, canvas_id: Optional[str] = None):
     """发送AI思考状态"""
-    await send_generation_status(
-        session_id=session_id,
-        canvas_id=canvas_id,
-        status='progress',
-        message='AI正在理解您的需求...',
-        progress=0.2
-    )
+    logger.info(f"🧠 [THINKING_DEBUG] 开始发送AI思考状态: session_id={session_id}, canvas_id={canvas_id}")
+    try:
+        # 🔧 修复：发送started事件以正确初始化thinking状态显示
+        await send_generation_status(
+            session_id=session_id,
+            canvas_id=canvas_id,
+            status='started',  # 改为started来触发isVisible=true
+            message='AI正在理解您的需求...',
+            progress=0.2
+        )
+        logger.info(f"✅ [THINKING_DEBUG] AI思考状态发送成功: session_id={session_id}")
+    except Exception as e:
+        logger.error(f"❌ [THINKING_DEBUG] AI思考状态发送失败: session_id={session_id}, error={e}")
+        raise
 
 
 async def send_image_generation_status(session_id: str, canvas_id: Optional[str] = None):

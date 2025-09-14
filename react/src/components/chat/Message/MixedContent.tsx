@@ -1,6 +1,7 @@
 import { Message, MessageContent } from '@/types/types'
 import { Markdown } from '../Markdown'
 import MessageImage from './Image'
+import Timestamp from './Timestamp'
 
 type MixedContentProps = {
   message: Message
@@ -65,17 +66,31 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
   return (
     <>
       {message.role === 'user' ? (
-        <div className='flex justify-end mb-4'>
-          <div className='bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit'>
-            <div className='w-full'>
-              <Markdown>{combinedText}</Markdown>
+        <div className='mb-4'>
+          {/* 用户混合内容消息时间戳 - 右对齐 */}
+          <Timestamp
+            timestamp={message.timestamp}
+            align="right"
+          />
+          <div className='flex justify-end'>
+            <div className='bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit'>
+              <div className='w-full'>
+                <Markdown>{combinedText}</Markdown>
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className='text-gray-800 dark:text-gray-200 text-left items-start mb-4'>
-          <div className='w-full'>
-            <Markdown>{combinedText}</Markdown>
+        <div className='mb-4'>
+          {/* 助手混合内容消息时间戳 - 左对齐 */}
+          <Timestamp
+            timestamp={message.timestamp}
+            align="left"
+          />
+          <div className='text-gray-800 dark:text-gray-200 text-left items-start'>
+            <div className='w-full'>
+              <Markdown>{combinedText}</Markdown>
+            </div>
           </div>
         </div>
       )}

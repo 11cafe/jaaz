@@ -67,6 +67,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     isError: false,
     timestamp: 0
   })
+
+  // 监控generationStatus变化
+  useEffect(() => {
+    console.log('🎯 [THINKING_DEBUG] generationStatus状态更新:', generationStatus)
+  }, [generationStatus])
   const mergedToolCallIds = useRef<string[]>([])
   const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const hasDisplayedInitialMessageRef = useRef(false)
@@ -733,43 +738,84 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // 生成状态处理函数
   const handleGenerationStarted = useCallback((data: any) => {
-    if (data.session_id && data.session_id !== sessionId) return
-    
-    setGenerationStatus({
+    console.log('🚀 [THINKING_DEBUG] Chat组件接收到GenerationStarted事件:', {
+      data,
+      currentSessionId: sessionId,
+      matches: data.session_id === sessionId
+    })
+
+    if (data.session_id && data.session_id !== sessionId) {
+      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationStarted事件')
+      return
+    }
+
+    const newStatus = {
       isVisible: true,
       message: data.message || t('chat:generation.starting'),
       progress: data.progress || 0.1,
       isComplete: false,
       isError: false,
       timestamp: data.timestamp || Date.now()
-    })
+    }
+
+    console.log('✅ [THINKING_DEBUG] 设置GenerationStarted状态:', newStatus)
+    setGenerationStatus(newStatus)
     setPending('text')
   }, [sessionId, t])
 
   const handleGenerationProgress = useCallback((data: any) => {
-    if (data.session_id && data.session_id !== sessionId) return
-    
-    setGenerationStatus(prev => ({
-      ...prev,
-      message: data.message || prev.message,
-      progress: data.progress || prev.progress,
-      timestamp: data.timestamp || Date.now()
-    }))
+    console.log('⏳ [THINKING_DEBUG] Chat组件接收到GenerationProgress事件:', {
+      data,
+      currentSessionId: sessionId,
+      matches: data.session_id === sessionId
+    })
+
+    if (data.session_id && data.session_id !== sessionId) {
+      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationProgress事件')
+      return
+    }
+
+    setGenerationStatus(prev => {
+      const newStatus = {
+        ...prev,
+        // 🔧 修复：确保progress事件也能显示thinking状态
+        isVisible: true,  // 如果还没显示，确保显示thinking状态
+        message: data.message || prev.message,
+        progress: data.progress || prev.progress,
+        timestamp: data.timestamp || Date.now()
+      }
+      console.log('✅ [THINKING_DEBUG] 更新GenerationProgress状态:', { prev, new: newStatus })
+      return newStatus
+    })
   }, [sessionId])
 
   const handleGenerationComplete = useCallback((data: any) => {
-    if (data.session_id && data.session_id !== sessionId) return
-    
-    setGenerationStatus(prev => ({
-      ...prev,
-      message: data.message || t('chat:generation.completed'),
-      progress: 1.0,
-      isComplete: true,
-      timestamp: data.timestamp || Date.now()
-    }))
-    
+    console.log('✅ [THINKING_DEBUG] Chat组件接收到GenerationComplete事件:', {
+      data,
+      currentSessionId: sessionId,
+      matches: data.session_id === sessionId
+    })
+
+    if (data.session_id && data.session_id !== sessionId) {
+      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationComplete事件')
+      return
+    }
+
+    setGenerationStatus(prev => {
+      const newStatus = {
+        ...prev,
+        message: data.message || t('chat:generation.completed'),
+        progress: 1.0,
+        isComplete: true,
+        timestamp: data.timestamp || Date.now()
+      }
+      console.log('✅ [THINKING_DEBUG] 设置GenerationComplete状态:', newStatus)
+      return newStatus
+    })
+
     // 3秒后隐藏状态显示
     setTimeout(() => {
+      console.log('🕒 [THINKING_DEBUG] 3秒后隐藏生成状态')
       setGenerationStatus(prev => ({ ...prev, isVisible: false }))
     }, 3000)
 
@@ -798,6 +844,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll, { passive: true })
 
+    console.log('🎫 [THINKING_DEBUG] 注册EventBus事件监听器')
+
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
@@ -815,6 +863,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::GenerationStarted', handleGenerationStarted)
     eventBus.on('Socket::Session::GenerationProgress', handleGenerationProgress)
     eventBus.on('Socket::Session::GenerationComplete', handleGenerationComplete)
+
+    console.log('✅ [THINKING_DEBUG] EventBus事件监听器注册完成，包括生成状态事件')
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
       clearTimeout(scrollTimeout)
@@ -1090,6 +1140,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   </div>
                 )
               })}
+
+              {/* AI思考状态显示 - 移动到聊天窗口内部 */}
+              <GenerationStatus
+                isVisible={generationStatus.isVisible}
+                message={generationStatus.message}
+                progress={generationStatus.progress}
+                isComplete={generationStatus.isComplete}
+                isError={generationStatus.isError}
+                timestamp={generationStatus.timestamp}
+              />
+
               {pending && <ChatSpinner pending={pending} />}
               {pending && sessionId && <ToolcallProgressUpdate sessionId={sessionId} />}
             </div>
@@ -1127,16 +1188,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </ScrollArea>
 
         <div className='p-2 gap-2 sticky bottom-0'>
-          {/* 生成状态显示 */}
-          <GenerationStatus
-            isVisible={generationStatus.isVisible}
-            message={generationStatus.message}
-            progress={generationStatus.progress}
-            isComplete={generationStatus.isComplete}
-            isError={generationStatus.isError}
-            timestamp={generationStatus.timestamp}
-          />
-          
           <ChatTextarea
             sessionId={sessionId!}
             pending={!!pending}
