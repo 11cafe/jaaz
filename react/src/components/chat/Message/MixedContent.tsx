@@ -11,6 +11,7 @@ type MixedContentProps = {
 type MixedContentImagesProps = {
   contents: MessageContent[]
   canvasElementId?: string // 支持传递canvas元素ID
+  messageRole?: 'user' | 'assistant' // 消息角色，决定图片对齐方式
 }
 
 type MixedContentTextProps = {
@@ -23,24 +24,40 @@ type MixedContentTextProps = {
 export const MixedContentImages: React.FC<MixedContentImagesProps> = ({
   contents,
   canvasElementId,
+  messageRole = 'user',
 }) => {
   const images = contents.filter((content) => content.type === 'image_url')
 
   if (images.length === 0) return null
 
+  // 根据消息角色决定对齐方式
+  const isUserMessage = messageRole === 'user'
+  const justifyClass = isUserMessage ? 'justify-end' : 'justify-start'
+  const flexDirection = isUserMessage ? 'flex-row-reverse' : 'flex-row'
+
   return (
     <div className='px-4'>
       {images.length === 1 ? (
-        // 单张图片：保持长宽比，最大宽度限制
-        <div className='max-h-[512px] flex justify-end'>
-          <MessageImage content={images[0]} canvasElementId={canvasElementId} />
+        // 单张图片：根据角色决定对齐方式和尺寸
+        <div className={`flex ${justifyClass}`}>
+          <div className={isUserMessage ? "max-w-[140px]" : "max-w-full"}>
+            <MessageImage
+              content={images[0]}
+              canvasElementId={canvasElementId}
+              isUserMessage={isUserMessage}
+            />
+          </div>
         </div>
       ) : (
-        // 多张图片：横向排布，第一张图靠右
-        <div className='flex gap-2 max-h-[512px] justify-end flex-row-reverse'>
+        // 多张图片：横向排布，根据角色决定方向和尺寸
+        <div className={`flex gap-2 ${justifyClass} ${flexDirection}`}>
           {images.map((image, index) => (
-            <div key={index} className='max-h-[512px]'>
-              <MessageImage content={image} canvasElementId={canvasElementId} />
+            <div key={index} className={isUserMessage ? 'max-w-[140px]' : 'max-w-[300px]'}>
+              <MessageImage
+                content={image}
+                canvasElementId={canvasElementId}
+                isUserMessage={isUserMessage}
+              />
             </div>
           ))}
         </div>
@@ -107,7 +124,7 @@ export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, con
 const MixedContent: React.FC<MixedContentProps> = ({ message, contents }) => {
   return (
     <>
-      <MixedContentImages contents={contents} />
+      <MixedContentImages contents={contents} messageRole={message.role} />
       <MixedContentText message={message} contents={contents} />
     </>
   )

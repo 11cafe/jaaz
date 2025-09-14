@@ -1116,14 +1116,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           timestamp={message.timestamp}
                           align={message.role === 'user' ? 'right' : 'left'}
                         />
-                        {/* 混合内容区域 */}
-                        <div className="mb-3">
-                          <MixedContentImages
-                            contents={message.content}
-                            canvasElementId={(message as any).canvas_element_id}
-                          />
-                        </div>
-                        <MixedContentText message={message} contents={message.content} hideTimestamp={true} />
+                        {/* 混合内容区域 - 根据角色决定顺序 */}
+                        {message.role === 'user' ? (
+                          // 用户消息：图片在上，文字在下
+                          <>
+                            <div className="mb-3">
+                              <MixedContentImages
+                                contents={message.content}
+                                canvasElementId={(message as any).canvas_element_id}
+                                messageRole={message.role}
+                              />
+                            </div>
+                            <MixedContentText message={message} contents={message.content} hideTimestamp={true} />
+                          </>
+                        ) : (
+                          // AI消息：文字在上，图片在下
+                          <>
+                            <div className="mb-3">
+                              <MixedContentText message={message} contents={message.content} hideTimestamp={true} />
+                            </div>
+                            <MixedContentImages
+                              contents={message.content}
+                              canvasElementId={(message as any).canvas_element_id}
+                              messageRole={message.role}
+                            />
+                          </>
+                        )}
                       </div>
                     ) : null}
 
