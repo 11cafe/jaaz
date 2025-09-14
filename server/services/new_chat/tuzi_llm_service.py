@@ -344,9 +344,8 @@ class TuziLLMService:
 
             # 注释掉错误的模型映射，直接使用用户选择的模型
             # original_model = model_name
-            # if model_name == "seedream-4.0":
-            #     model_name = "doubao-seedream-4-0-250828"
-            #     logger.info(f"🔍 [DEBUG] 模型名称映射: '{original_model}' -> '{model_name}'")
+            if model_name == "seedream-4.0":
+                model_name = "doubao-seedream-4-0-250828"
             logger.info(f"🔍 [DEBUG] 使用模型: '{model_name}' (无映射)")
                 
             # 生成唯一文件名

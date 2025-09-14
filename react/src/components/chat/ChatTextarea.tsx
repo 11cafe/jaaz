@@ -52,6 +52,7 @@ type ChatTextareaProps = {
     }
   ) => void
   onCancelChat?: () => void
+  enableDynamicPlaceholder?: boolean // 🆕 新增：是否启用动态placeholder效果
 }
 
 const ChatTextarea: React.FC<ChatTextareaProps> = ({
@@ -61,16 +62,19 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   sessionId,
   onSendMessages,
   onCancelChat,
+  enableDynamicPlaceholder = true, // 🆕 默认启用动态placeholder，保持向后兼容
 }) => {
   const { t } = useTranslation()
   const { authStatus } = useAuth()
   const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
   const { balance } = useBalance()
+  // 🆕 只有在启用动态placeholder时才调用hook
   const dynamicPlaceholder = useTypingPlaceholder({
     typingSpeed: 80,
     deletingSpeed: 40,
     pauseBetweenWords: 800,
-    pauseAfterComplete: 2500
+    pauseAfterComplete: 2500,
+    enabled: enableDynamicPlaceholder // 🆕 传入enabled参数控制是否启用
   })
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)

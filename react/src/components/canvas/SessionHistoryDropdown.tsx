@@ -70,7 +70,7 @@ export function SessionHistoryDropdown({
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{t('chat:sessionHistory.historyTitle')}</h2>
+          <h4 className="text-xs font-medium text-gray-900">{t('chat:sessionHistory.historyTitle')}</h4>
         </div>
 
         {/* Session List */}
@@ -86,11 +86,11 @@ export function SessionHistoryDropdown({
                     : ''
                 }`}
               >
-                <div className={`text-sm font-medium truncate ${
+                <h5 className={`text-xs font-medium truncate ${
                   session.id === currentSessionId ? 'text-blue-700' : 'text-gray-900'
                 }`}>
                   {getSessionDisplayName(session, sessionList)}
-                </div>
+                </h5>
                 <div className="text-xs text-gray-500 mt-1">
                   {formatCreatedTime(session)}
                 </div>

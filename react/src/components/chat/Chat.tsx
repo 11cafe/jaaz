@@ -1249,6 +1249,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             messages={messages}
             onSendMessages={onSendMessages}
             onCancelChat={handleCancelChat}
+            enableDynamicPlaceholder={false} // 🆕 在画布页面禁用动态placeholder效果
           />
 
           {/* 魔法生成组件 */}
