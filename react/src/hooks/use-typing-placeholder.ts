@@ -6,6 +6,7 @@ interface TypingPlaceholderOptions {
   deletingSpeed?: number
   pauseBetweenWords?: number
   pauseAfterComplete?: number
+  enabled?: boolean // 🆕 新增：是否启用动态打字效果
 }
 
 export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => {
@@ -14,7 +15,8 @@ export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => 
     typingSpeed = 100,
     deletingSpeed = 50,
     pauseBetweenWords = 1000,
-    pauseAfterComplete = 2000
+    pauseAfterComplete = 2000,
+    enabled = true // 🆕 默认启用，保持向后兼容
   } = options
 
   const [currentPlaceholder, setCurrentPlaceholder] = useState('')
@@ -26,6 +28,11 @@ export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => 
   const placeholderTexts = t('chat:textarea.placeholderTexts', { returnObjects: true }) as string[]
 
   useEffect(() => {
+    // 🆕 如果禁用动态效果，直接返回不执行动画逻辑
+    if (!enabled) {
+      return
+    }
+
     const currentText = placeholderTexts[currentIndex]
 
     if (!isDeleting) {
@@ -62,7 +69,7 @@ export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => 
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [currentPlaceholder, currentIndex, isDeleting, typingSpeed, deletingSpeed, pauseBetweenWords, pauseAfterComplete, placeholderTexts])
+  }, [enabled, currentPlaceholder, currentIndex, isDeleting, typingSpeed, deletingSpeed, pauseBetweenWords, pauseAfterComplete, placeholderTexts])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -73,5 +80,6 @@ export const useTypingPlaceholder = (options: TypingPlaceholderOptions = {}) => 
     }
   }, [])
 
-  return currentPlaceholder
+  // 🆕 如果禁用动态效果，返回静态placeholder；否则返回动态placeholder
+  return enabled ? currentPlaceholder : t('chat:textarea.placeholder', 'Type your message...')
 }

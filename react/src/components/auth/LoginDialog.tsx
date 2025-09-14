@@ -34,7 +34,7 @@ export function LoginDialog() {
           {/* MagicArt 图标 */}
           <div className='mb-2'>
             <img
-              src="http://localhost:8000/static/magicart.svg"
+              src="/static/magicart.svg"
               alt="MagicArt Logo"
               className="w-16 h-16 mx-auto"
             />

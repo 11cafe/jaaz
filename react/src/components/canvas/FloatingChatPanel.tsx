@@ -69,7 +69,7 @@ export function FloatingChatPanel({
       {/* 浮动聊天窗口 - 只在桌面端显示，底部留出空间 */}
       <div
         className={cn(
-          'hidden md:block absolute top-4 right-4 bottom-20 z-50',
+          'hidden md:block absolute top-4 right-4 bottom-8 z-50',
           'w-[min(25vw,400px)] min-w-[280px] max-w-[400px]',
           'transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
@@ -80,7 +80,7 @@ export function FloatingChatPanel({
           transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
-        <div className="relative w-full h-full bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden flex flex-col">
+        <div className="relative w-full h-full bg-white/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/50 overflow-hidden flex flex-col">
           {/* 功能栏 */}
           <ChatPanelHeader
             sessionList={sessionList}

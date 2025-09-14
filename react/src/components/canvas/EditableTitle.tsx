@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 
@@ -74,8 +73,9 @@ export function EditableTitle({
 
   if (isEditing) {
     return (
-      <Input
+      <input
         ref={inputRef}
+        type="text"
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -83,7 +83,16 @@ export function EditableTitle({
         placeholder={defaultPlaceholder}
         maxLength={maxLength}
         className={cn(
-          "text-sm font-medium bg-white border border-blue-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 px-2 py-1 h-auto min-w-0",
+          // 与h4完全一致的基础样式 - h4字体大小
+          "text-xs font-medium text-gray-800 px-2 py-1 rounded transition-colors min-w-0",
+          // 编辑状态特有样式 - 强制透明背景
+          "!bg-transparent border border-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/50",
+          // 重置input所有默认样式
+          "outline-none appearance-none m-0 w-full h-auto",
+          // 确保字体完全一致，不继承任何默认字体
+          "font-sans leading-normal text-xs",
+          // 强制覆盖任何可能的默认样式
+          "!shadow-none !backdrop-filter-none",
           className
         )}
       />
@@ -91,15 +100,20 @@ export function EditableTitle({
   }
 
   return (
-    <h3
+    <h4
       className={cn(
-        "text-sm font-medium text-gray-800 truncate cursor-pointer hover:bg-gray-100/50 px-2 py-1 rounded transition-colors select-none",
+        // 与input完全一致的基础样式 - h4字体大小
+        "text-xs font-medium text-gray-800 px-2 py-1 rounded transition-colors min-w-0",
+        // 确保字体完全一致
+        "font-sans leading-normal",
+        // 非编辑状态特有的样式
+        "truncate cursor-pointer hover:bg-gray-100/30 select-none",
         className
       )}
       onDoubleClick={handleDoubleClick}
       title={t('common:buttons.edit', 'Double click to edit')}
     >
       {title || defaultPlaceholder}
-    </h3>
+    </h4>
   )
 }
