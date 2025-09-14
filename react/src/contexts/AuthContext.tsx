@@ -184,7 +184,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         is_logged_in: false,
       })
       tokenManager.stopAutoRefresh()
-      toast.info(t('common:toast.crossTabLogout'))
+
+      // 检查是否是静默退出（邀请页面强制退出）
+      const isSilentLogout = sessionStorage.getItem('silent_logout') === 'true'
+      if (!isSilentLogout) {
+        toast.info(t('common:toast.crossTabLogout'))
+      } else {
+        console.log('🤫 Silent logout detected, skipping toast notification')
+      }
     }
 
     // 监听强制刷新事件

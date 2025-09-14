@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
-import { Lock } from 'lucide-react'
+import { X } from 'lucide-react'
 import { directLogin } from '../../api/auth'
 import { useConfigs } from '../../contexts/configs'
 
@@ -20,10 +20,24 @@ export function LoginDialog() {
   return (
     <Dialog open={open} onOpenChange={setShowLoginDialog}>
       <DialogContent className='sm:max-w-md border-0 shadow-2xl backdrop-blur-sm bg-background/95'>
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={() => setShowLoginDialog(false)}
+          className="absolute right-4 top-4 z-20 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200 focus:outline-none focus:ring-0"
+          aria-label={t('common:invite.modal.close')}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         <div className='flex flex-col items-center space-y-8 py-10 px-6'>
-          {/* 锁图标 */}
-          <div className='flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 rounded-3xl shadow-lg transform transition-transform duration-300 hover:scale-105'>
-            <Lock className='w-10 h-10 text-white dark:text-gray-800' />
+          {/* MagicArt 图标 */}
+          <div className='mb-2'>
+            <img
+              src="http://localhost:8000/static/magicart.svg"
+              alt="MagicArt Logo"
+              className="w-16 h-16 mx-auto"
+            />
           </div>
 
           {/* 标题和副标题 */}

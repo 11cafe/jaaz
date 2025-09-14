@@ -47,7 +47,7 @@
   },
   "toast": {
     "loginExpired": "Login has expired, please login again",
-    "crossTabLogout": "You have been logged out in another tab",
+    "crossTabLogout": "Successfully logged out",
     "loginSuccess": "Login successful!",
     "loginError": "Error occurred during login",
     "loginFailed": "Login failed",
@@ -84,6 +84,7 @@
   },
   "auth": {
     "login": "Login",
+    "signUp": "Sign Up",
     "logout": "Logout",
     "loginToJaaz": "Login to MagicArt",
     "myAccount": "My Account",
@@ -135,7 +136,16 @@
     "copyUrl": "Copy URL",
     "copySuccess": "Invite URL copied! Send it to your friends.",
     "copyFailed": "Failed to copy",
-    "failedToLoad": "Failed to load invite URL"
+    "failedToLoad": "Failed to load invite URL",
+    "modal": {
+      "invitedYouTo": "invited you to try",
+      "productName": "MagicArt",
+      "projectsBuilt": "100,000+ projects built and shared.",
+      "tagline": "A growing hub of talented creators, here to spark your next big idea.",
+      "continueWithGoogle": "Continue with Google",
+      "redirecting": "Redirecting...",
+      "close": "Close"
+    }
   },
   "socket": {
     "connectionError": "Connection error ({{current}}/{{max}}): {{error}}",

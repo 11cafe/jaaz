@@ -19,7 +19,7 @@ import { Route as AssetsRouteImport } from './routes/assets'
 import { Route as Agent_studioRouteImport } from './routes/agent_studio'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TemplateUseTemplateIdRouteImport } from './routes/template-use.$templateId'
-import { Route as JoinCodeRouteImport } from './routes/join.$code'
+import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as CanvasIdRouteImport } from './routes/canvas.$id'
 
 const TermsRoute = TermsRouteImport.update({
@@ -72,10 +72,10 @@ const TemplateUseTemplateIdRoute = TemplateUseTemplateIdRouteImport.update({
   path: '/template-use/$templateId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JoinCodeRoute = JoinCodeRouteImport.update({
-  id: '/join/$code',
-  path: '/join/$code',
-  getParentRoute: () => rootRouteImport,
+const InviteCodeRoute = InviteCodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => InviteRoute,
 } as any)
 const CanvasIdRoute = CanvasIdRouteImport.update({
   id: '/canvas/$id',
@@ -87,28 +87,28 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
-  '/invite': typeof InviteRoute
+  '/invite': typeof InviteRouteWithChildren
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
   '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
-  '/join/$code': typeof JoinCodeRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
-  '/invite': typeof InviteRoute
+  '/invite': typeof InviteRouteWithChildren
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
   '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
-  '/join/$code': typeof JoinCodeRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
 export interface FileRoutesById {
@@ -116,14 +116,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
-  '/invite': typeof InviteRoute
+  '/invite': typeof InviteRouteWithChildren
   '/knowledge': typeof KnowledgeRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/templates': typeof TemplatesRoute
   '/terms': typeof TermsRoute
   '/canvas/$id': typeof CanvasIdRoute
-  '/join/$code': typeof JoinCodeRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/template-use/$templateId': typeof TemplateUseTemplateIdRoute
 }
 export interface FileRouteTypes {
@@ -139,7 +139,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/terms'
     | '/canvas/$id'
-    | '/join/$code'
+    | '/invite/$code'
     | '/template-use/$templateId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -153,7 +153,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/terms'
     | '/canvas/$id'
-    | '/join/$code'
+    | '/invite/$code'
     | '/template-use/$templateId'
   id:
     | '__root__'
@@ -167,7 +167,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/terms'
     | '/canvas/$id'
-    | '/join/$code'
+    | '/invite/$code'
     | '/template-use/$templateId'
   fileRoutesById: FileRoutesById
 }
@@ -175,14 +175,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   Agent_studioRoute: typeof Agent_studioRoute
   AssetsRoute: typeof AssetsRoute
-  InviteRoute: typeof InviteRoute
+  InviteRoute: typeof InviteRouteWithChildren
   KnowledgeRoute: typeof KnowledgeRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   TemplatesRoute: typeof TemplatesRoute
   TermsRoute: typeof TermsRoute
   CanvasIdRoute: typeof CanvasIdRoute
-  JoinCodeRoute: typeof JoinCodeRoute
   TemplateUseTemplateIdRoute: typeof TemplateUseTemplateIdRoute
 }
 
@@ -258,12 +257,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplateUseTemplateIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/join/$code': {
-      id: '/join/$code'
-      path: '/join/$code'
-      fullPath: '/join/$code'
-      preLoaderRoute: typeof JoinCodeRouteImport
-      parentRoute: typeof rootRouteImport
+    '/invite/$code': {
+      id: '/invite/$code'
+      path: '/$code'
+      fullPath: '/invite/$code'
+      preLoaderRoute: typeof InviteCodeRouteImport
+      parentRoute: typeof InviteRoute
     }
     '/canvas/$id': {
       id: '/canvas/$id'
@@ -275,18 +274,28 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface InviteRouteChildren {
+  InviteCodeRoute: typeof InviteCodeRoute
+}
+
+const InviteRouteChildren: InviteRouteChildren = {
+  InviteCodeRoute: InviteCodeRoute,
+}
+
+const InviteRouteWithChildren =
+  InviteRoute._addFileChildren(InviteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   Agent_studioRoute: Agent_studioRoute,
   AssetsRoute: AssetsRoute,
-  InviteRoute: InviteRoute,
+  InviteRoute: InviteRouteWithChildren,
   KnowledgeRoute: KnowledgeRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   TemplatesRoute: TemplatesRoute,
   TermsRoute: TermsRoute,
   CanvasIdRoute: CanvasIdRoute,
-  JoinCodeRoute: JoinCodeRoute,
   TemplateUseTemplateIdRoute: TemplateUseTemplateIdRoute,
 }
 export const routeTree = rootRouteImport

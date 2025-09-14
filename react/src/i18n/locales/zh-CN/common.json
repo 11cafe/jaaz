@@ -47,7 +47,7 @@
   },
   "toast": {
     "loginExpired": "登录状态已过期，请重新登录",
-    "crossTabLogout": "您已在其他标签页中退出登录",
+    "crossTabLogout": "成功退出登录",
     "loginSuccess": "登录成功！",
     "loginError": "登录过程中出现错误",
     "loginFailed": "登录失败",
@@ -90,6 +90,7 @@
   },
   "auth": {
     "login": "登录",
+    "signUp": "注册",
     "logout": "退出登录",
     "loginToJaaz": "登录到 Jaaz",
     "myAccount": "我的账户",
@@ -141,7 +142,16 @@
     "copyUrl": "复制链接",
     "copySuccess": "邀请链接已复制！发送给您的朋友吧。",
     "copyFailed": "复制失败",
-    "failedToLoad": "加载邀请链接失败"
+    "failedToLoad": "加载邀请链接失败",
+    "modal": {
+      "invitedYouTo": "邀请您体验",
+      "productName": "MagicArt",
+      "projectsBuilt": "已创建并分享超过 10 万个项目",
+      "tagline": "这里汇聚了众多才华横溢的创作者，将激发您的下一个创意灵感。",
+      "continueWithGoogle": "使用 Google 继续",
+      "redirecting": "正在跳转...",
+      "close": "关闭"
+    }
   },
   "socket": {
     "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",

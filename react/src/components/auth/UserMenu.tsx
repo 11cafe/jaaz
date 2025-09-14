@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConfigs } from '@/contexts/configs'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useLocation } from '@tanstack/react-router'
 import { BASE_API_URL } from '@/constants'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,6 +54,7 @@ export function UserMenu() {
   const { balance, isLoading: balanceLoading, error: balanceError } = useBalance()
   const { userInfo, currentLevel, isLoggedIn: userInfoLoggedIn, isLoading: userInfoLoading, refreshUserInfo } = useUserInfo()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   
   // 🎯 用户菜单打开时主动刷新用户数据，确保信息是最新的
@@ -259,10 +260,12 @@ export function UserMenu() {
     )
   }
 
-  // 未登录状态，显示登录按钮
+  // 未登录状态，检查是否在邀请页面
+  const isInvitePage = location.pathname.startsWith('/join/')
+
   return (
     <Button variant="outline" onClick={() => setShowLoginDialog(true)}>
-      {t('common:auth.login')}
+      {isInvitePage ? t('common:auth.signUp') : t('common:auth.login')}
     </Button>
   )
 }
