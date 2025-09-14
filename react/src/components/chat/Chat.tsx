@@ -22,7 +22,6 @@ import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 import ShareTemplateDialog from './ShareTemplateDialog'
 import { generateChatSessionTitle } from '@/utils/formatDate'
-import GenerationStatus from './GenerationStatus'
 
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
@@ -58,20 +57,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [pending, setPending] = useState<PendingType>(false) // 不再基于initCanvas设置初始状态
   const [hasDisplayedInitialMessage, setHasDisplayedInitialMessage] = useState(false)
   
-  // 生成状态相关state
-  const [generationStatus, setGenerationStatus] = useState({
-    isVisible: false,
-    message: '',
-    progress: 0,
-    isComplete: false,
-    isError: false,
-    timestamp: 0
-  })
-
-  // 监控generationStatus变化
-  useEffect(() => {
-    console.log('🎯 [THINKING_DEBUG] generationStatus状态更新:', generationStatus)
-  }, [generationStatus])
   const mergedToolCallIds = useRef<string[]>([])
   const pendingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const hasDisplayedInitialMessageRef = useRef(false)
@@ -247,6 +232,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }, 100)
     }
   }, [messages, hasDisplayedInitialMessage, forceScrollToBottom])
+
+  // 监听pending状态变化，确保"Thinking..."出现时滚动到底部
+  useEffect(() => {
+    if (pending) {
+      // 立即滚动一次
+      forceScrollToBottom()
+
+      // 延迟滚动确保ChatSpinner已经渲染
+      setTimeout(() => {
+        forceScrollToBottom()
+      }, 100)
+
+      // 再次延迟滚动确保完全显示
+      setTimeout(() => {
+        forceScrollToBottom()
+      }, 300)
+    }
+  }, [pending, forceScrollToBottom])
 
   // 清理函数
   useEffect(() => {
@@ -595,9 +598,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
 
       setPending(false) // 取消loading状态
-      scrollToBottom()
+
+      // 立即滚动一次
+      forceScrollToBottom()
+
+      // 多次延迟滚动确保图片加载完成后正确显示
+      setTimeout(() => {
+        forceScrollToBottom()
+      }, 200)
+
+      setTimeout(() => {
+        forceScrollToBottom()
+      }, 600)
+
+      // 最后一次滚动确保图片完全可见
+      setTimeout(() => {
+        forceScrollToBottom()
+      }, 1200)
     },
-    [canvasId, sessionId, scrollToBottom, t]
+    [canvasId, sessionId, forceScrollToBottom, t]
   )
 
   const handleUserImages = useCallback(
@@ -736,91 +755,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     })
   }, [])
 
-  // 生成状态处理函数
-  const handleGenerationStarted = useCallback((data: any) => {
-    console.log('🚀 [THINKING_DEBUG] Chat组件接收到GenerationStarted事件:', {
-      data,
-      currentSessionId: sessionId,
-      matches: data.session_id === sessionId
-    })
-
-    if (data.session_id && data.session_id !== sessionId) {
-      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationStarted事件')
-      return
-    }
-
-    const newStatus = {
-      isVisible: true,
-      message: data.message || t('chat:generation.starting'),
-      progress: data.progress || 0.1,
-      isComplete: false,
-      isError: false,
-      timestamp: data.timestamp || Date.now()
-    }
-
-    console.log('✅ [THINKING_DEBUG] 设置GenerationStarted状态:', newStatus)
-    setGenerationStatus(newStatus)
-    setPending('text')
-  }, [sessionId, t])
-
-  const handleGenerationProgress = useCallback((data: any) => {
-    console.log('⏳ [THINKING_DEBUG] Chat组件接收到GenerationProgress事件:', {
-      data,
-      currentSessionId: sessionId,
-      matches: data.session_id === sessionId
-    })
-
-    if (data.session_id && data.session_id !== sessionId) {
-      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationProgress事件')
-      return
-    }
-
-    setGenerationStatus(prev => {
-      const newStatus = {
-        ...prev,
-        // 🔧 修复：确保progress事件也能显示thinking状态
-        isVisible: true,  // 如果还没显示，确保显示thinking状态
-        message: data.message || prev.message,
-        progress: data.progress || prev.progress,
-        timestamp: data.timestamp || Date.now()
-      }
-      console.log('✅ [THINKING_DEBUG] 更新GenerationProgress状态:', { prev, new: newStatus })
-      return newStatus
-    })
-  }, [sessionId])
-
-  const handleGenerationComplete = useCallback((data: any) => {
-    console.log('✅ [THINKING_DEBUG] Chat组件接收到GenerationComplete事件:', {
-      data,
-      currentSessionId: sessionId,
-      matches: data.session_id === sessionId
-    })
-
-    if (data.session_id && data.session_id !== sessionId) {
-      console.log('❌ [THINKING_DEBUG] Session ID不匹配，忽略GenerationComplete事件')
-      return
-    }
-
-    setGenerationStatus(prev => {
-      const newStatus = {
-        ...prev,
-        message: data.message || t('chat:generation.completed'),
-        progress: 1.0,
-        isComplete: true,
-        timestamp: data.timestamp || Date.now()
-      }
-      console.log('✅ [THINKING_DEBUG] 设置GenerationComplete状态:', newStatus)
-      return newStatus
-    })
-
-    // 3秒后隐藏状态显示
-    setTimeout(() => {
-      console.log('🕒 [THINKING_DEBUG] 3秒后隐藏生成状态')
-      setGenerationStatus(prev => ({ ...prev, isVisible: false }))
-    }, 3000)
-
-    setPending(false)
-  }, [sessionId, t])
 
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout
@@ -844,8 +778,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll, { passive: true })
 
-    console.log('🎫 [THINKING_DEBUG] 注册EventBus事件监听器')
-
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
@@ -859,12 +791,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
     eventBus.on('Socket::Session::Info', handleInfo)
-    // 生成状态事件监听
-    eventBus.on('Socket::Session::GenerationStarted', handleGenerationStarted)
-    eventBus.on('Socket::Session::GenerationProgress', handleGenerationProgress)
-    eventBus.on('Socket::Session::GenerationComplete', handleGenerationComplete)
-
-    console.log('✅ [THINKING_DEBUG] EventBus事件监听器注册完成，包括生成状态事件')
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
       clearTimeout(scrollTimeout)
@@ -885,10 +811,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
       eventBus.off('Socket::Session::Info', handleInfo)
-      // 清理生成状态事件监听
-      eventBus.off('Socket::Session::GenerationStarted', handleGenerationStarted)
-      eventBus.off('Socket::Session::GenerationProgress', handleGenerationProgress)
-      eventBus.off('Socket::Session::GenerationComplete', handleGenerationComplete)
     }
   })
 
@@ -1053,9 +975,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </header>
 
-        <ScrollArea className='h-[calc(100vh-45px)]' viewportRef={scrollRef}>
+        <ScrollArea className='h-[78vh]' viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className='flex flex-col flex-1 px-4 pb-50 pt-20'>
+            <div className='flex flex-col flex-1 px-4 pt-20 pb-24'>
               {/* Messages */}
               {messages.map((message, idx) => {
                 return (
@@ -1141,18 +1063,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 )
               })}
 
-              {/* AI思考状态显示 - 移动到聊天窗口内部 */}
-              <GenerationStatus
-                isVisible={generationStatus.isVisible}
-                message={generationStatus.message}
-                progress={generationStatus.progress}
-                isComplete={generationStatus.isComplete}
-                isError={generationStatus.isError}
-                timestamp={generationStatus.timestamp}
-              />
 
-              {pending && <ChatSpinner pending={pending} />}
-              {pending && sessionId && <ToolcallProgressUpdate sessionId={sessionId} />}
+              {/* Thinking状态显示 */}
+              {pending && (
+                <div className="flex flex-col gap-2 mt-6 mb-4">
+                  <ChatSpinner pending={pending} />
+                  {sessionId && <ToolcallProgressUpdate sessionId={sessionId} />}
+                </div>
+              )}
             </div>
           ) : (
             <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-24 select-none'>
@@ -1187,7 +1105,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </ScrollArea>
 
-        <div className='p-2 gap-2 sticky bottom-0'>
+        <div className='p-2 gap-2 sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50'>
           <ChatTextarea
             sessionId={sessionId!}
             pending={!!pending}
