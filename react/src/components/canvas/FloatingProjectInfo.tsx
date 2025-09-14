@@ -22,7 +22,7 @@ import { useCanvas } from '@/contexts/canvas'
 interface FloatingProjectInfoProps {
   projectName: string
   onProjectNameChange: (name: string) => void
-  onProjectNameSave: () => Promise<void>
+  onProjectNameSave: (nameToSave?: string) => Promise<void>
 }
 
 export function FloatingProjectInfo({
@@ -66,8 +66,8 @@ export function FloatingProjectInfo({
         setIsSaving(true)
         // 确保最终名称已更新
         onProjectNameChange(trimmedName)
-        // 调用保存API（类似导航栏的onBlur行为）
-        await onProjectNameSave()
+        // 调用保存API，直接传递要保存的名称避免状态更新延迟
+        await onProjectNameSave(trimmedName)
         console.log('Project名称保存成功')
       } catch (error) {
         console.error('保存Project名称失败:', error)
@@ -174,20 +174,20 @@ export function FloatingProjectInfo({
   }
 
   return (
-    <div className="absolute top-4 left-4 z-50">
-      <div className="flex items-center gap-3">
+    <div className="absolute top-2 left-2 md:top-4 md:left-4 z-60">
+      <div className="flex items-center gap-2 md:gap-3">
         {/* Logo按钮 */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="p-2 h-auto w-auto rounded-lg transition-none hover:bg-transparent hover:text-current dark:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="p-1.5 md:p-2 h-auto w-auto rounded-lg transition-none hover:bg-transparent hover:text-current dark:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <img
                 src={LOGO_URL}
                 alt="MagicArt"
-                className="w-8 h-8"
+                className="w-6 h-6 md:w-8 md:h-8"
                 draggable={false}
               />
             </Button>
@@ -244,25 +244,24 @@ export function FloatingProjectInfo({
               value={tempName}
               onChange={(e) => {
                 setTempName(e.target.value)
-                // 实时更新（类似导航栏的实现）
-                onProjectNameChange(e.target.value)
+                // 🚀 移除实时更新，仅在本地更新tempName，避免触发Canvas重新渲染
               }}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyDown}
-              className="h-8 text-lg font-medium bg-white/90 border-gray-300 focus:border-gray-500 rounded-md"
+              className="h-7 md:h-8 text-sm md:text-lg font-medium bg-white/90 border-gray-300 focus:border-gray-500 rounded-md"
               placeholder="输入项目名称..."
             />
           ) : (
             <div
-              className="cursor-pointer group flex items-center gap-2 hover:bg-black/5 rounded-md px-2 py-1"
+              className="cursor-pointer group flex items-center gap-1 md:gap-2 hover:bg-black/5 rounded-md px-1.5 md:px-2 py-0.5 md:py-1"
               onClick={handleStartEdit}
               title="点击编辑项目名称"
             >
-              <span className="text-lg font-medium text-gray-900 truncate max-w-[300px]">
+              <span className="text-sm md:text-lg font-medium text-gray-900 truncate max-w-[200px] md:max-w-[300px]">
                 {projectName || '未命名项目'}
-                {isSaving && <span className="text-sm text-gray-500 ml-2">(保存中...)</span>}
+                {isSaving && <span className="text-xs md:text-sm text-gray-500 ml-1 md:ml-2">(保存中...)</span>}
               </span>
-              <Edit3 className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100" />
+              <Edit3 className="w-3 h-3 md:w-4 md:h-4 text-gray-400 opacity-0 group-hover:opacity-100" />
             </div>
           )}
         </div>

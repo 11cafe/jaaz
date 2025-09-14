@@ -47,7 +47,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setSessionList,
   sessionId: searchSessionId,
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['chat', 'common'])
   const [session, setSession] = useState<Session | null>(null)
   const { initCanvas, setInitCanvas, textModel } = useConfigs()
   const { authStatus } = useAuth()
@@ -483,7 +483,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               msg.tool_calls.forEach((tc) => {
                 if (tc.id === data.id) {
                   // 添加取消状态标记
-                  tc.result = '工具调用已取消'
+                  tc.result = t('chat:toolCall.cancelled')
                 }
               })
             }
@@ -491,7 +491,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId]
+    [sessionId, t]
   )
 
   const handleToolCallArguments = useCallback(
@@ -565,7 +565,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content: [
           {
             type: 'text',
-            text: '🎨 Image generated and added to canvas',
+            text: t('chat:generation.imageGenerated'),
           },
           {
             type: 'image_url',
@@ -592,7 +592,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setPending(false) // 取消loading状态
       scrollToBottom()
     },
-    [canvasId, sessionId, scrollToBottom]
+    [canvasId, sessionId, scrollToBottom, t]
   )
 
   const handleUserImages = useCallback(
@@ -737,14 +737,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     setGenerationStatus({
       isVisible: true,
-      message: data.message || '开始生成...',
+      message: data.message || t('chat:generation.starting'),
       progress: data.progress || 0.1,
       isComplete: false,
       isError: false,
       timestamp: data.timestamp || Date.now()
     })
     setPending('text')
-  }, [sessionId])
+  }, [sessionId, t])
 
   const handleGenerationProgress = useCallback((data: any) => {
     if (data.session_id && data.session_id !== sessionId) return
@@ -762,7 +762,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     setGenerationStatus(prev => ({
       ...prev,
-      message: data.message || '✨ 生成完成！',
+      message: data.message || t('chat:generation.completed'),
       progress: 1.0,
       isComplete: true,
       timestamp: data.timestamp || Date.now()
@@ -772,9 +772,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setTimeout(() => {
       setGenerationStatus(prev => ({ ...prev, isVisible: false }))
     }, 3000)
-    
+
     setPending(false)
-  }, [sessionId])
+  }, [sessionId, t])
 
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout
@@ -1101,7 +1101,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 transition={{ duration: 0.5 }}
                 className='text-muted-foreground text-3xl'
               >
-                <ShinyText text='你好，MagicArt!' />
+                <ShinyText text={t('chat:welcome.greeting')} />
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
@@ -1109,7 +1109,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 transition={{ duration: 0.6 }}
                 className='text-muted-foreground text-2xl'
               >
-                <ShinyText text='希望设计点什么呢?' />
+                <ShinyText text={t('chat:welcome.question')} />
               </motion.span>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -1117,10 +1117,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 transition={{ duration: 0.8 }}
                 className='mt-6 text-muted-foreground/70 text-sm max-w-md'
               >
-                <p className='mb-2'>💡 这是一个新的聊天会话</p>
-                <p className='mb-1'>• 会话将在您发送第一条消息时自动保存</p>
-                <p className='mb-1'>• 关闭窗口时会话将保留，下次可继续使用</p>
-                <p>• 您可以随时创建新的会话来分类管理不同的设计任务</p>
+                <p className='mb-2'>{t('chat:welcome.newSession')}</p>
+                <p className='mb-1'>{t('chat:welcome.autoSave')}</p>
+                <p className='mb-1'>{t('chat:welcome.persistent')}</p>
+                <p>{t('chat:welcome.management')}</p>
               </motion.div>
             </motion.div>
           )}

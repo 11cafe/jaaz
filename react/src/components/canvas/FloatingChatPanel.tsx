@@ -44,26 +44,41 @@ export function FloatingChatPanel({
 
   return (
     <>
-      {/* 聊天切换按钮 */}
+      {/* 聊天切换按钮 - 右侧中间位置，移动端友好 */}
       {!isOpen && (
-        <div className="absolute top-4 right-4 z-50">
+        <div className="absolute top-1/2 right-4 -translate-y-1/2 z-40">
           <Button
             onClick={() => setIsOpen(true)}
             size="sm"
-            className="p-3 h-auto w-auto rounded-full bg-white/90 backdrop-blur-md border border-gray-200/50 shadow-lg hover:bg-white hover:scale-105 transition-all duration-200"
+            className="p-3 h-auto w-auto rounded-full bg-white/90 backdrop-blur-md border border-gray-200/50 shadow-lg hover:bg-white"
+            style={{
+              transition: 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), background-color 200ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
           >
             <MessageCircle className="w-5 h-5 text-gray-700" />
           </Button>
         </div>
       )}
 
-      {/* 浮动聊天窗口 - 只在桌面端显示 */}
+      {/* 浮动聊天窗口 - 只在桌面端显示，底部留出空间 */}
       <div
         className={cn(
-          'hidden md:block absolute top-4 right-4 bottom-4 z-40 transition-all duration-300 ease-in-out',
-          isOpen ? 'w-[25vw] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full',
-          'min-w-[320px] max-w-[480px]' // 设置最小和最大宽度限制
+          'hidden md:block absolute top-4 right-4 bottom-20 z-50',
+          'w-[min(25vw,400px)] min-w-[280px] max-w-[400px]',
+          'transition-transform duration-300 ease-out',
+          isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
         )}
+        style={{
+          transitionProperty: 'transform, opacity',
+          transitionDuration: '300ms',
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
       >
         <div className="relative w-full h-full bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden flex flex-col">
           {/* 功能栏 */}
@@ -90,7 +105,7 @@ export function FloatingChatPanel({
 
       {/* 移动端适配：小屏幕时的全屏模式 */}
       {isOpen && (
-        <div className="md:hidden absolute inset-0 z-40 bg-white flex flex-col">
+        <div className="md:hidden absolute inset-0 z-50 bg-white flex flex-col pt-16">
           {/* 移动端功能栏 */}
           <ChatPanelHeader
             sessionList={sessionList}

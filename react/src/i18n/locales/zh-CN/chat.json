@@ -3,6 +3,7 @@
   "placeholder": "在这里输入你的消息...",
   "sessionHistory": {
     "title": "会话历史",
+    "historyTitle": "历史记录",
     "newChat": "新建对话",
     "newChatDescription": "开始新的对话",
     "newSession": "新对话",
@@ -12,6 +13,9 @@
     "daysAgo": "{{count}}天前",
     "messagesCount": "{{count}} 条消息",
     "noSessions": "暂无历史对话",
+    "noSessionsYet": "暂无会话",
+    "startNewConversation": "开始新对话创建您的第一个会话",
+    "selectSession": "选择会话",
     "defaultSessionTitle": "新对话"
   },
   "insufficientBalance": "余额不足",
@@ -54,9 +58,22 @@
   },
   "toolCall": {
     "requiresConfirmation": "需确认",
-    "cancelled": "已取消",
+    "cancelled": "工具调用已取消",
     "confirm": "确认执行",
     "cancel": "取消"
+  },
+  "generation": {
+    "starting": "开始生成...",
+    "completed": "✨ 生成完成！",
+    "imageGenerated": "🎨 图片已生成并添加到画布"
+  },
+  "welcome": {
+    "greeting": "你好，MagicArt!",
+    "question": "希望设计点什么呢?",
+    "newSession": "💡 这是一个新的聊天会话",
+    "autoSave": "• 会话将在您发送第一条消息时自动保存",
+    "persistent": "• 关闭窗口时会话将保留，下次可继续使用",
+    "management": "• 您可以随时创建新的会话来分类管理不同的设计任务"
   },
   "modelSelector": {
     "title": "模型",

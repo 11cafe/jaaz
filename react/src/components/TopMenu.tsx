@@ -7,6 +7,8 @@ import { UserMenu } from './auth/UserMenu'
 import InviteButton from './common/InviteButton'
 import PointsBadge from './common/PointsBadge'
 import { useAuth } from '@/contexts/AuthContext'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export default function TopMenu({
   middle,
@@ -19,9 +21,47 @@ export default function TopMenu({
   const { t } = useTranslation('common')
   const { authStatus } = useAuth()
 
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+
+    const controlNavbar = () => {
+      clearTimeout(timeoutId)
+
+      timeoutId = setTimeout(() => {
+        const currentScrollY = window.scrollY
+
+        if (currentScrollY < 10) {
+          // 在页面顶部附近时始终显示
+          setIsVisible(true)
+        } else if (currentScrollY > lastScrollY && currentScrollY > 80) {
+          // 向下滚动且滚动距离超过80px时隐藏
+          setIsVisible(false)
+        } else if (currentScrollY < lastScrollY) {
+          // 向上滚动时显示
+          setIsVisible(true)
+        }
+
+        setLastScrollY(currentScrollY)
+      }, 10) // 添加10ms的防抖，让滚动更流畅
+    }
+
+    window.addEventListener('scroll', controlNavbar, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', controlNavbar)
+      clearTimeout(timeoutId)
+    }
+  }, [lastScrollY])
+
   return (
     <div
-      className="sticky top-0 z-50 flex w-full h-16 px-3 sm:px-6 items-center select-none relative"
+      className={cn(
+        "sticky top-0 z-50 flex w-full h-16 px-3 sm:px-6 items-center select-none relative",
+        "transition-transform duration-300 ease-in-out",
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      )}
     >
       {/* 左侧区域 */}
       <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
@@ -68,9 +108,9 @@ export default function TopMenu({
         {right}
         {/* <AgentSettings /> */}
         <LanguageSwitcher />
-        {/* 只有登录用户才显示邀请按钮 */}
-        {authStatus.is_logged_in && <InviteButton />}
-        {authStatus.is_logged_in && <PointsBadge />}
+        {/* 只有登录用户才显示邀请按钮 - 移动端隐藏 */}
+        {authStatus.is_logged_in && <InviteButton className="hidden sm:flex" />}
+        {authStatus.is_logged_in && <PointsBadge className="hidden sm:flex" />}
         {/* <ThemeButton /> */}
         <UserMenu />
       </div>

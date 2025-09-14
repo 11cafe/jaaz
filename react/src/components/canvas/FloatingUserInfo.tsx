@@ -67,69 +67,28 @@ export function FloatingUserInfo() {
     const apiUserInfo = userInfo?.user_info
 
     const username = authUserInfo?.username || apiUserInfo?.email?.split('@')[0] || 'User'
-    const image_url = authUserInfo?.image_url
+    const image_url = authUserInfo?.image_url || apiUserInfo?.image_url
     const initials = username ? username.substring(0, 2).toUpperCase() : 'U'
 
     return (
-      <div className="absolute bottom-4 left-4 z-50">
-        <div className="flex items-center gap-3 bg-white/95 backdrop-blur-lg border border-white/50 rounded-2xl px-4 py-2.5 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+      <div className="absolute top-16 left-4 md:bottom-5 md:top-auto z-30">
+        <div className="flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-white/30 rounded-lg px-1.5 py-1 shadow-none transition-all duration-200 hover:bg-white/90">
           {/* 用户头像 */}
-          <Avatar className="h-9 w-9 ring-2 ring-blue-200/60">
+          <Avatar className="h-5 w-5 ring-1 ring-blue-200/30">
             <AvatarImage src={image_url} alt={username} />
-            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-blue-100 to-indigo-100 text-slate-700">
+            <AvatarFallback className="text-[8px] font-medium bg-gradient-to-br from-blue-100 to-indigo-100 text-slate-600">
               {initials}
             </AvatarFallback>
           </Avatar>
 
           {/* 积分显示 */}
-          <div className="flex items-center gap-2 text-slate-700">
-            <div className="p-1 rounded-full bg-gray-100">
-              <Zap className="w-3.5 h-3.5 text-gray-800" />
+          <div className="flex items-center gap-1 text-slate-600">
+            <div className="p-0.5 rounded-full bg-gray-100">
+              <Zap className="w-2.5 h-2.5 text-gray-700" />
             </div>
-            <span className="text-sm font-semibold">
+            <span className="text-[10px] font-medium">
               {balanceLoading ? '...' : balanceError ? '--' : points}
             </span>
-          </div>
-
-          {/* 缩放控制 - 新位置 */}
-          <div className="flex items-center gap-1 border-l border-slate-200/70 pl-3">
-            <Button
-              className="h-7 w-7 p-0 hover:bg-slate-100 rounded-lg transition-colors"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleZoomChange(currentZoom - 10)}
-            >
-              <Minus className="h-3.5 w-3.5 text-slate-600" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="h-7 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors min-w-[3rem]"
-                >
-                  {currentZoom}%
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-24 bg-white/95 backdrop-blur-lg border-white/50">
-                {[25, 50, 100, 150, 200].map((zoom) => (
-                  <DropdownMenuItem key={zoom} onClick={() => handleZoomChange(zoom)} className="text-xs">
-                    {zoom}%
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleZoomFit} className="text-xs">
-                  {t('canvas:tool.zoomFit')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              className="h-7 w-7 p-0 hover:bg-slate-100 rounded-lg transition-colors"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleZoomChange(currentZoom + 10)}
-            >
-              <Plus className="h-3.5 w-3.5 text-slate-600" />
-            </Button>
           </div>
         </div>
       </div>
@@ -138,12 +97,12 @@ export function FloatingUserInfo() {
 
   // 未登录状态，显示登录提示
   return (
-    <div className="absolute bottom-4 left-4 z-50">
+    <div className="absolute top-16 left-4 md:bottom-5 md:top-auto z-30">
       <Button
         variant="outline"
         size="sm"
         onClick={() => setShowLoginDialog(true)}
-        className="bg-white/90 backdrop-blur-md border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+        className="bg-white/85 backdrop-blur-md border-gray-200/30 text-gray-700 hover:bg-white/90 transition-all duration-200 text-[10px] px-1.5 py-0.5 h-auto shadow-none rounded-lg"
       >
         {t('common:auth.login')}
       </Button>

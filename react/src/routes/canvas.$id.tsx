@@ -178,6 +178,35 @@ function Canvas() {
                 replace: true // 使用replace避免影响浏览器历史
               })
             }
+          } else {
+            // 如果没有任何sessions，自动创建一个默认的session
+            console.log('没有找到任何sessions，自动创建默认session')
+
+            // 生成新的会话ID
+            const defaultSessionId = nanoid()
+            const defaultSessionName = t('newChatWithNumber', { number: 1 })
+
+            // 创建默认session对象
+            const defaultSession: Session = {
+              id: defaultSessionId,
+              title: defaultSessionName,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              model: textModel?.model || 'gpt-4o',
+              provider: textModel?.provider || 'openai',
+            }
+
+            // 立即将默认session添加到sessionList中
+            setSessionList([defaultSession])
+            console.log('已创建并添加默认session:', defaultSessionId, defaultSessionName)
+
+            // 导航到默认session
+            navigate({
+              to: '/canvas/$id',
+              params: { id: id },
+              search: { sessionId: defaultSessionId },
+              replace: true // 使用replace避免影响浏览器历史
+            })
           }
           // Video elements now handled by native Excalidraw embeddable elements
         }
@@ -238,17 +267,19 @@ function Canvas() {
   }
 
   // 保存Project名称到服务器
-  const handleProjectNameSave = async () => {
+  const handleProjectNameSave = async (nameToSave?: string) => {
+    const finalName = nameToSave || projectName
     try {
-      console.log('正在保存Project名称:', projectName)
-      await renameCanvas(id, projectName)
+      console.log('正在保存Project名称:', finalName)
+      await renameCanvas(id, finalName)
       // 同时更新其他相关的名称状态，保持一致性
-      setOriginalCanvasName(projectName)
-      setCanvasName(projectName) // 确保canvas名称也同步更新
-      console.log('Project名称保存成功:', projectName)
+      setOriginalCanvasName(finalName)
+      setCanvasName(finalName) // 确保canvas名称也同步更新
+      console.log('Project名称保存成功:', finalName)
     } catch (error) {
       console.error('保存Project名称失败:', error)
       // 可以添加错误提示
+      throw error // 重新抛出错误，让子组件能够处理
     }
   }
 
