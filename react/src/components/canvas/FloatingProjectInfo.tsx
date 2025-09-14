@@ -22,7 +22,7 @@ import { useCanvas } from '@/contexts/canvas'
 interface FloatingProjectInfoProps {
   projectName: string
   onProjectNameChange: (name: string) => void
-  onProjectNameSave: () => Promise<void>
+  onProjectNameSave: (nameToSave?: string) => Promise<void>
 }
 
 export function FloatingProjectInfo({
@@ -66,8 +66,8 @@ export function FloatingProjectInfo({
         setIsSaving(true)
         // 确保最终名称已更新
         onProjectNameChange(trimmedName)
-        // 调用保存API（类似导航栏的onBlur行为）
-        await onProjectNameSave()
+        // 调用保存API，直接传递要保存的名称避免状态更新延迟
+        await onProjectNameSave(trimmedName)
         console.log('Project名称保存成功')
       } catch (error) {
         console.error('保存Project名称失败:', error)
@@ -174,7 +174,7 @@ export function FloatingProjectInfo({
   }
 
   return (
-    <div className="absolute top-2 left-2 md:top-4 md:left-4 z-50">
+    <div className="absolute top-2 left-2 md:top-4 md:left-4 z-60">
       <div className="flex items-center gap-2 md:gap-3">
         {/* Logo按钮 */}
         <DropdownMenu>
@@ -244,8 +244,7 @@ export function FloatingProjectInfo({
               value={tempName}
               onChange={(e) => {
                 setTempName(e.target.value)
-                // 实时更新（类似导航栏的实现）
-                onProjectNameChange(e.target.value)
+                // 🚀 移除实时更新，仅在本地更新tempName，避免触发Canvas重新渲染
               }}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyDown}

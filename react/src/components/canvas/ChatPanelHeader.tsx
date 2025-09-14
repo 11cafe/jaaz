@@ -41,7 +41,7 @@ export function ChatPanelHeader({
           onSave={handleSessionNameSave}
           placeholder="新对话"
           maxLength={100}
-          className="min-w-0 text-sm md:text-base"
+          className="min-w-0 text-xs md:text-sm"
         />
       </div>
 
