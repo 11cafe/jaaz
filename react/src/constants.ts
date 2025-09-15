@@ -7,7 +7,7 @@ import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 //   ? 'https://www.magicart.cc'
 //   : 'http://localhost:8000'
 
-export const BASE_API_URL = 'http://localhost:8000'
+export const BASE_API_URL = 'http://127.0.0.1:8000'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }

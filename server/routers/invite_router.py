@@ -238,7 +238,7 @@ async def invite_landing_page(code: str, request: Request):
         
         # 邀请码有效，直接重定向到Google OAuth登录
         # 动态获取重定向URI
-        host = request.headers.get("host", "localhost:8000")
+        host = request.headers.get("host", "127.0.0.1:8000")
         if "localhost" in host or "127.0.0.1" in host:
             redirect_uri = f"http://{host}"
         else:

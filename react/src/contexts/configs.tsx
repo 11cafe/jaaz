@@ -12,7 +12,7 @@ export const ConfigsContext = createContext<{
 
 export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => {
   const configsStore = useConfigsStore()
-  const { setTextModels, setTextModel, setSelectedTools, setAllTools, setShowLoginDialog } =
+  const { setTextModels, setTextModel, setSelectedTools, setAllTools, setShowLoginDialog, showLoginDialog } =
     configsStore
   const { authStatus } = useAuth()
 
@@ -25,11 +25,20 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models_2'],
     queryFn: () => listModels(),
-    staleTime: 1000, // 5分钟内数据被认为是新鲜的
+    staleTime: 5 * 60 * 1000, // 🔧 5分钟内数据被认为是新鲜的
+    gcTime: 10 * 60 * 1000, // 🔧 缓存保持10分钟
     placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
-    refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
+    refetchOnWindowFocus: false, // 🔧 避免过度频繁的重新获取
     refetchOnReconnect: true, // 网络重连时重新获取
-    refetchOnMount: true, // 挂载时重新获取
+    refetchOnMount: false, // 🔧 避免每次挂载都重新获取
+    retry: (failureCount, error) => {
+      // 🔧 智能重试：网络错误重试，认证错误不重试
+      if (error.message.includes('401') || error.message.includes('403')) {
+        return false // 认证错误不重试
+      }
+      return failureCount < 3 // 其他错误最多重试3次
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 指数退避
   })
 
   useEffect(() => {
@@ -97,16 +106,16 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
           } else {
             console.log('⚠️ 未找到匹配的模型，使用默认策略')
             // 步骤3：都未找到，使用默认策略
-            useDefaultModelStrategy()
+            setDefaultModelStrategy()
           }
         }
       } else {
         console.log('🎯 没有保存的模型选择，使用默认策略')
-        useDefaultModelStrategy()
+        setDefaultModelStrategy()
       }
-      
+
       // 默认策略函数
-      function useDefaultModelStrategy() {
+      function setDefaultModelStrategy() {
         let defaultModel = llmModels.find((m) => m.type === 'text' && m.model === 'gpt-4o')
         if (!defaultModel) {
           defaultModel = llmModels.find((m) => m.type === 'text' && m.model === 'gpt-4o-mini')
@@ -204,9 +213,21 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
 
     setSelectedTools(currentSelectedTools)
 
-    // 如果文本模型或工具模型为空，则显示登录对话框
-    if (llmModels.length === 0 || toolList.length === 0) {
+    // 🔧 智能登录弹窗管理：只有在确实需要时才显示
+    if (!isLoggedIn && llmModels.length === 0 && toolList.length === 0) {
+      console.log('⚠️ 未登录且无可用模型，显示登录对话框')
       setShowLoginDialog(true)
+    } else if (isLoggedIn) {
+      // 🔧 用户已登录时，确保关闭登录弹窗
+      if (showLoginDialog) {
+        console.log('✅ 用户已登录，关闭登录弹窗')
+        setShowLoginDialog(false)
+      }
+
+      if (llmModels.length === 0 || toolList.length === 0) {
+        console.log('⚠️ 已登录但模型列表为空，可能是网络问题，不显示登录对话框')
+        // 已登录用户即使模型列表为空也不显示登录对话框，避免误导用户
+      }
     }
 
     // 标记初始化完成，释放锁
@@ -214,7 +235,7 @@ export const ConfigsProvider = ({ children }: { children: React.ReactNode }) => 
     isInitializingRef.current = false
     
     console.log('✅ [ConfigsProvider] 模型初始化完成')
-  }, [modelList, setSelectedTools, setTextModel, setTextModels, setAllTools, setShowLoginDialog, authStatus.is_logged_in])
+  }, [modelList, setSelectedTools, setTextModel, setTextModels, setAllTools, setShowLoginDialog, showLoginDialog, authStatus.is_logged_in])
 
   return (
     <ConfigsContext.Provider value={{ configsStore: useConfigsStore, refreshModels, isModelInitialized }}>

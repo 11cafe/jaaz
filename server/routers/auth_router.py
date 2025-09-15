@@ -263,7 +263,7 @@ async def check_auth_status(request: Request):
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://www.magicart.cc")
-LOCALHOST_REDIRECT_URI = os.getenv("LOCALHOST_REDIRECT_URI", "http://localhost:8000")
+LOCALHOST_REDIRECT_URI = os.getenv("LOCALHOST_REDIRECT_URI", "http://127.0.0.1:8000")
 
 # 验证环境变量
 if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -739,6 +739,7 @@ async def direct_login(request: Request):
 async def direct_oauth_callback(request: Request, code: str = Query(...), state: str = Query(...), error: str = Query(None)):
     """直接OAuth回调处理：在URL中传递认证结果"""
     # 动态获取重定向URI
+    logger.info(f"request: {request}")
     redirect_uri = get_redirect_uri(request)
     
     if error:

@@ -59,7 +59,7 @@ class CrossTabSync {
       
       this.checkInterval = setInterval(() => {
         this.checkForChanges()
-      }, 5000) // 每5秒检查一次
+      }, 30000) // 🔧 减少检查频率：每30秒检查一次，避免过度频繁的状态检查
       
       console.log('⏰ Periodic auth check started')
     }

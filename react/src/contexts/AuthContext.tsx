@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAuth = useCallback(async () => {
     try {
       setIsLoading(true)
+      console.log('🔄 [AuthContext] 开始刷新认证状态...')
       const status = await getAuthStatus()
 
       // 🎯 检查用户信息是否包含level字段
@@ -173,7 +174,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 监听跨标签页认证状态变化
     const handleAuthStatusChanged = () => {
       console.log('🔄 Cross-tab auth status change detected')
-      refreshAuth()
+      // 🔧 避免在加载中时重复刷新
+      if (!isLoading) {
+        refreshAuth()
+      } else {
+        console.log('🔄 Skipping refresh: already loading')
+      }
     }
 
     // 监听跨标签页登出
@@ -211,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('auth-logout-detected', handleLogoutDetected)
       window.removeEventListener('auth-force-refresh', handleForceRefresh)
     }
-  }, [refreshAuth])
+  }, [refreshAuth, isLoading])
 
   return (
     <AuthContext.Provider value={{ authStatus, isLoading, refreshAuth }}>
