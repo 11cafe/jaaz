@@ -144,7 +144,7 @@ class WorkflowExecution:
         if self.base_url.startswith("https"):
             self.ws_core = "wss://"
         else:
-            self.ws_core = "ws://"
+            self.ws_core = "wss://"
         ws_url = self.base_url.split("//")[1]
         if "/" in ws_url:
             ws_url = ws_url.split("/")[0]
