@@ -14,5 +14,8 @@ export const useLanguage = () => {
     changeLanguage,
     isEnglish: getCurrentLanguage() === 'en',
     isChinese: getCurrentLanguage() === 'zh-CN',
+    isFrench: getCurrentLanguage() === 'fr',
+    isSpanish: getCurrentLanguage() === 'es',
+    isKorean: getCurrentLanguage() === 'ko',
   }
 }

@@ -1,0 +1,50 @@
+{
+  "newChat": "Nouveau chat",
+  "placeholder": "Tapez votre message ici...",
+  "insufficientBalance": "Solde insuffisant",
+  "insufficientBalanceDescription": "Vos crédits sont épuisés. Veuillez recharger pour continuer.",
+  "textarea": {
+    "placeholder": "Entrez vos exigences de conception",
+    "selectModel": "Veuillez sélectionner un modèle de texte ! Allez dans Paramètres pour définir vos clés API si vous ne l'avez pas encore fait.",
+    "selectTool": "Veuillez aller dans les paramètres pour ajouter des outils de génération d'images ou de vidéos, sinon vous ne pourrez générer aucune image ou vidéo !!",
+    "enterPrompt": "Veuillez entrer une invite",
+    "quantity": "Quantité d'images"
+  },
+  "messages": {
+    "imagePositioning": "Aller à l'image",
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins"
+  },
+  "thinking": {
+    "title": "Réflexion"
+  },
+  "plan": {
+    "title": "Plan",
+    "steps": {
+      "singular": "étape",
+      "plural": "étapes"
+    }
+  },
+  "shareTemplate": {
+    "title": "Partager comme modèle",
+    "templateName": "Nom du modèle",
+    "templateNamePlaceholder": "Entrez le nom du modèle...",
+    "coverPhoto": "Photo de couverture",
+    "noImagesFound": "Aucune image trouvée dans le canevas",
+    "nameRequired": "Le nom du modèle est requis",
+    "coverImageRequired": "L'image de couverture est requise",
+    "create": "Créer le modèle",
+    "creating": "Création...",
+    "success": "Modèle créé avec succès !",
+    "error": "Échec de la création du modèle"
+  },
+  "modelSelector": {
+    "title": "Modèle",
+    "auto": "Auto",
+    "tabs": {
+      "image": "Image",
+      "video": "Vidéo",
+      "text": "Texte"
+    }
+  }
+}
