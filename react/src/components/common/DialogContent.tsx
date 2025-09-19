@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import * as Dialog from '@radix-ui/react-dialog'
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
 import { AnimatePresence, motion } from 'motion/react'
 
 type CommonDialogProps = {
@@ -7,6 +8,7 @@ type CommonDialogProps = {
   children: React.ReactNode
   className?: string
   transformPerspective?: number
+  title?: string
 }
 
 const CommonDialogContent: React.FC<CommonDialogProps> = ({
@@ -14,6 +16,7 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
   children,
   className,
   transformPerspective = 500,
+  title,
 }) => {
   const openState = {
     opacity: 1,
@@ -68,6 +71,14 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
                 exit={initialState}
                 style={{ transformPerspective }}
               >
+                {/* Required DialogTitle for accessibility */}
+                {title ? (
+                  <Dialog.Title className="sr-only">{title}</Dialog.Title>
+                ) : (
+                  <VisuallyHidden.Root asChild>
+                    <Dialog.Title>Dialog</Dialog.Title>
+                  </VisuallyHidden.Root>
+                )}
                 {children}
               </motion.div>
             </div>

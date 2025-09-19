@@ -32,6 +32,7 @@ const SettingsDialog = () => {
         open={open}
         transformPerspective={6000}
         className="flex flex-col p-0 gap-0 w-screen! h-screen! max-h-[100vh]! max-w-[100vw]! rounded-none! border-none! shadow-none!"
+        title="Settings"
       >
         <SidebarProvider className="h-[calc(100vh-60px)]! min-h-[calc(100vh-60px)]! flex-1 relative">
           <SettingSidebar

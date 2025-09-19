@@ -7,7 +7,7 @@
     "save": "保存",
     "cancel": "取消",
     "delete": "删除",
-    "edit": "编辑",
+    "edit": "双击编辑标题",
     "create": "创建",
     "submit": "提交",
     "loading": "加载中...",
@@ -31,18 +31,48 @@
     "saved": "保存成功",
     "deleted": "删除成功"
   },
-  "notifications": {
-    "title": "通知",
-    "clear": "清空",
-    "markAllAsRead": "全部已读",
-    "allRead": "全部已读",
-    "newImageGenerated": "新图片生成"
+  "points": {
+    "insufficientTitle": "积分不足",
+    "currentBalance": "当前余额",
+    "required": "需要",
+    "credits": "积分",
+    "insufficientDescription": "抱歉，您的账户余额不足以完成此次图片生成。",
+    "upgradeHint": "升级您的订阅计划以获得更多积分，畅享无限创作！",
+    "upgradePlan": "升级套餐",
+    "viewPricing": "查看定价",
+    "upgradeFeatures": "升级后您将获得：",
+    "feature1": "更多积分用于图片生成",
+    "feature2": "优先处理和更快生成速度",
+    "feature3": "高级AI模型和更多功能"
+  },
+  "toast": {
+    "loginExpired": "登录状态已过期，请重新登录",
+    "crossTabLogout": "成功退出登录",
+    "loginSuccess": "登录成功！",
+    "loginError": "登录过程中出现错误",
+    "loginFailed": "登录失败",
+    "paymentSuccess": "支付成功！",
+    "paymentError": "支付失败，请重试",
+    "subscriptionCancelled": "订阅已成功取消！",
+    "subscriptionCancelError": "取消订阅失败",
+    "imageUploadFailed": "图片上传失败",
+    "copySuccess": "复制成功！",
+    "copyError": "复制失败",
+    "knowledgeListError": "获取知识库列表失败",
+    "knowledgeSettingsSaved": "知识库设置已保存",
+    "knowledgeSettingsError": "保存知识库设置失败",
+    "fileReadError": "文件读取失败",
+    "networkError": "网络错误",
+    "insufficientPoints": "积分不足无法生成图片",
+    "insufficientPointsWithDetails": "积分不足，当前积分: {{current}}，需要积分: {{required}}"
   },
   "navigation": {
     "home": "首页",
     "canvas": "画布",
     "settings": "设置",
-    "back": "返回"
+    "back": "返回",
+    "templates": "模版",
+    "pricing": "订阅"
   },
   "dialog": {
     "confirmTitle": "确认操作",
@@ -60,6 +90,7 @@
   },
   "auth": {
     "login": "登录",
+    "signUp": "注册",
     "logout": "退出登录",
     "loginToJaaz": "登录到 Jaaz",
     "myAccount": "我的账户",
@@ -78,7 +109,49 @@
     "logoutSuccessMessage": "已成功登出",
     "notLoggedIn": "未登录",
     "balance": "余额",
-    "recharge": "充值"
+    "recharge": "充值",
+    "currentPoints": "积分",
+    "buyPoints": "购买点数",
+    "upgrade": "升级",
+    "managePlan": "管理计划",
+    "left": "剩余",
+    "inviteCode": "邀请码",
+    "loginDialog": {
+      "welcomeTitle": "欢迎使用 MagicArt",
+      "subtitle": "请登录以继续使用 AI 设计助手",
+      "continueWithGoogle": "使用 Google 继续",
+      "redirecting": "正在跳转...",
+      "secureLogin": "安全登录"
+    },
+    "levels": {
+      "free": "免费版",
+      "base": "基础版",
+      "pro": "Pro", 
+      "max": "企业版",
+      "monthly": "月付",
+      "yearly": "年付"
+    }
+  },
+  "invite": {
+    "title": "邀请好友",
+    "description": "每成功邀请一位好友注册，即可获得 50 免费积分",
+    "totalInvites": "总邀请数",
+    "yourInvitationUrl": "您的邀请链接",
+    "copyThisUrl": "复制此链接并发送给您的朋友",
+    "invitationUrl": "邀请链接",
+    "copyUrl": "复制链接",
+    "copySuccess": "邀请链接已复制！发送给您的朋友吧。",
+    "copyFailed": "复制失败",
+    "failedToLoad": "加载邀请链接失败",
+    "modal": {
+      "invitedYouTo": "邀请您体验",
+      "productName": "MagicArt",
+      "projectsBuilt": "已创建并分享超过 10 万个项目",
+      "tagline": "这里汇聚了众多才华横溢的创作者，将激发您的下一个创意灵感。",
+      "continueWithGoogle": "使用 Google 继续",
+      "redirecting": "正在跳转...",
+      "close": "关闭"
+    }
   },
   "socket": {
     "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",

@@ -28,3 +28,4 @@ class ImageProviderBase(ABC):
             Tuple[str, int, int, str]: (mime_type, width, height, filename)
         """
         pass
+        print("ImageProviderBase generate")

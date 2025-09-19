@@ -44,12 +44,12 @@ const CanvasViewMenu = () => {
   return (
     <div
       className={cn(
-        'absolute top-2 right-2 flex items-center gap-1 rounded-lg p-1 z-20 transition-all duration-300 select-none text-primary/70',
-        'hover:bg-primary-foreground/55 hover:backdrop-blur-lg hover:text-primary'
+        'absolute top-16 left-32 md:bottom-5 md:top-auto md:left-32 flex items-center gap-1.5 rounded-xl p-1.5 z-20 transition-all duration-300 select-none',
+        'bg-white/80 backdrop-blur-md border border-white/40 shadow-lg text-slate-700 hover:bg-white/90'
       )}
     >
       <Button
-        className="size-8"
+        className="size-7"
         variant="ghost"
         size="icon"
         onClick={() => handleZoomChange(currentZoom - 10)}
@@ -58,7 +58,7 @@ const CanvasViewMenu = () => {
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <span className="text-sm w-10 text-center">{currentZoom}%</span>
+          <span className="text-xs w-10 text-center font-medium">{currentZoom}%</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           {[10, 50, 100, 150, 200].map((zoom) => (
@@ -73,7 +73,7 @@ const CanvasViewMenu = () => {
         </DropdownMenuContent>
       </DropdownMenu>
       <Button
-        className="size-8"
+        className="size-7"
         variant="ghost"
         size="icon"
         onClick={() => handleZoomChange(currentZoom + 10)}

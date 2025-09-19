@@ -17,6 +17,11 @@ export enum SessionEventType {
   ToolCallPendingConfirmation = 'tool_call_pending_confirmation',
   ToolCallConfirmed = 'tool_call_confirmed',
   ToolCallCancelled = 'tool_call_cancelled',
+  UserImages = 'user_images',
+  // 新增生成状态类型
+  GenerationStarted = 'generation_started',
+  GenerationProgress = 'generation_progress',
+  GenerationComplete = 'generation_complete',
 }
 
 export interface SessionBaseEvent {
@@ -26,6 +31,9 @@ export interface SessionBaseEvent {
 export interface SessionErrorEvent extends SessionBaseEvent {
   type: SessionEventType.Error
   error: string
+  error_code?: string
+  current_points?: number
+  required_points?: number
 }
 export interface SessionDoneEvent extends SessionBaseEvent {
   type: SessionEventType.Done
@@ -96,6 +104,47 @@ export interface SessionToolCallCancelledEvent extends SessionBaseEvent {
   id: string
 }
 
+export interface SessionUserImagesEvent extends SessionBaseEvent {
+  type: SessionEventType.UserImages
+  message: {
+    role: 'user'
+    content: Array<{
+      type: 'text' | 'image_url'
+      text?: string
+      image_url?: {
+        url: string
+      }
+    }>
+  }
+}
+
+export interface SessionGenerationStartedEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationStarted
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
+export interface SessionGenerationProgressEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationProgress
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
+export interface SessionGenerationCompleteEvent extends SessionBaseEvent {
+  type: SessionEventType.GenerationComplete
+  canvas_id?: string
+  message: string
+  progress: number
+  timestamp: number
+  data?: any
+}
+
 export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
@@ -111,3 +160,7 @@ export type SessionUpdateEvent =
   | SessionToolCallPendingConfirmationEvent
   | SessionToolCallConfirmedEvent
   | SessionToolCallCancelledEvent
+  | SessionUserImagesEvent
+  | SessionGenerationStartedEvent
+  | SessionGenerationProgressEvent
+  | SessionGenerationCompleteEvent

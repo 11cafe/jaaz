@@ -10,9 +10,13 @@ type MessageImageProps = {
     }
     type: 'image_url'
   }
+  // 支持直接传递canvas元素ID (GPT生成的图片)
+  canvasElementId?: string
+  // 是否为用户消息，决定图片尺寸
+  isUserMessage?: boolean
 }
 
-const MessageImage = ({ content }: MessageImageProps) => {
+const MessageImage = ({ content, canvasElementId, isUserMessage = false }: MessageImageProps) => {
   const { excalidrawAPI } = useCanvas()
   const files = excalidrawAPI?.getFiles()
   const filesArray = Object.keys(files || {}).map((key) => ({
@@ -25,16 +29,20 @@ const MessageImage = ({ content }: MessageImageProps) => {
   const handleImagePositioning = (id: string) => {
     excalidrawAPI?.scrollToContent(id, { animate: true })
   }
-  const id = filesArray.find((file) =>
+  
+  // 优化定位逻辑：优先使用直接传递的canvas元素ID，其次通过URL匹配
+  const id = canvasElementId || filesArray.find((file) =>
     content.image_url.url?.includes(file.url)
   )?.id
 
   return (
-    <div className="w-full max-w-[140px]">
+    <div className="w-full">
       <PhotoView src={content.image_url.url}>
         <div className="relative group cursor-pointer">
           <img
-            className="w-full h-auto max-h-[140px] object-cover rounded-md border border-border hover:scale-105 transition-transform duration-300"
+            className={`w-full h-auto rounded-md border border-border hover:scale-105 transition-transform duration-300 ${
+              isUserMessage ? 'max-h-[140px] object-cover' : 'object-contain'
+            }`}
             src={content.image_url.url}
             alt="Image"
           />
