@@ -15,6 +15,24 @@ import canvasZh from './locales/zh-CN/canvas.json'
 import chatZh from './locales/zh-CN/chat.json'
 import settingsZh from './locales/zh-CN/settings.json'
 
+import commonFr from './locales/fr/common.json'
+import homeFr from './locales/fr/home.json'
+import canvasFr from './locales/fr/canvas.json'
+import chatFr from './locales/fr/chat.json'
+import settingsFr from './locales/fr/settings.json'
+
+import commonEs from './locales/es/common.json'
+import homeEs from './locales/es/home.json'
+import canvasEs from './locales/es/canvas.json'
+import chatEs from './locales/es/chat.json'
+import settingsEs from './locales/es/settings.json'
+
+import commonKo from './locales/ko/common.json'
+import homeKo from './locales/ko/home.json'
+import canvasKo from './locales/ko/canvas.json'
+import chatKo from './locales/ko/chat.json'
+import settingsKo from './locales/ko/settings.json'
+
 const resources = {
   en: {
     common: commonEn,
@@ -29,6 +47,27 @@ const resources = {
     canvas: canvasZh,
     chat: chatZh,
     settings: settingsZh,
+  },
+  fr: {
+    common: commonFr,
+    home: homeFr,
+    canvas: canvasFr,
+    chat: chatFr,
+    settings: settingsFr,
+  },
+  es: {
+    common: commonEs,
+    home: homeEs,
+    canvas: canvasEs,
+    chat: chatEs,
+    settings: settingsEs,
+  },
+  ko: {
+    common: commonKo,
+    home: homeKo,
+    canvas: canvasKo,
+    chat: chatKo,
+    settings: settingsKo,
   },
 }
 

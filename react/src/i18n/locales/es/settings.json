@@ -1,0 +1,102 @@
+{
+  "title": "Configuración",
+  "messages": {
+    "settingsSaved": "Configuración guardada con éxito",
+    "settingsReset": "Configuración restablecida a valores predeterminados",
+    "failedToSave": "Error al guardar la configuración",
+    "failedToLoad": "Error al cargar la configuración",
+    "restartRequired": "Por favor reinicie la aplicación para que los ajustes de proxy surtan efecto"
+  },
+  "models": {
+    "title": "Modelos",
+    "placeholder": "Ingrese el nombre del modelo",
+    "addModel": "Agregar modelo",
+    "types": {
+      "text": "texto",
+      "image": "imagen",
+      "video": "video"
+    }
+  },
+  "provider": {
+    "title": "Proveedores",
+    "addProvider": "Agregar proveedor",
+    "providerName": "Nombre del proveedor",
+    "providerNamePlaceholder": "Ingrese el nombre del proveedor",
+    "apiUrl": "URL de la API",
+    "apiUrlPlaceholder": "Ingrese la URL de la API",
+    "apiKey": "Clave API",
+    "apiKeyPlaceholder": "Ingrese la clave API",
+    "apiKeyDescription": "Su clave API será almacenada de forma segura",
+    "maxTokens": "Tokens máximos",
+    "maxTokensPlaceholder": "Ingrese su número máximo de tokens",
+    "maxTokensDescription": "El número máximo de tokens en la respuesta",
+    "customProvider": "✨ Proveedor personalizado",
+    "imageGeneration": "🎨 Generación de imágenes",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "noModelsSelected": "Por favor agregue al menos un modelo"
+  },
+  "proxy": {
+    "title": "Configuración de proxy",
+    "mode": "Modo proxy",
+    "selectMode": "Seleccionar modo proxy",
+    "modes": {
+      "no_proxy": "Sin proxy",
+      "system": "Proxy del sistema",
+      "custom": "Proxy personalizado"
+    },
+    "enable": "Habilitar proxy",
+    "url": "URL del proxy",
+    "urlPlaceholder": "http://proxy.example.com:8080",
+    "testConnection": "Probar conexión",
+    "testing": "Probando...",
+    "testSuccess": "Prueba de conexión proxy exitosa",
+    "testFailed": "Error en la prueba de conexión proxy: {{message}}",
+    "testError": "Error en la prueba de conexión proxy",
+    "status": {
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "misconfigured": "Mal configurado"
+    }
+  },
+  "comfyui": {
+    "title": "ComfyUI",
+    "localImageGeneration": "🎨 Generación de imágenes local",
+    "enable": "Habilitar",
+    "debugStatus": "🔍 Estado de depuración",
+    "status": {
+      "disabled": "Deshabilitado",
+      "running": "Ejecutándose",
+      "installed": "Instalado (no ejecutándose)",
+      "notInstalled": "No instalado",
+      "notRunning": "No ejecutándose",
+      "checking": "Verificando..."
+    },
+    "urlDescription": "URL del servicio ComfyUI, ingrese la dirección si ya está instalado",
+    "invalidUrl": "Por favor ingrese una URL válida (ej., http://127.0.0.1:8188)",
+    "notInstalledTitle": "ComfyUI no instalado",
+    "notInstalledDescription": "Instale ComfyUI para habilitar la generación de imágenes local con modelos Flux",
+    "installButton": "Instalar ComfyUI",
+    "startButton": "Iniciar ComfyUI",
+    "uninstallButton": "Desinstalar ComfyUI",
+    "confirmUninstall": "¿Está seguro de que desea desinstalar ComfyUI? Esto eliminará completamente ComfyUI de su sistema, incluyendo todos los modelos descargados y configuraciones.",
+    "confirmUninstallButton": "Confirmar desinstalación",
+    "deleteWorkflowConfirmation": "¿Está seguro de que desea eliminar este flujo de trabajo?",
+    "uninstallProgress": {
+      "title": "Desinstalando ComfyUI",
+      "preparing": "Preparando desinstalación...",
+      "inProgress": "Desinstalación en progreso... Por favor espere.",
+      "logTitle": "Registro de desinstalación:",
+      "completed": "Desinstalación completada"
+    },
+    "notInstalled": "ComfyUI no está instalado",
+    "addWorkflow": "Agregar flujo de trabajo",
+    "addInput": "Agregar entrada",
+    "workflows": "Flujos de trabajo",
+    "editWorkflow": "Editar flujo de trabajo"
+  },
+  "saveSettings": "Guardar configuración",
+  "close": "Cerrar",
+  "cancel": "Cancelar"
+}

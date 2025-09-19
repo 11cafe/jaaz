@@ -1,0 +1,102 @@
+{
+  "title": "Paramètres",
+  "messages": {
+    "settingsSaved": "Paramètres enregistrés avec succès",
+    "settingsReset": "Paramètres réinitialisés par défaut",
+    "failedToSave": "Échec de l'enregistrement des paramètres",
+    "failedToLoad": "Échec du chargement de la configuration",
+    "restartRequired": "Veuillez redémarrer l'application pour que les paramètres de proxy prennent effet"
+  },
+  "models": {
+    "title": "Modèles",
+    "placeholder": "Entrez le nom du modèle",
+    "addModel": "Ajouter un modèle",
+    "types": {
+      "text": "texte",
+      "image": "image",
+      "video": "vidéo"
+    }
+  },
+  "provider": {
+    "title": "Fournisseurs",
+    "addProvider": "Ajouter un fournisseur",
+    "providerName": "Nom du fournisseur",
+    "providerNamePlaceholder": "Entrez le nom du fournisseur",
+    "apiUrl": "URL de l'API",
+    "apiUrlPlaceholder": "Entrez l'URL de l'API",
+    "apiKey": "Clé API",
+    "apiKeyPlaceholder": "Entrez la clé API",
+    "apiKeyDescription": "Votre clé API sera stockée en sécurité",
+    "maxTokens": "Tokens maximum",
+    "maxTokensPlaceholder": "Entrez votre nombre maximum de tokens",
+    "maxTokensDescription": "Le nombre maximum de tokens dans la réponse",
+    "customProvider": "✨ Fournisseur personnalisé",
+    "imageGeneration": "🎨 Génération d'images",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "noModelsSelected": "Veuillez ajouter au moins un modèle"
+  },
+  "proxy": {
+    "title": "Paramètres de proxy",
+    "mode": "Mode proxy",
+    "selectMode": "Sélectionner le mode proxy",
+    "modes": {
+      "no_proxy": "Aucun proxy",
+      "system": "Proxy système",
+      "custom": "Proxy personnalisé"
+    },
+    "enable": "Activer le proxy",
+    "url": "URL du proxy",
+    "urlPlaceholder": "http://proxy.example.com:8080",
+    "testConnection": "Tester la connexion",
+    "testing": "Test en cours...",
+    "testSuccess": "Test de connexion proxy réussi",
+    "testFailed": "Échec du test de connexion proxy : {{message}}",
+    "testError": "Erreur du test de connexion proxy",
+    "status": {
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "misconfigured": "Mal configuré"
+    }
+  },
+  "comfyui": {
+    "title": "ComfyUI",
+    "localImageGeneration": "🎨 Génération d'images locale",
+    "enable": "Activer",
+    "debugStatus": "🔍 Statut de débogage",
+    "status": {
+      "disabled": "Désactivé",
+      "running": "En cours d'exécution",
+      "installed": "Installé (non en cours d'exécution)",
+      "notInstalled": "Non installé",
+      "notRunning": "Non en cours d'exécution",
+      "checking": "Vérification..."
+    },
+    "urlDescription": "URL du service ComfyUI, entrez l'adresse si déjà installé",
+    "invalidUrl": "Veuillez entrer une URL valide (par ex., http://127.0.0.1:8188)",
+    "notInstalledTitle": "ComfyUI non installé",
+    "notInstalledDescription": "Installez ComfyUI pour activer la génération d'images locale avec les modèles Flux",
+    "installButton": "Installer ComfyUI",
+    "startButton": "Démarrer ComfyUI",
+    "uninstallButton": "Désinstaller ComfyUI",
+    "confirmUninstall": "Êtes-vous sûr de vouloir désinstaller ComfyUI ? Cela supprimera complètement ComfyUI de votre système, y compris tous les modèles téléchargés et configurations.",
+    "confirmUninstallButton": "Confirmer la désinstallation",
+    "deleteWorkflowConfirmation": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
+    "uninstallProgress": {
+      "title": "Désinstallation de ComfyUI",
+      "preparing": "Préparation de la désinstallation...",
+      "inProgress": "Désinstallation en cours... Veuillez patienter.",
+      "logTitle": "Journal de désinstallation :",
+      "completed": "Désinstallation terminée"
+    },
+    "notInstalled": "ComfyUI n'est pas installé",
+    "addWorkflow": "Ajouter un flux de travail",
+    "addInput": "Ajouter une entrée",
+    "workflows": "Flux de travail",
+    "editWorkflow": "Modifier le flux de travail"
+  },
+  "saveSettings": "Enregistrer les paramètres",
+  "close": "Fermer",
+  "cancel": "Annuler"
+}

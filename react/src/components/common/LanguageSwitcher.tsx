@@ -16,6 +16,9 @@ const LanguageSwitcher = () => {
   const languages = [
     { code: 'en', name: t('common:languages.en') },
     { code: 'zh-CN', name: t('common:languages.zh-CN') },
+    { code: 'fr', name: t('common:languages.fr') },
+    { code: 'es', name: t('common:languages.es') },
+    { code: 'ko', name: t('common:languages.ko') },
   ]
 
   return (
