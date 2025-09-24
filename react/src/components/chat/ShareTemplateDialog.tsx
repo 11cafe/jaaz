@@ -13,6 +13,7 @@ import { useCanvas } from "@/contexts/canvas"
 import { ExcalidrawImageElement } from "@excalidraw/excalidraw/element/types"
 import { toast } from "sonner"
 import { Share2 } from "lucide-react"
+import { authenticatedFetch } from "@/api/auth"
 import { Message } from "@/types/types"
 import { BASE_API_URL } from "@/constants"
 
@@ -128,12 +129,8 @@ export default function ShareTemplateDialog({
       }
 
       // Call jaaz-cloud API to create template
-      const response = await fetch(`${BASE_API_URL}/api/template/create`, {
+      const response = await authenticatedFetch(`${BASE_API_URL}/api/template/create`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("jaaz_access_token")}`,
-        },
         body: JSON.stringify(templateData),
       })
 

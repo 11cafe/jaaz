@@ -1,0 +1,114 @@
+{
+  "title": "Choose the Right Plan for You",
+  "subtitle": "Whether you're an individual user or a business team, we have the right pricing plan to meet your needs",
+  "mostPopular": "Most Popular",
+  "currentPlan": "Current Plan",
+  "monthlyYearly": {
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "plans": {
+    "current": "Current Plan",
+    "free": {
+      "name": "Free",
+      "pricing": {
+        "monthly": { "price": "0", "period": "Forever Free" },
+        "yearly": { "price": "0", "period": "Forever Free" }
+      },
+      "description": "Perfect for individuals",
+      "features": [
+        "Credits: 20",
+        "Images: 10",
+        "Basic features",
+        "Community support"
+      ],
+      "buttonText": "Get Started"
+    },
+    "base": {
+      "name": "Base",
+      "pricing": {
+        "monthly": { "price": "$5.9", "period": "/Monthly" },
+        "yearly": { "price": "$59", "period": "/Yearly", "originalPrice": "$70.8" }
+      },
+      "description": "Perfect for individual creators",
+      "features": [
+        "Credits: 300",
+        "Images: 150",
+        "All basic features",
+        "Email support"
+      ],
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Base"
+    },
+    "pro": {
+      "name": "Pro",
+      "pricing": {
+        "monthly": { "price": "$9.9", "period": "/Monthly" },
+        "yearly": { "price": "$99", "period": "/Yearly", "originalPrice": "$118.8" }
+      },
+      "description": "Perfect for professional creators",
+      "features": [
+        "Credits: 1000",
+        "Images: 500",
+        "All advanced features",
+        "Priority support"
+      ],
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Pro"
+    },
+    "max": {
+      "name": "Max",
+      "pricing": {
+        "monthly": { "price": "$29.9", "period": "/Monthly" },
+        "yearly": { "price": "$299", "period": "/Yearly", "originalPrice": "$358.8" }
+      },
+      "description": "Perfect for enterprises and teams",
+      "features": [
+        "Credits: 3000",
+        "Images: 1500",
+        "All enterprise features",
+        "Dedicated support"
+      ],
+      "buttonText": "Login to Purchase",
+      "buttonTextLoggedIn": "Get Max"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "questions": {
+      "cancel": {
+        "question": "Can I cancel my subscription at any time?",
+        "answer": "Yes, you can cancel your subscription at any time. The cancellation will take effect at the end of the current billing cycle."
+      },
+      "trial": {
+        "question": "Do you offer a free trial?",
+        "answer": "The free version is permanently available. Professional and Enterprise versions support a 7-day free trial."
+      },
+      "upgrade": {
+        "question": "How can I upgrade or downgrade my plan?",
+        "answer": "You can change your subscription plan at any time in the settings page. Changes will take effect immediately."
+      },
+      "enterprise": {
+        "question": "Does the Enterprise version support customization?",
+        "answer": "Yes, the Enterprise version supports custom development and deployment according to your specific needs."
+      }
+    }
+  },
+  "contact": {
+    "title": "Still have questions?",
+    "subtitle": "Our team is here to help you",
+    "customerService": "Contact Support",
+    "documentation": "View Documentation"
+  },
+  "buttons": {
+    "processing": "Processing...",
+    "getStarted": "Get Started"
+  },
+  "messages": {
+    "paymentError": "Failed to create payment order",
+    "paymentErrorRetry": "Failed to create payment order, please try again later"
+  },
+  "discount": {
+    "save": "Save {{percent}}%"
+  }
+}

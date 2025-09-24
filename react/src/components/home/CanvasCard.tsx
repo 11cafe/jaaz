@@ -57,23 +57,23 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
       </CanvasDeleteDialog>
 
       <div
-        className="p-3 flex flex-col gap-2"
+        className="p-2 sm:p-3 flex flex-col gap-2"
         onClick={() => handleCanvasClick(canvas.id)}
       >
         {canvas.thumbnail ? (
           <img
             src={canvas.thumbnail}
             alt={canvas.name}
-            className="w-full h-40 object-cover rounded-lg"
+            className="w-full h-32 sm:h-40 object-cover rounded-lg"
           />
         ) : (
-          <div className="w-full h-40 bg-primary/10 rounded-lg flex items-center justify-center">
-            <ImageIcon className="w-10 h-10 opacity-10" />
+          <div className="w-full h-32 sm:h-40 bg-primary/10 rounded-lg flex items-center justify-center">
+            <ImageIcon className="w-8 sm:w-10 h-8 sm:h-10 opacity-10" />
           </div>
         )}
-        <div className="flex flex-col">
-          <h3 className="text-lg font-bold">{canvas.name}</h3>
-          <p className="text-sm text-gray-500">{formatDate(canvas.created_at)}</p>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm sm:text-lg font-bold line-clamp-1">{canvas.name}</h3>
+          <p className="text-xs sm:text-sm text-gray-500">{formatDate(canvas.created_at)}</p>
         </div>
       </div>
     </motion.div>

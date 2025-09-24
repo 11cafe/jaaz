@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Trash2 } from 'lucide-react'
-import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '../ui/dialog'
 
 export type ModelItem = {
   name: string
@@ -85,6 +85,7 @@ export default function AddModelsList({
             </Button>
           </DialogTrigger>
           <DialogContent>
+            <DialogTitle>Add New Model</DialogTitle>
             <div className="space-y-5">
               <Label>Model Name</Label>
               <Input

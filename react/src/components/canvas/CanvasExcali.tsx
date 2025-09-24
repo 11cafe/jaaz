@@ -409,13 +409,23 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       initialData={() => {
         const data = initialData
         console.log('👇initialData', data)
-        if (data?.appState) {
-          data.appState = {
-            ...data.appState,
-            collaborators: undefined!,
-          }
+        
+        // 🎨 设置自定义背景色 - 与蓝色渐变主题呼应
+        // 颜色选项：
+        // '#fafbff' - 非常淡的蓝白色（推荐，与主题完美呼应）
+        // '#f8faff' - 稍蓝一点的版本（更明显的蓝色调）
+        // '#fbfcff' - 极淡版本（几乎白色但保持蓝色调）
+        // '#ffffff' - 经典纯白色（如需回到原始效果）
+        const customAppState = {
+          ...(data?.appState || {}),
+          collaborators: undefined!,
+          viewBackgroundColor: '#fafbff', // 当前使用：非常淡的蓝白色
         }
-        return data || null
+        
+        return {
+          ...data,
+          appState: customAppState,
+        } || null
       }}
       renderEmbeddable={renderEmbeddable}
       // Allow all URLs for embeddable content
