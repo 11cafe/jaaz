@@ -1,0 +1,63 @@
+{
+  "title": "Canevas",
+  "rename": "Renommer le canevas",
+  "delete": "Supprimer le canevas",
+  "share": "Partager le canevas",
+  "export": "Exporter le canevas",
+  "exportImages": "Exporter",
+  "import": "Importer le canevas",
+  "untitled": "Sans titre",
+  "back": "Retour",
+  "saveSnapshot": "Enregistrer l'instantané",
+  "loadSnapshot": "Charger l'instantané",
+  "saved": "Enregistré ✅",
+  "messages": {
+    "canvasRenamed": "Canevas renommé avec succès",
+    "canvasDeleted": "Canevas supprimé avec succès",
+    "canvasExported": "Canevas exporté avec succès",
+    "canvasImported": "Canevas importé avec succès",
+    "failedToRename": "Échec du renommage du canevas",
+    "failedToDelete": "Échec de la suppression du canevas",
+    "failedToCreateFile": "Échec de la création du fichier",
+    "nothingSelected": "Aucun élément sélectionné",
+    "exportingAssets": "Exportation des éléments...",
+    "failedToExportImages": "Échec de l'exportation des images",
+    "gptImagePermissionRequired": "Vous devez activer les permissions du modèle gpt-image-1 pour utiliser cette fonctionnalité !"
+  },
+  "deleteDialog": {
+    "title": "Supprimer le canevas",
+    "description": "Êtes-vous sûr de vouloir supprimer ce canevas ? Cette action ne peut pas être annulée.",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
+  },
+  "tool": {
+    "hand": "Main",
+    "selection": "Sélection",
+    "rectangle": "Rectangle",
+    "ellipse": "Ellipse",
+    "text": "Texte",
+    "image": "Image",
+    "shape": "Forme",
+    "arrow": "Flèche",
+    "line": "Ligne",
+    "zoomFit": "Ajuster à la taille"
+  },
+  "popbar": {
+    "addToChat": "Ajouter au chat",
+    "magicGenerate": "✨ Génération magique"
+  },
+  "myAssets": "Mes éléments",
+  "selectAFolder": "Sélectionner un dossier",
+  "selectAFolderDescription": "Sélectionnez un dossier pour voir ses images et vidéos",
+  "noMediaFiles": "Aucun fichier média",
+  "noMediaFilesDescription": "Aucune image ou vidéo dans ce dossier",
+  "mediaFiles": "fichiers média",
+  "openInExplorer": "Ouvrir dans l'explorateur de fichiers système",
+  "basicInfo": "Informations de base",
+  "fileName": "Nom du fichier",
+  "fileSize": "Taille du fichier",
+  "modifiedTime": "Heure de modification",
+  "dimensions": "Dimensions",
+  "filePath": "Chemin du fichier",
+  "pngMetadata": "Métadonnées PNG"
+}

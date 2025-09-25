@@ -1,0 +1,84 @@
+{
+  "languages": {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "fr": "Français",
+    "es": "Español",
+    "ko": "한국어"
+  },
+  "buttons": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "submit": "Soumettre",
+    "loading": "Chargement...",
+    "retry": "Réessayer"
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Avertissement",
+    "info": "Information"
+  },
+  "messages": {
+    "success": "Opération terminée avec succès",
+    "error": "Une erreur s'est produite",
+    "loading": "Chargement, veuillez patienter...",
+    "noData": "Aucune donnée disponible",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet élément ?",
+    "saved": "Enregistré avec succès",
+    "deleted": "Supprimé avec succès"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "clear": "Effacer",
+    "markAllAsRead": "Marquer tout comme lu",
+    "allRead": "Tout lu",
+    "newImageGenerated": "Nouvelle image générée"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "canvas": "Canevas",
+    "settings": "Paramètres",
+    "back": "Retour"
+  },
+  "update": {
+    "title": "🎉 Nouvelle version disponible",
+    "description": "La nouvelle version v{{version}} est disponible. Souhaitez-vous l'installer maintenant ?",
+    "installNote": "Cliquez sur \"Installer la mise à jour\" pour redémarrer l'application et installer la nouvelle version.",
+    "laterButton": "Rappeler plus tard",
+    "installButton": "Installer la mise à jour",
+    "installing": "Installation..."
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "loginToJaaz": "Se connecter à Jaaz",
+    "myAccount": "Mon compte",
+    "loginDescription": "Connectez-vous pour utiliser les modèles d'IA cloud",
+    "startLogin": "Commencer la connexion",
+    "preparingLogin": "Préparation de la connexion...",
+    "cancel": "Annuler",
+    "loginSuccessMessage": "Connexion réussie !",
+    "authExpiredMessage": "Autorisation expirée, veuillez vous reconnecter",
+    "authErrorMessage": "Erreur lors de la vérification du statut d'autorisation",
+    "waitingForBrowser": "En attente de la finalisation de la connexion dans le navigateur...",
+    "pollErrorMessage": "Échec de la vérification du statut de connexion, veuillez réessayer",
+    "preparingLoginMessage": "Préparation de la connexion...",
+    "browserLoginMessage": "Veuillez finaliser la connexion dans le navigateur",
+    "loginRequestFailed": "Échec de la demande de connexion, veuillez réessayer",
+    "logoutSuccessMessage": "Déconnexion réussie",
+    "notLoggedIn": "Non connecté",
+    "balance": "Solde",
+    "recharge": "Recharger"
+  },
+  "socket": {
+    "connectionError": "Erreur de connexion ({{current}}/{{max}}) : {{error}}",
+    "maxRetriesReached": "Échec de la connexion, veuillez redémarrer l'application"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "languages": {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "fr": "Français",
+    "es": "Español",
+    "ko": "한국어"
+  },
+  "buttons": {
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "편집",
+    "create": "생성",
+    "submit": "제출",
+    "loading": "로딩 중...",
+    "retry": "다시 시도"
+  },
+  "common": {
+    "yes": "예",
+    "no": "아니오",
+    "ok": "확인",
+    "error": "오류",
+    "success": "성공",
+    "warning": "경고",
+    "info": "정보"
+  },
+  "messages": {
+    "success": "작업이 성공적으로 완료되었습니다",
+    "error": "오류가 발생했습니다",
+    "loading": "로딩 중입니다. 잠시만 기다려주세요...",
+    "noData": "사용 가능한 데이터가 없습니다",
+    "confirmDelete": "이 항목을 삭제하시겠습니까?",
+    "saved": "성공적으로 저장되었습니다",
+    "deleted": "성공적으로 삭제되었습니다"
+  },
+  "notifications": {
+    "title": "알림",
+    "clear": "지우기",
+    "markAllAsRead": "모두 읽음으로 표시",
+    "allRead": "모두 읽음",
+    "newImageGenerated": "새 이미지가 생성되었습니다"
+  },
+  "navigation": {
+    "home": "홈",
+    "canvas": "캔버스",
+    "settings": "설정",
+    "back": "뒤로"
+  },
+  "update": {
+    "title": "🎉 새 버전이 사용 가능합니다",
+    "description": "새 버전 v{{version}}이 사용 가능합니다. 지금 설치하시겠습니까?",
+    "installNote": "\"업데이트 설치\"를 클릭하여 앱을 다시 시작하고 새 버전을 설치하세요.",
+    "laterButton": "나중에 알림",
+    "installButton": "업데이트 설치",
+    "installing": "설치 중..."
+  },
+  "auth": {
+    "login": "로그인",
+    "logout": "로그아웃",
+    "loginToJaaz": "Jaaz에 로그인",
+    "myAccount": "내 계정",
+    "loginDescription": "클라우드 AI 모델을 사용하려면 로그인하세요",
+    "startLogin": "로그인 시작",
+    "preparingLogin": "로그인 준비 중...",
+    "cancel": "취소",
+    "loginSuccessMessage": "로그인 성공!",
+    "authExpiredMessage": "인증이 만료되었습니다. 다시 로그인해주세요",
+    "authErrorMessage": "인증 상태 확인 중 오류가 발생했습니다",
+    "waitingForBrowser": "브라우저에서 로그인 완료를 기다리는 중...",
+    "pollErrorMessage": "로그인 상태 확인에 실패했습니다. 다시 시도해주세요",
+    "preparingLoginMessage": "로그인 준비 중...",
+    "browserLoginMessage": "브라우저에서 로그인을 완료해주세요",
+    "loginRequestFailed": "로그인 요청이 실패했습니다. 다시 시도해주세요",
+    "logoutSuccessMessage": "성공적으로 로그아웃되었습니다",
+    "notLoggedIn": "로그인되지 않음",
+    "balance": "잔액",
+    "recharge": "충전"
+  },
+  "socket": {
+    "connectionError": "연결 오류 ({{current}}/{{max}}): {{error}}",
+    "maxRetriesReached": "연결 실패, 애플리케이션을 다시 시작해주세요"
+  }
+}

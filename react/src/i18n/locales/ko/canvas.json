@@ -1,0 +1,63 @@
+{
+  "title": "캔버스",
+  "rename": "캔버스 이름 바꾸기",
+  "delete": "캔버스 삭제",
+  "share": "캔버스 공유",
+  "export": "캔버스 내보내기",
+  "exportImages": "내보내기",
+  "import": "캔버스 가져오기",
+  "untitled": "제목 없음",
+  "back": "뒤로",
+  "saveSnapshot": "스냅샷 저장",
+  "loadSnapshot": "스냅샷 불러오기",
+  "saved": "저장됨 ✅",
+  "messages": {
+    "canvasRenamed": "캔버스 이름이 성공적으로 변경되었습니다",
+    "canvasDeleted": "캔버스가 성공적으로 삭제되었습니다",
+    "canvasExported": "캔버스가 성공적으로 내보내졌습니다",
+    "canvasImported": "캔버스가 성공적으로 가져와졌습니다",
+    "failedToRename": "캔버스 이름 변경에 실패했습니다",
+    "failedToDelete": "캔버스 삭제에 실패했습니다",
+    "failedToCreateFile": "파일 생성에 실패했습니다",
+    "nothingSelected": "선택된 항목이 없습니다",
+    "exportingAssets": "요소를 내보내는 중...",
+    "failedToExportImages": "이미지 내보내기에 실패했습니다",
+    "gptImagePermissionRequired": "이 기능을 사용하려면 gpt-image-1 모델 권한을 활성화해야 합니다!"
+  },
+  "deleteDialog": {
+    "title": "캔버스 삭제",
+    "description": "이 캔버스를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "cancel": "취소",
+    "delete": "삭제"
+  },
+  "tool": {
+    "hand": "손",
+    "selection": "선택",
+    "rectangle": "직사각형",
+    "ellipse": "타원",
+    "text": "텍스트",
+    "image": "이미지",
+    "shape": "도형",
+    "arrow": "화살표",
+    "line": "선",
+    "zoomFit": "화면에 맞춤"
+  },
+  "popbar": {
+    "addToChat": "채팅에 추가",
+    "magicGenerate": "✨ 마법 생성"
+  },
+  "myAssets": "내 요소",
+  "selectAFolder": "폴더 선택",
+  "selectAFolderDescription": "이미지와 비디오를 보려면 폴더를 선택하세요",
+  "noMediaFiles": "미디어 파일 없음",
+  "noMediaFilesDescription": "이 폴더에 이미지나 비디오가 없습니다",
+  "mediaFiles": "미디어 파일",
+  "openInExplorer": "시스템 파일 탐색기에서 열기",
+  "basicInfo": "기본 정보",
+  "fileName": "파일 이름",
+  "fileSize": "파일 크기",
+  "modifiedTime": "수정 시간",
+  "dimensions": "크기",
+  "filePath": "파일 경로",
+  "pngMetadata": "PNG 메타데이터"
+}
