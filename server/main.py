@@ -86,6 +86,20 @@ async def serve_react_app():
     response.headers["Expires"] = "0"
     return response
 
+# Catch-all route to serve React app - must be last route
+@app.get("/{path:path}")
+async def serve_frontend(path: str):
+    """Serve React app for all frontend routes to support client-side routing"""
+    if path.startswith("api/") or path.startswith("assets/") or path.startswith("socket.io/"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    response = FileResponse(os.path.join(react_build_dir, "index.html"))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 print('Creating socketio app')
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
 
