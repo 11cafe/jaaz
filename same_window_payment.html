@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同窗口支付演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+        
+        .payment-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            min-width: 200px;
+        }
+        
+        .payment-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .payment-button:active {
+            transform: translateY(0);
+        }
+        
+        .payment-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-message {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+        
+        .flow-steps {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+        
+        .flow-steps h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .flow-steps ol {
+            padding-left: 1.5rem;
+            line-height: 1.8;
+            color: #555;
+        }
+        
+        .flow-steps li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .payment-result {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .payment-result h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .payment-result .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .container {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .payment-button {
+                padding: 0.8rem 2rem;
+                font-size: 1.1rem;
+                min-width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🚀 同窗口支付演示</h1>
+        <p class="subtitle">
+            体验在<span class="highlight">同一个窗口</span>内完成支付流程，
+            无需打开新窗口或弹框！
+        </p>
+        
+        <div class="flow-steps">
+            <h3>📋 支付流程：</h3>
+            <ol>
+                <li>点击下方支付按钮</li>
+                <li><strong>当前窗口</strong>跳转到支付页面</li>
+                <li>在支付页面完成付款</li>
+                <li><strong>自动跳转回</strong>当前页面</li>
+                <li>显示支付结果和积分</li>
+            </ol>
+        </div>
+        
+        <button id="payment-btn" class="payment-button">
+            💰 开始支付 (Base Plan - $9.99)
+        </button>
+        
+        <div id="status-message" class="status-message"></div>
+        
+        <div id="payment-result" class="payment-result">
+            <h3>🎉 支付成功！</h3>
+            <div class="result-item">
+                <span>获得积分:</span>
+                <strong id="points-awarded">--</strong>
+            </div>
+            <div class="result-item">
+                <span>当前等级:</span>
+                <strong id="user-level">--</strong>
+            </div>
+            <div class="result-item">
+                <span>订单号:</span>
+                <strong id="order-id">--</strong>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class SameWindowPayment {
+            constructor() {
+                this.apiBaseUrl = 'http://localhost:8001';
+                this.statusMessage = document.getElementById('status-message');
+                this.paymentResult = document.getElementById('payment-result');
+                
+                this.initEventListeners();
+                this.checkPaymentResult();
+            }
+            
+            initEventListeners() {
+                document.getElementById('payment-btn').addEventListener('click', () => {
+                    this.startPayment();
+                });
+            }
+            
+            async startPayment() {
+                try {
+                    this.showStatus('正在创建支付订单...', 'info');
+                    this.disablePaymentButton(true);
+                    
+                    // 调用后端API创建支付
+                    const response = await fetch(`${this.apiBaseUrl}/api/create_checkout`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.checkout_url) {
+                        this.showStatus('支付订单创建成功，即将跳转到支付页面...', 'success');
+                        
+                        // 保存当前页面状态（可选）
+                        this.savePageState();
+                        
+                        // 2秒后跳转到支付页面
+                        setTimeout(() => {
+                            // 在同一窗口跳转到支付页面
+                            window.location.href = data.checkout_url;
+                        }, 2000);
+                        
+                    } else {
+                        this.showStatus(`创建支付失败: ${data.error || '未知错误'}`, 'error');
+                        this.disablePaymentButton(false);
+                    }
+                } catch (error) {
+                    console.error('Payment creation error:', error);
+                    this.showStatus(`网络错误: ${error.message}`, 'error');
+                    this.disablePaymentButton(false);
+                }
+            }
+            
+            checkPaymentResult() {
+                // 检查URL参数，看是否是支付回调
+                const urlParams = new URLSearchParams(window.location.search);
+                const paymentStatus = urlParams.get('payment');
+                
+                if (paymentStatus === 'success') {
+                    const points = urlParams.get('points');
+                    const level = urlParams.get('level');
+                    const orderId = urlParams.get('order_id');
+                    
+                    this.showPaymentSuccess({
+                        points_awarded: points,
+                        level: level,
+                        order_id: orderId
+                    });
+                    
+                    // 清理URL参数（可选）
+                    this.cleanupUrl();
+                }
+            }
+            
+            showPaymentSuccess(paymentData) {
+                // 隐藏支付按钮和状态消息
+                document.getElementById('payment-btn').style.display = 'none';
+                this.statusMessage.style.display = 'none';
+                
+                // 显示支付结果
+                document.getElementById('points-awarded').textContent = paymentData.points_awarded || '--';
+                document.getElementById('user-level').textContent = paymentData.level || '--';
+                document.getElementById('order-id').textContent = paymentData.order_id || '--';
+                
+                this.paymentResult.style.display = 'block';
+                
+                // 添加庆祝效果
+                this.addCelebrationEffect();
+            }
+            
+            addCelebrationEffect() {
+                // 添加一些庆祝动画效果
+                this.paymentResult.style.animation = 'fadeIn 0.8s ease-out';
+                
+                // 可以添加更多的庆祝效果，比如粒子动画等
+                console.log('🎉 Payment completed successfully!');
+            }
+            
+            savePageState() {
+                // 保存当前页面状态到localStorage（可选）
+                const pageState = {
+                    timestamp: Date.now(),
+                    url: window.location.href
+                };
+                localStorage.setItem('payment_return_state', JSON.stringify(pageState));
+            }
+            
+            cleanupUrl() {
+                // 清理URL中的支付参数，保持URL整洁
+                const url = new URL(window.location);
+                url.searchParams.delete('payment');
+                url.searchParams.delete('points');
+                url.searchParams.delete('level');
+                url.searchParams.delete('order_id');
+                
+                // 使用replaceState避免在浏览器历史中留下支付参数
+                window.history.replaceState({}, document.title, url.toString());
+            }
+            
+            showStatus(message, type = 'info') {
+                this.statusMessage.textContent = message;
+                this.statusMessage.className = `status-message status-${type}`;
+                this.statusMessage.style.display = 'block';
+                
+                // 5秒后自动隐藏信息消息
+                if (type === 'info') {
+                    setTimeout(() => {
+                        this.statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+            
+            disablePaymentButton(disabled) {
+                const button = document.getElementById('payment-btn');
+                button.disabled = disabled;
+                button.textContent = disabled 
+                    ? '⏳ 正在处理...' 
+                    : '💰 开始支付 (Base Plan - $9.99)';
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new SameWindowPayment();
+        });
+    </script>
+</body>
+</html>

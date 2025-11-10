@@ -24,6 +24,20 @@ export type TMaterialAddImagesToChatEvent = {
   height?: number
 }[]
 
+export type TUserImagesEvent = {
+  session_id: string
+  message: {
+    role: 'user'
+    content: Array<{
+      type: 'text' | 'image_url'
+      text?: string
+      image_url?: {
+        url: string
+      }
+    }>
+  }
+}
+
 export type TEvents = {
   // ********** Socket events - Start **********
   'Socket::Session::Error': ISocket.SessionErrorEvent
@@ -40,6 +54,11 @@ export type TEvents = {
   'Socket::Session::ToolCallPendingConfirmation': ISocket.SessionToolCallPendingConfirmationEvent
   'Socket::Session::ToolCallConfirmed': ISocket.SessionToolCallConfirmedEvent
   'Socket::Session::ToolCallCancelled': ISocket.SessionToolCallCancelledEvent
+  'Socket::Session::UserImages': TUserImagesEvent
+  // 生成状态事件
+  'Socket::Session::GenerationStarted': ISocket.SessionGenerationStartedEvent
+  'Socket::Session::GenerationProgress': ISocket.SessionGenerationProgressEvent
+  'Socket::Session::GenerationComplete': ISocket.SessionGenerationCompleteEvent
   // ********** Socket events - End **********
 
   // ********** Canvas events - Start **********
@@ -52,4 +71,30 @@ export type TEvents = {
   // ********** Material events - End **********
 }
 
-export const eventBus = mitt<TEvents>()
+// 创建eventBus实例
+const eventBusInstance = mitt<TEvents>()
+
+// 包装emit方法以添加调试日志
+const originalEmit = eventBusInstance.emit
+eventBusInstance.emit = function(type, event) {
+  console.log('🚀 [EVENTBUS_DEBUG] 发射事件:', {
+    type,
+    event,
+    timestamp: new Date().toISOString(),
+    listeners_count: eventBusInstance.all.get(type)?.length || 0
+  })
+  return originalEmit.call(this, type, event)
+}
+
+// 包装on方法以添加调试日志
+const originalOn = eventBusInstance.on
+eventBusInstance.on = function(type, handler) {
+  console.log('🎯 [EVENTBUS_DEBUG] 注册事件监听器:', {
+    type,
+    handler_name: handler.name || 'anonymous',
+    timestamp: new Date().toISOString()
+  })
+  return originalOn.call(this, type, handler)
+}
+
+export const eventBus = eventBusInstance

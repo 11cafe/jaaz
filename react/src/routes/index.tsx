@@ -26,6 +26,19 @@ function Home() {
     mutationFn: createCanvas,
     onSuccess: (data, variables) => {
       setInitCanvas(true)
+
+      // 将用户消息存储到localStorage，供canvas页面立即显示
+      if (variables.messages && variables.messages.length > 0) {
+        const messageData = {
+          sessionId: variables.session_id,
+          message: variables.messages[0],
+          timestamp: Date.now(),
+          canvasId: data.id,
+        }
+        localStorage.setItem('initial_user_message', JSON.stringify(messageData))
+      }
+
+      // 立即跳转到canvas页面，移除不必要的延迟
       navigate({
         to: '/canvas/$id',
         params: { id: data.id },
@@ -35,6 +48,7 @@ function Home() {
       })
     },
     onError: (error) => {
+      console.error('[debug] Canvas创建失败:', error)
       toast.error(t('common:messages.error'), {
         description: error.message,
       })
@@ -42,45 +56,105 @@ function Home() {
   })
 
   return (
-    <div className='flex flex-col h-screen'>
-      <ScrollArea className='h-full'>
+    <div className='flex flex-col h-screen relative overflow-hidden bg-soft-blue-radial'>
+
+      <ScrollArea className='h-full relative z-10'>
         <TopMenu />
 
-        <div className='relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-460px)] pt-[60px] select-none'>
+        <div className='relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-400px)] sm:min-h-[calc(100vh-460px)] pt-[40px] sm:pt-[60px] px-4 sm:px-6 select-none'>
+          {/* 主内容区域 - 添加玻璃形态效果 */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6, ease: [0.21, 1.11, 0.81, 0.99] }}
+            className='w-full max-w-4xl mx-auto p-8 sm:p-12'
           >
-            <h1 className='text-5xl font-bold mb-2 mt-8 text-center'>{t('home:title')}</h1>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <p className='text-xl text-gray-500 mb-8 text-center'>{t('home:subtitle')}</p>
-          </motion.div>
+            <h1 className='text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center
+                           text-gray-800 dark:text-white drop-shadow-sm leading-tight'>
+              {t('home:title')}
+            </h1>
 
-          <ChatTextarea
-            className='w-full max-w-xl'
-            messages={[]}
-            onSendMessages={(messages, configs) => {
-              createCanvasMutation({
-                name: t('home:newCanvas'),
-                canvas_id: nanoid(),
-                messages: messages,
-                session_id: nanoid(),
-                text_model: configs.textModel,
-                tool_list: configs.toolList,
-                system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
-              })
-            }}
-            pending={isPending}
-          />
+            <p className='text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 dark:text-gray-200
+                          mb-10 text-center px-2 sm:px-4 leading-relaxed font-medium'>
+              {t('home:subtitle')}
+            </p>
+
+            <div className='w-full max-w-2xl mx-auto px-2 sm:px-0'>
+              <div className='bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-0.5 sm:p-1 shadow-lg border border-white/20'>
+                <ChatTextarea
+                  className='w-full border-0 bg-transparent'
+                  messages={[]}
+                  onSendMessages={(messages, configs) => {
+                    createCanvasMutation({
+                      name: t('home:newCanvas'),
+                      canvas_id: nanoid(),
+                      messages: messages,
+                      session_id: nanoid(),
+                      text_model: configs.textModel,
+                      tool_list: configs.toolList,
+                      model_name: configs.modelName,
+                      system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
+                    })
+                  }}
+                  pending={isPending}
+                />
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        <CanvasList />
+        {/* Canvas 列表区域 - 添加微妙的背景 */}
+        <div className='relative z-10 mt-8 sm:mt-12'>
+          <CanvasList />
+        </div>
+
+        {/* Footer区域 */}
+        <footer className='relative z-10 mt-16 sm:mt-20 border-t border-stone-200/50 dark:border-gray-700/50'>
+          <div className='max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12'>
+            <div className='flex flex-col items-center space-y-6'>
+              {/* Logo和标题 */}
+              <div className='text-center'>
+                <h3 className='text-lg sm:text-xl font-semibold bg-gradient-to-r from-gray-900 via-gray-700 to-stone-600 dark:from-white dark:via-gray-200 dark:to-stone-300 bg-clip-text text-transparent'>
+                  MagicArt AI Image Generator
+                </h3>
+                <p className='mt-2 text-sm text-stone-600 dark:text-stone-400'>
+                  Unleash your creativity with AI-powered image generation
+                </p>
+              </div>
+
+              {/* 链接区域 */}
+              <div className='flex items-center space-x-8'>
+                <a 
+                  href='/privacy' 
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Privacy Policy
+                </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a 
+                  href='/terms' 
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Terms of Service
+                </a>
+                <div className='w-px h-4 bg-stone-300 dark:bg-stone-600'></div>
+                <a 
+                  href='mailto:support@magicart.cc' 
+                  className='text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors duration-200 hover:underline decoration-2 underline-offset-4'
+                >
+                  Contact Support
+                </a>
+              </div>
+
+              {/* 版权信息 */}
+              <div className='text-center pt-4 border-t border-stone-200/30 dark:border-gray-700/30 w-full max-w-md'>
+                <p className='text-xs text-stone-500 dark:text-stone-500'>
+                  © 2025 MagicArt AI Image Generator. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
       </ScrollArea>
     </div>
   )

@@ -10,8 +10,7 @@ const { pipeline } = require('stream/promises')
 const crypto = require('crypto')
 
 // Check if running in worker process
-const isWorkerProcess =
-  process.send !== undefined || process.env.IS_WORKER_PROCESS === 'true'
+const isWorkerProcess = process.send !== undefined || process.env.IS_WORKER_PROCESS === 'true'
 
 // Import electron modules only if not in worker process
 let app, BrowserWindow
@@ -109,9 +108,7 @@ async function getLatestComfyUIRelease() {
           if (res.statusCode !== 200) {
             reject(
               new Error(
-                `GitHub API error: ${res.statusCode} - ${
-                  release.message || 'Unknown error'
-                }`
+                `GitHub API error: ${res.statusCode} - ${release.message || 'Unknown error'}`
               )
             )
             return
@@ -134,11 +131,7 @@ async function getLatestComfyUIRelease() {
             )
 
             if (!fallbackAsset) {
-              reject(
-                new Error(
-                  'No suitable Windows portable version found in latest release'
-                )
-              )
+              reject(new Error('No suitable Windows portable version found in latest release'))
               return
             }
 
@@ -160,9 +153,7 @@ async function getLatestComfyUIRelease() {
             digest: windowsPortableAsset.digest,
           })
         } catch (error) {
-          reject(
-            new Error(`Failed to parse GitHub API response: ${error.message}`)
-          )
+          reject(new Error(`Failed to parse GitHub API response: ${error.message}`))
         }
       })
     })
@@ -201,10 +192,7 @@ function sendProgress(percent, status) {
     if (mainWindow) {
       mainWindow.webContents.executeJavaScript(`
         window.dispatchEvent(new CustomEvent('comfyui-install-progress', {
-          detail: { percent: ${percent}, status: "${status.replace(
-        /"/g,
-        '\\"'
-      )}" }
+          detail: { percent: ${percent}, status: "${status.replace(/"/g, '\\"')}" }
         }));
       `)
     }
@@ -368,9 +356,7 @@ async function downloadFile(url, filePath, onProgress, options = {}) {
           const stats = fs.statSync(filePath)
           resumeSize = stats.size
           if (resumeSize > 0) {
-            sendLog(
-              `Resuming download from ${Math.round(resumeSize / 1024 / 1024)}MB`
-            )
+            sendLog(`Resuming download from ${Math.round(resumeSize / 1024 / 1024)}MB`)
           }
         } catch (error) {
           sendLog('Could not get existing file size, starting fresh download')
@@ -479,10 +465,7 @@ async function downloadFile(url, filePath, onProgress, options = {}) {
 
         // Throttle progress updates
         const now = Date.now()
-        if (
-          totalSize > 0 &&
-          (now - lastProgressUpdate > 500 || downloadedSize >= totalSize)
-        ) {
+        if (totalSize > 0 && (now - lastProgressUpdate > 500 || downloadedSize >= totalSize)) {
           const progress = downloadedSize / totalSize
           onProgress(progress)
           lastProgressUpdate = now
@@ -520,9 +503,7 @@ async function downloadFile(url, filePath, onProgress, options = {}) {
       if (totalSize > 0) {
         const stats = fs.statSync(filePath)
         if (stats.size !== totalSize) {
-          throw new Error(
-            `File size mismatch: expected ${totalSize}, got ${stats.size}`
-          )
+          throw new Error(`File size mismatch: expected ${totalSize}, got ${stats.size}`)
         }
       }
 
@@ -543,14 +524,9 @@ async function downloadFile(url, filePath, onProgress, options = {}) {
         // Keep partial file for network errors, remove for others
         const isNetworkError =
           error.code &&
-          [
-            'ETIMEDOUT',
-            'ECONNRESET',
-            'ECONNREFUSED',
-            'ENOTFOUND',
-            'ENETUNREACH',
-            'EPIPE',
-          ].includes(error.code)
+          ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'EPIPE'].includes(
+            error.code
+          )
 
         if (!isNetworkError && fs.existsSync(filePath)) {
           try {
@@ -584,9 +560,7 @@ async function downloadFile(url, filePath, onProgress, options = {}) {
             // Ignore cleanup errors
           }
         }
-        throw new Error(
-          `Download failed after ${maxRetries} attempts: ${error.message}`
-        )
+        throw new Error(`Download failed after ${maxRetries} attempts: ${error.message}`)
       }
     }
   }
@@ -617,15 +591,12 @@ function findComfyUIMainDir(comfyUIDir) {
 async function updateConfigWithComfyUI() {
   try {
     // Call backend API to update configuration
-    const response = await fetch(
-      'http://127.0.0.1:57988/api/comfyui/update_config',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    const response = await fetch('http://127.0.0.1:8000/api/comfyui/update_config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
     if (response.ok) {
       const result = await response.json()
@@ -746,9 +717,7 @@ async function installComfyUI() {
       releaseInfo = await getLatestComfyUIRelease()
       sendLog(`Found latest version: ${releaseInfo.version}`)
       sendLog(
-        `Download file: ${releaseInfo.fileName} (${Math.round(
-          releaseInfo.size / 1024 / 1024
-        )}MB)`
+        `Download file: ${releaseInfo.fileName} (${Math.round(releaseInfo.size / 1024 / 1024)}MB)`
       )
     } catch (error) {
       sendLog(`Failed to fetch latest release: ${error.message}`)
@@ -793,9 +762,7 @@ async function installComfyUI() {
           const stats = fs.statSync(zipPath)
           if (stats.size > 1000000) {
             // At least 1MB, simple integrity check
-            sendLog(
-              'Installation package appears complete based on size, skipping download'
-            )
+            sendLog('Installation package appears complete based on size, skipping download')
             shouldDownload = false
           } else {
             sendLog('Installation package is incomplete, re-downloading')
@@ -803,9 +770,7 @@ async function installComfyUI() {
           }
         }
       } catch (error) {
-        sendLog(
-          `Error checking installation package: ${error.message}, re-downloading`
-        )
+        sendLog(`Error checking installation package: ${error.message}, re-downloading`)
         shouldDownload = true
       }
     }
@@ -817,9 +782,7 @@ async function installComfyUI() {
 
     if (shouldDownload) {
       sendProgress(15, 'Starting ComfyUI download...')
-      sendLog(
-        `Downloading ComfyUI ${releaseInfo.version} from ${releaseInfo.downloadUrl}...`
-      )
+      sendLog(`Downloading ComfyUI ${releaseInfo.version} from ${releaseInfo.downloadUrl}...`)
 
       // Download with enhanced retry configuration for large files
       await downloadFile(
@@ -991,10 +954,7 @@ if (isWorkerProcess) {
           })
         }
       } catch (error) {
-        console.error(
-          '🦄 ComfyUI installation failed in worker process:',
-          error
-        )
+        console.error('🦄 ComfyUI installation failed in worker process:', error)
 
         // Send error result back to main process
         process.send({
@@ -1024,10 +984,7 @@ if (isWorkerProcess) {
           })
         }
       } catch (error) {
-        console.error(
-          '🦄 ComfyUI uninstallation failed in worker process:',
-          error
-        )
+        console.error('🦄 ComfyUI uninstallation failed in worker process:', error)
 
         // Send error result back to main process
         process.send({

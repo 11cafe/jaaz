@@ -4,7 +4,7 @@ from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from services.jaaz_service import JaazService
 from tools.utils.image_canvas_utils import save_image_to_canvas, send_image_start_notification, send_image_error_notification
-from common import DEFAULT_PORT
+from common import DEFAULT_PORT, BASE_URL
 import os
 from tools.utils.image_utils import get_image_info_and_save, generate_image_id, process_input_image
 from services.config_service import FILES_DIR
@@ -130,14 +130,23 @@ async def generate_image_by_midjourney_jaaz(
         if not saved_images:
             raise Exception("Failed to save any images from Midjourney generation")
 
-        # Create result message with all saved images
-        image_links: List[str] = []
+        # 📝 [CHAT_DEBUG] 记录Midjourney图片生成信息
+        from log import get_logger
+        logger = get_logger(__name__)
+        logger.info(f"🎨 [CHAT_DEBUG] Midjourney生成了 {len(saved_images)} 张图片")
         for saved_image in saved_images:
-            image_links.append(
-                f"![image_{saved_image['index']+1}: {saved_image['image_id']}](http://localhost:{DEFAULT_PORT}{saved_image['url']})"
-            )
+            logger.info(f"🎨 [CHAT_DEBUG] 图片 {saved_image['index']+1}: {saved_image['image_id']} -> {BASE_URL}{saved_image['url']}")
 
-        result_message = f"Midjourney generated {len(saved_images)} images successfully:\n\n" + "\n\n".join(image_links)
+        # 🆕 [CHAT_DUAL_DISPLAY] 实现聊天+画布双重显示
+        # 为每张图片创建markdown格式，在聊天中显示
+        image_links = []
+        for saved_image in saved_images:
+            image_url = f"{BASE_URL}{saved_image['url']}"
+            image_link = f"![image_{saved_image['index']+1}: {saved_image['image_id']}]({image_url})"
+            image_links.append(image_link)
+        
+        # 聊天响应包含图片预览 + 提示文本
+        result_message = f"🎨 Midjourney已生成 {len(saved_images)} 张图片并添加到画布\n\n" + "\n\n".join(image_links)
 
         print(f"🎨 Midjourney generation completed: {len(saved_images)} images saved")
         return result_message

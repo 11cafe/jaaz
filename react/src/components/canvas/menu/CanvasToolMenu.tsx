@@ -32,7 +32,7 @@ const CanvasToolMenu = () => {
   ]
 
   return (
-    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-primary-foreground/75 backdrop-blur-lg rounded-lg p-1 shadow-[0_5px_10px_rgba(0,0,0,0.08)] border border-primary/10">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/85 backdrop-blur-md rounded-xl p-1.5 shadow-lg border border-white/40 md:bottom-5">
       {tools.map((tool, index) =>
         tool ? (
           <CanvasMenuButton

@@ -1,5 +1,6 @@
 import { CanvasData, Message, Session } from '@/types/types'
 import { ToolInfo } from '@/api/model'
+import { authenticatedFetch } from '@/api/auth'
 
 export type ListCanvasesResponse = {
   id: string
@@ -10,7 +11,17 @@ export type ListCanvasesResponse = {
 }
 
 export async function listCanvases(): Promise<ListCanvasesResponse[]> {
-  const response = await fetch('/api/canvas/list')
+  const response = await authenticatedFetch('/api/canvas/list')
+  
+  if (!response.ok) {
+    // 如果认证失败（401），返回空数组而不是抛出错误
+    if (response.status === 401) {
+      console.log('🚨 listCanvases: User not authenticated, returning empty list')
+      return []
+    }
+    throw new Error(`Failed to fetch canvases: ${response.status}`)
+  }
+  
   return await response.json()
 }
 
@@ -23,16 +34,23 @@ export async function createCanvas(data: {
     provider: string
     model: string
     url: string
-  }
+  } | null
   tool_list: ToolInfo[]
-
+  model_name?: string
   system_prompt: string
+  template_id?: number
 }): Promise<{ id: string }> {
   const response = await fetch('/api/canvas/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Canvas creation failed: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+  
   return await response.json()
 }
 
@@ -71,5 +89,20 @@ export async function deleteCanvas(id: string): Promise<void> {
   const response = await fetch(`/api/canvas/${id}/delete`, {
     method: 'DELETE',
   })
+  return await response.json()
+}
+
+export async function renameSession(sessionId: string, title: string): Promise<void> {
+  const response = await fetch(`/api/canvas/session/${sessionId}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error || 'Failed to rename session')
+  }
+
   return await response.json()
 }

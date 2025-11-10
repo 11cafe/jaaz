@@ -1,21 +1,29 @@
 import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
-export const BASE_API_URL =
-  import.meta.env.VITE_JAAZ_BASE_API_URL || 'https://jaaz.app'
+// 🚨 Important: Use localhost instead of 127.0.0.1 to avoid cross-origin cookie issues
+// 自动检测环境并使用正确的协议
+// export const BASE_API_URL = import.meta.env.PROD
+//   ? 'https://www.magicart.cc'
+//   : 'http://localhost:8000'
+
+export const BASE_API_URL = 'http://127.0.0.1:8000'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
 } = {
   jaaz: {
-    name: 'Jaaz',
-    icon: 'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png',
+    name: 'MagicArt',
+    icon: '/magicart.png',
   },
   anthropic: {
     name: 'Claude',
     icon: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png',
   },
-  openai: { name: 'OpenAI', icon: 'https://openai.com/favicon.ico' },
+  openai: {
+    name: 'OpenAI',
+    icon: `${BASE_API_URL}/static/llm_icon/openai.png`,
+  },
   replicate: {
     name: 'Replicate',
     icon: 'https://images.seeklogo.com/logo-png/61/1/replicate-icon-logo-png_seeklogo-611690.png',
@@ -40,19 +48,26 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'ComfyUI',
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
+  google: {
+    name: 'Google',
+    icon: 'https://www.gstatic.com/aistudio/ai_studio_favicon_2_32x32.png',
+  },
+  doubao: {
+    name: 'Doubao',
+    icon: `${BASE_API_URL}/static/llm_icon/doubao.png`,
+  },
 }
 
 // Tool call name mapping
-export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
-  {
-    generate_image: 'Generate Image',
-    prompt_user_multi_choice: 'Prompt Multi-Choice',
-    prompt_user_single_choice: 'Prompt Single-Choice',
-    write_plan: 'Write Plan',
-    finish: 'Finish',
-  }
+export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } = {
+  generate_image: 'Generate Image',
+  prompt_user_multi_choice: 'Prompt Multi-Choice',
+  prompt_user_single_choice: 'Prompt Single-Choice',
+  write_plan: 'Write Plan',
+  finish: 'Finish',
+}
 
-export const LOGO_URL = 'https://jaaz.app/favicon.ico'
+export const LOGO_URL = '/magicart.png'
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
 Step 1. write a design strategy plan. Write in the same language as the user's inital first prompt.

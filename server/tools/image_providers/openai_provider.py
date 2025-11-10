@@ -29,7 +29,7 @@ class OpenAIImageProvider(ImageProviderBase):
         config = config_service.app_config.get('openai', {})
         self.api_key = str(config.get("api_key", ""))
         self.base_url = str(config.get("url", ""))  # 可选
-
+        print("OpenAIImageProvider generate")
         if not self.api_key:
             raise ValueError("OpenAI API key is not configured")
 
@@ -45,8 +45,11 @@ class OpenAIImageProvider(ImageProviderBase):
                 # Image editing mode
                 input_image_path = input_images[0]
                 # For OpenAI, input_image should be the file path
-                full_path = os.path.join(FILES_DIR, input_image_path)
-
+                from ..utils.image_utils import _find_image_file
+                full_path = _find_image_file(input_image_path)
+                if not full_path:
+                    raise Exception(f"Image file not found: {input_image_path}")
+                print(f"full_path: {full_path}")
                 with open(full_path, 'rb') as image_file:
                     result = self.client.images.edit(
                         model=model,
@@ -66,6 +69,7 @@ class OpenAIImageProvider(ImageProviderBase):
                 }
                 size = size_map.get(aspect_ratio, "1024x1024")
 
+                print(f"prompt: {prompt}")
                 result = self.client.images.generate(
                     model=model,
                     prompt=prompt,

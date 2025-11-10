@@ -7,6 +7,216 @@
   display: none !important;
 }
 
+/* 🎨 现代化左侧工具栏 - 世界顶级设计师版本 */
+.excalidraw .App-menu__left {
+  position: fixed !important;
+  left: 16px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin-top: 24px !important;
+  z-index: 50 !important;
+
+  /* 📐 现代紧凑尺寸 */
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  max-height: 75vh !important;
+
+  /* 🔥 毛玻璃现代效果 */
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+
+  /* 📱 布局优化 */
+  padding: 16px 14px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+
+  /* ✨ 动画效果 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 🌟 深色模式适配 */
+.excalidraw.theme--dark .App-menu__left {
+  background: rgba(30, 30, 30, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 🎯 智能内容筛选 - 80/20原则 */
+
+/* ✅ 保留核心功能组 */
+.excalidraw .App-menu__left > div:nth-child(1),  /* Stroke 颜色 */
+.excalidraw .App-menu__left > div:nth-child(2),  /* Stroke width 线宽 */
+.excalidraw .App-menu__left > div:nth-child(n+8) /* Opacity, Layers, Align, Actions */
+{
+  display: block !important;
+}
+
+/* ❌ 隐藏不常用的中间选项 */
+.excalidraw .App-menu__left > div:nth-child(3),  /* Stroke style */
+.excalidraw .App-menu__left > div:nth-child(4),  /* Sloppiness */
+.excalidraw .App-menu__left > div:nth-child(5),  /* Edges */
+.excalidraw .App-menu__left > div:nth-child(6),  /* Arrow type */
+.excalidraw .App-menu__left > div:nth-child(7)   /* Arrowheads */
+{
+  display: none !important;
+}
+
+/* 🎨 现代化内容样式 */
+.excalidraw .App-menu__left h3 {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: rgba(0, 0, 0, 0.8) !important;
+  margin: 12px 0 8px 0 !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+}
+
+.excalidraw.theme--dark .App-menu__left h3 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 🎪 优化按钮样式 */
+.excalidraw .App-menu__left .ToolIcon,
+.excalidraw .App-menu__left button {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.excalidraw .App-menu__left .ToolIcon:hover,
+.excalidraw .App-menu__left button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 🌈 现代化颜色选择器 */
+.excalidraw .App-menu__left .ButtonSelect {
+  gap: 6px !important;
+  margin-bottom: 16px !important;
+}
+
+/* 📏 滑块现代化 */
+.excalidraw .App-menu__left .slider {
+  margin: 8px 0 16px 0 !important;
+}
+
+/* 📦 分组间距优化 */
+.excalidraw .App-menu__left > div + div {
+  margin-top: 4px !important;
+}
+
+/* 🔧 完美布局控制 */
+.excalidraw .App-menu__left * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.excalidraw .App-menu__left .FixedSideContainer {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  margin-bottom: 4px !important;
+}
+
+/* 🎲 按钮组优化 */
+.excalidraw .App-menu__left .ButtonSelect {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+}
+
+/* ✨ 消除滚动条 - 紧凑设计 */
+.excalidraw .App-menu__left::-webkit-scrollbar {
+  display: none !important;
+}
+
+.excalidraw .App-menu__left {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* 🎪 微交互动画 */
+.excalidraw .App-menu__left .ToolIcon {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.excalidraw .App-menu__left .ToolIcon:active {
+  transform: scale(0.95) !important;
+}
+
+/* 🌟 精致分割线 */
+.excalidraw .App-menu__left hr,
+.excalidraw .App-menu__left .separator {
+  margin: 12px 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0.1) 50%,
+    rgba(0,0,0,0) 100%) !important;
+  border: none !important;
+}
+
+/* 🎨 特殊美化效果 */
+.excalidraw .App-menu__left {
+  /* 🌊 轻微的入场动画 */
+  animation: slideInLeft 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* 📱 响应式优化 */
+@media (max-height: 700px) {
+  .excalidraw .App-menu__left {
+    max-height: 80vh !important;
+    padding: 12px 10px !important;
+  }
+
+  .excalidraw .App-menu__left h3 {
+    font-size: 12px !important;
+    margin: 8px 0 6px 0 !important;
+  }
+}
+
+/* 🔍 悬浮放大效果 */
+.excalidraw .App-menu__left:hover {
+  transform: translateY(-50%) scale(1.02) !important;
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 🎯 精确的边距控制 */
+.excalidraw .App-menu__left > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+.excalidraw .App-menu__left > *:first-child {
+  margin-top: 0 !important;
+}
+
 /* Video overlay styles */
 .video-overlay {
   position: absolute;

@@ -1,14 +1,38 @@
 {
   "newChat": "New Chat",
   "placeholder": "Type your message here...",
+  "sessionHistory": {
+    "title": "Session History",
+    "historyTitle": "History",
+    "newChat": "New Chat",
+    "newChatDescription": "Start a new conversation",
+    "newSession": "New Chat",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "messagesCount": "{{count}} messages",
+    "noSessions": "No chat history",
+    "noSessionsYet": "No sessions yet",
+    "startNewConversation": "Start a new conversation to create your first session",
+    "selectSession": "Select session",
+    "defaultSessionTitle": "New Chat"
+  },
   "insufficientBalance": "Insufficient Balance",
   "insufficientBalanceDescription": "Your credits are depleted. Please recharge to continue.",
   "textarea": {
     "placeholder": "Enter your design requirements",
-    "selectModel": "Please select a text model! Go to Settings to set your API keys if you haven't done so.",
+    "selectModel": "Please select a model (text, image, or video)! Go to Settings to set your API keys if you haven't done so.",
     "selectTool": "Please go to settings to add image or video generation tools, or you won't be able to generate any images or videos!!",
     "enterPrompt": "Please enter a prompt",
-    "quantity": "Image Quantity"
+    "quantity": "Image Quantity",
+    "placeholderTexts": [
+      "Draw a cute cat playing in the garden",
+      "Create a futuristic cityscape at sunset",
+      "Paint a magical forest with glowing mushrooms",
+      "Generate a portrait of a young artist",
+      "Design a cozy coffee shop interior"
+    ]
   },
   "messages": {
     "imagePositioning": "Go to image",
@@ -38,9 +62,33 @@
     "success": "Template created successfully!",
     "error": "Failed to create template"
   },
+  "toolCall": {
+    "requiresConfirmation": "Requires Confirmation",
+    "cancelled": "Tool call cancelled",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "generation": {
+    "starting": "Starting generation...",
+    "completed": "✨ Generation completed!",
+    "imageGenerated": "🎨 Image generated and added to canvas"
+  },
+  "welcome": {
+    "greeting": "Hello, MagicArt!",
+    "question": "What would you like to design?",
+    "newSession": "💡 This is a new chat session",
+    "autoSave": "• The session will be automatically saved when you send the first message",
+    "persistent": "• The session will be retained when you close the window and can be continued next time",
+    "management": "• You can create new sessions at any time to categorize and manage different design tasks"
+  },
   "modelSelector": {
     "title": "Model",
     "auto": "Auto",
+    "singleSelectMode": "Single selection mode",
+    "globalSingleSelectMode": "Global single selection - only one model at a time",
+    "selected": "Selected",
+    "currentSelection": "Current",
+    "willReplace": "Will replace current selection",
     "tabs": {
       "image": "Image",
       "video": "Video",
