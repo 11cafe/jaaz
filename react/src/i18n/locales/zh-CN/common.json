@@ -1,7 +1,10 @@
 {
   "languages": {
     "en": "English",
-    "zh-CN": "简体中文"
+    "zh-CN": "简体中文",
+    "fr": "Français",
+    "es": "Español",
+    "ko": "한국어"
   },
   "buttons": {
     "save": "保存",
