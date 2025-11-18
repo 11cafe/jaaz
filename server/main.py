@@ -104,4 +104,4 @@ if __name__ == "__main__":
     import uvicorn
     print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
 
-    uvicorn.run(socket_app, host="127.0.0.1", port=args.port)
+    uvicorn.run(socket_app, host="0.0.0.0", port=args.port)
