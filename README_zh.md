@@ -82,7 +82,7 @@
 
 首先 git clone 这个仓库：
 
-`git clone https://github.com/11cafe/localart`
+`git clone https://github.com/11cafe/jaaz`
 
 `cd react`
 
