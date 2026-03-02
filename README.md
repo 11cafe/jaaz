@@ -55,10 +55,6 @@ Create Viral Shorts with a Single Sentence
 <video src="https://github.com/user-attachments/assets/1c15e792-098a-4557-b310-d9c223f73442" controls width="100%" />
 
 
-
-
-
-
 ## ✨ Getting started & staying tuned with us.
 
 Star us, and you will receive all release notifications from GitHub without any delay!
@@ -187,6 +183,7 @@ VSCode/Cursor Install Extensions：
 `pip install -r requirements.txt`
 
 `python main.py`
+
 
 
 
