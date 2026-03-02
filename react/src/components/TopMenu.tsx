@@ -1,16 +1,14 @@
-import { useConfigs } from '@/contexts/configs'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ChevronLeft, ImageIcon } from 'lucide-react'
-import { motion } from 'motion/react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { SettingsIcon } from 'lucide-react'
-import ThemeButton from '@/components/theme/ThemeButton'
+import { useTranslation } from 'react-i18next'
 import { LOGO_URL } from '@/constants'
 import LanguageSwitcher from './common/LanguageSwitcher'
-import { cn } from '@/lib/utils'
 import { UserMenu } from './auth/UserMenu'
+import InviteButton from './common/InviteButton'
+import PointsBadge from './common/PointsBadge'
+import { useAuth } from '@/contexts/AuthContext'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export default function TopMenu({
   middle,
@@ -19,60 +17,103 @@ export default function TopMenu({
   middle?: React.ReactNode
   right?: React.ReactNode
 }) {
-  const { t } = useTranslation()
-
   const navigate = useNavigate()
-  const { setShowSettingsDialog } = useConfigs()
+  const { t } = useTranslation('common')
+  const { authStatus } = useAuth()
+
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+
+    const controlNavbar = () => {
+      clearTimeout(timeoutId)
+
+      timeoutId = setTimeout(() => {
+        const currentScrollY = window.scrollY
+
+        if (currentScrollY < 10) {
+          // 在页面顶部附近时始终显示
+          setIsVisible(true)
+        } else if (currentScrollY > lastScrollY && currentScrollY > 80) {
+          // 向下滚动且滚动距离超过80px时隐藏
+          setIsVisible(false)
+        } else if (currentScrollY < lastScrollY) {
+          // 向上滚动时显示
+          setIsVisible(true)
+        }
+
+        setLastScrollY(currentScrollY)
+      }, 10) // 添加10ms的防抖，让滚动更流畅
+    }
+
+    window.addEventListener('scroll', controlNavbar, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', controlNavbar)
+      clearTimeout(timeoutId)
+    }
+  }, [lastScrollY])
 
   return (
-    <motion.div
-      className="sticky top-0 z-0 flex w-full h-8 bg-background px-4 justify-between items-center select-none border-b border-border"
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className={cn(
+        "sticky top-0 z-50 flex w-full h-16 px-3 sm:px-6 items-center select-none relative",
+        "transition-transform duration-300 ease-in-out",
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      )}
     >
-      <div className="flex items-center gap-8">
-        <motion.div
-          className="flex items-center gap-2 cursor-pointer group"
+      {/* 左侧区域 */}
+      <div className="flex items-center gap-2 sm:gap-10 min-w-0 flex-1">
+        <div
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0"
           onClick={() => navigate({ to: '/' })}
         >
-          {window.location.pathname !== '/' && (
-            <ChevronLeft className="size-5 group-hover:-translate-x-0.5 transition-transform duration-300" />
-          )}
-          <img src={LOGO_URL} alt="logo" className="size-5" draggable={false} />
-          <motion.div className="flex relative overflow-hidden items-start h-7 text-xl font-bold">
-            <motion.span className="flex items-center" layout>
-              {window.location.pathname === '/' ? 'Jaaz' : t('canvas:back')}
-            </motion.span>
-          </motion.div>
-        </motion.div>
-        <Button
-          variant={window.location.pathname === '/assets' ? 'default' : 'ghost'}
-          size="sm"
-          className={cn('flex items-center font-bold rounded-none')}
-          onClick={() => navigate({ to: '/assets' })}
-        >
-          <ImageIcon className="size-4" />
-          {t('canvas:assets', 'Library')}
-        </Button>
+          <img src={LOGO_URL} alt="logo" className="size-6 sm:size-7 shrink-0" draggable={false} />
+          <div className="flex relative items-center text-base sm:text-lg md:text-2xl font-bold text-foreground min-w-0">
+            <span className="flex items-center whitespace-nowrap">
+              MagicArt
+            </span>
+          </div>
+        </div>
+        <nav className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base"
+            onClick={() => navigate({ to: '/templates' })}
+          >
+            {t('navigation.templates')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center font-medium px-2 py-1.5 text-sm rounded-lg hover:bg-white/20 hover:backdrop-blur-sm sm:px-4 sm:py-2 sm:text-base"
+            onClick={() => navigate({ to: '/pricing' })}
+          >
+            {t('navigation.pricing')}
+          </Button>
+        </nav>
       </div>
 
-      <div className="flex items-center gap-2">{middle}</div>
+      {/* 中间区域 - 绝对居中 */}
+      {middle && (
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          {middle}
+        </div>
+      )}
 
-      <div className="flex items-center gap-2">
+      {/* 右侧区域 */}
+      <div className="flex items-center gap-1 sm:gap-2">
         {right}
         {/* <AgentSettings /> */}
-        <Button
-          size={'sm'}
-          variant="ghost"
-          onClick={() => setShowSettingsDialog(true)}
-        >
-          <SettingsIcon size={30} />
-        </Button>
         <LanguageSwitcher />
-        <ThemeButton />
+        {/* 只有登录用户才显示邀请按钮 - 移动端隐藏 */}
+        {authStatus.is_logged_in && <InviteButton className="hidden sm:flex" />}
+        {authStatus.is_logged_in && <PointsBadge className="hidden sm:flex" />}
+        {/* <ThemeButton /> */}
         <UserMenu />
       </div>
-    </motion.div>
+    </div>
   )
 }

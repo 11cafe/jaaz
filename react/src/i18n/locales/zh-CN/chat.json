@@ -1,14 +1,38 @@
 {
   "newChat": "新建聊天",
   "placeholder": "在这里输入你的消息...",
+  "sessionHistory": {
+    "title": "会话历史",
+    "historyTitle": "历史记录",
+    "newChat": "新建对话",
+    "newChatDescription": "开始新的对话",
+    "newSession": "新对话",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "messagesCount": "{{count}} 条消息",
+    "noSessions": "暂无历史对话",
+    "noSessionsYet": "暂无会话",
+    "startNewConversation": "开始新对话创建您的第一个会话",
+    "selectSession": "选择会话",
+    "defaultSessionTitle": "新对话"
+  },
   "insufficientBalance": "余额不足",
   "insufficientBalanceDescription": "您的积分已用完，请充值后继续使用",
   "textarea": {
     "placeholder": "输入您的设计需求",
-    "selectModel": "请选择一个文本模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
+    "selectModel": "请选择一个模型（文本、图像或视频）！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "selectTool": "请选择一个图片模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
     "enterPrompt": "请输入提示内容",
-    "quantity": "生成数量"
+    "quantity": "生成数量",
+    "placeholderTexts": [
+      "画一只在花园里玩耍的可爱猫咪",
+      "创作一个夕阳下的未来主义城市景观",
+      "绘制一个有着发光蘑菇的魔法森林",
+      "生成一位年轻艺术家的肖像",
+      "设计一个温馨的咖啡店内饰"
+    ]
   },
   "messages": {
     "imagePositioning": "定位到图片",
@@ -41,13 +65,31 @@
   },
   "toolCall": {
     "requiresConfirmation": "需确认",
-    "cancelled": "已取消",
+    "cancelled": "工具调用已取消",
     "confirm": "确认执行",
     "cancel": "取消"
+  },
+  "generation": {
+    "starting": "开始生成...",
+    "completed": "✨ 生成完成！",
+    "imageGenerated": "🎨 图片已生成并添加到画布"
+  },
+  "welcome": {
+    "greeting": "你好，MagicArt!",
+    "question": "希望设计点什么呢?",
+    "newSession": "💡 这是一个新的聊天会话",
+    "autoSave": "• 会话将在您发送第一条消息时自动保存",
+    "persistent": "• 关闭窗口时会话将保留，下次可继续使用",
+    "management": "• 您可以随时创建新的会话来分类管理不同的设计任务"
   },
   "modelSelector": {
     "title": "模型",
     "auto": "自动",
+    "singleSelectMode": "单选模式",
+    "globalSingleSelectMode": "全局单选 - 同时只能选择一个模型",
+    "selected": "已选择",
+    "currentSelection": "当前选择",
+    "willReplace": "将替换当前选择",
     "tabs": {
       "image": "图像",
       "video": "视频",

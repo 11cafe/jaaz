@@ -1,0 +1,18 @@
+{
+  "title": "模板",
+  "subtitle": "精选优质模板，助您快速创作出色作品",
+  "search": {
+    "placeholder": "搜索模板..."
+  },
+  "buttons": {
+    "use": "使用",
+    "reload": "重新加载"
+  },
+  "messages": {
+    "loading": "正在加载模板...",
+    "error": "加载模板时出现错误，请稍后重试",
+    "noResults": "没有找到匹配的模板",
+    "empty": "暂无模板",
+    "preview": "预览"
+  }
+}

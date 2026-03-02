@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { defineConfig, UserConfig } from 'vite'
 
-const PORT = 57988
+const PORT = 8000
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -89,6 +89,11 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         // Uncomment the following if you want to remove the /api prefix when forwarding to Flask
         // rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // Proxy static files to backend
+      '/static': {
+        target: `http://127.0.0.1:${PORT}`,
+        changeOrigin: true,
       },
       // Also proxy WebSocket connections
       '/ws': {

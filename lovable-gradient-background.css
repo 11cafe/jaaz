@@ -1,0 +1,140 @@
+/* Lovable风格的背景渐变效果 */
+
+/* 滑入动画定义 */
+@keyframes slideUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 主背景容器 */
+.lovable-background-container {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #fcfbf8; /* 浅色主题背景 */
+  transition: none;
+  overflow: hidden;
+}
+
+/* 深色主题背景 */
+.dark .lovable-background-container {
+  background-color: #1c1c1c;
+}
+
+/* 渐变背景层 */
+.gradient-background-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 动画渐变元素 */
+.animated-gradient {
+  position: absolute;
+  inset: 0;
+  margin-top: 0;
+  opacity: 0;
+  filter: blur(10px);
+  animation: slideUp 1s ease-out 0.5s forwards;
+}
+
+/* 渐变圆形 */
+.gradient-circle {
+  position: absolute;
+  left: 50%;
+  aspect-ratio: 1;
+  width: 350%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  
+  /* 创建多色径向渐变，模仿Lovable的品牌色彩 */
+  background: radial-gradient(
+    circle at center,
+    #4B73FF 0%,
+    #FF66F4 25%,
+    #FF0105 50%,
+    #FE7B02 75%,
+    transparent 100%
+  );
+  
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center top;
+  
+  /* CSS遮罩创建渐变消失效果 */
+  -webkit-mask: linear-gradient(to bottom, transparent 0%, black 5%, black 100%);
+  mask: linear-gradient(to bottom, transparent 0%, black 5%, black 100%);
+  
+  /* 性能优化 */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+/* 响应式设计 */
+@media (min-width: 768px) {
+  .gradient-circle {
+    width: 190%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gradient-circle {
+    width: 190%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .gradient-circle {
+    width: 190%;
+  }
+}
+
+@media (min-width: 1536px) {
+  .gradient-circle {
+    width: 190%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* 颗粒纹理层 */
+.grain-texture {
+  position: absolute;
+  inset: 0;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAALklEQVQoU2NkYGAwZiABMIIoo6ioiA4ODkbBWWwzMLMyMjIy/P//ny8rKysnJydc1cUlhgAAAABJRU5ErkJggg==');
+  background-size: 100px 100px;
+  background-repeat: repeat;
+  background-blend-mode: overlay;
+  background-position: left top;
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+/* 深色主题的渐变调整 */
+.dark .gradient-circle {
+  background: radial-gradient(
+    circle at center,
+    #4B73FF 0%,
+    #FF66F4 25%,
+    #FF0105 50%,
+    #FE7B02 75%,
+    transparent 100%
+  );
+  opacity: 0.8;
+}
+
+/* 内容层确保在背景之上 */
+.content-layer {
+  position: relative;
+  z-index: 10;
+}

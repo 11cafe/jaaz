@@ -41,10 +41,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         // Create socket manager instance if not exists
         if (!socketManagerRef.current) {
           socketManagerRef.current = new SocketIOManager({
-            serverUrl: process.env.NODE_ENV === 'development'
-              ? 'http://localhost:57988'
-              : window.location.origin,
-            autoConnect: false
+            serverUrl:
+              process.env.NODE_ENV === 'development'
+                ? 'http://localhost:8000'
+                : window.location.origin,
+            autoConnect: false,
           })
         }
 
@@ -134,14 +135,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       {children}
 
       {error && (
-        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-3 py-2 rounded-md shadow-lg">
+        <div className='fixed top-4 right-4 z-50 bg-red-500 text-white px-3 py-2 rounded-md shadow-lg'>
           {socketManagerRef.current?.isMaxReconnectAttemptsReached()
             ? t('socket.maxRetriesReached')
             : t('socket.connectionError', {
-              current: socketManagerRef.current?.getReconnectAttempts() || 0,
-              max: 5,
-              error
-            })}
+                current: socketManagerRef.current?.getReconnectAttempts() || 0,
+                max: 5,
+                error,
+              })}
         </div>
       )}
     </SocketContext.Provider>
