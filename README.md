@@ -152,7 +152,7 @@ Please contact via email: aifoxdw@gmail.com
 
 First git clone this repo:
 
-`git clone https://github.com/11cafe/localart`
+`git clone https://github.com/11cafe/jaaz`
 
 `cd react`
 
