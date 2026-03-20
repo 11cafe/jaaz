@@ -116,6 +116,18 @@ const PROVIDER_OPTIONS = [
     },
   },
   {
+    value: 'minimax',
+    label: 'MiniMax',
+    data: {
+      apiUrl: 'https://api.minimax.io/v1/',
+      models: {
+        'MiniMax-M2.7': { type: 'text' },
+        'MiniMax-M2.5': { type: 'text' },
+        'MiniMax-M2.5-highspeed': { type: 'text' },
+      },
+    },
+  },
+  {
     value: '硅基流动',
     label: '硅基流动 (SiliconFlow)',
     data: { apiUrl: 'https://api.siliconflow.cn/v1/' },
