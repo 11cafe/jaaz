@@ -23,7 +23,7 @@
 由大语言模型（LLM）驱动，Jaaz 能理解你的想法并生成优化的提示词，用于创作高质量的图像或故事板。
 
 混合模型部署
-支持通过 Ollama、ComfyUI 运行本地模型，也支持 Replicate、OpenAI 或 Claude 等远程 API。可实现 100% 本地运行或连接到云端。
+支持通过 Ollama、ComfyUI 运行本地模型，也支持 Replicate、OpenAI、Claude 或 MiniMax 等远程 API。可实现 100% 本地运行或连接到云端。
 
 轻松接入所有最强 API
 登录后，你可以使用所有最新的模型（gpt-image-1, flux kntext, google……）。

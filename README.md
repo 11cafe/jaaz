@@ -65,7 +65,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 🎬 One-Prompt Image & Video Generation
 Turn one prompt into complete images or videos in seconds.
 
- -Supports GPT-4o, Midjourney, VEO3, Kling,veo3,seedance etc.
+ -Supports GPT-4o, MiniMax, Midjourney, VEO3, Kling,veo3,seedance etc.
 
  -Auto-optimized prompts & multi-turn refinement
 
