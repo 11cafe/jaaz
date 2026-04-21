@@ -174,7 +174,19 @@ async def _handle_error(error: Exception, session_id: str) -> None:
     print(f"Full traceback:\n{tb_str}")
     traceback.print_exc()
 
+    error_str = str(error)
+    # Sanitize HTML error responses (e.g., Cloudflare blocks, gateway error pages)
+    # that occur when the API endpoint returns an HTML page instead of JSON
+    if error_str.strip().startswith('<'):
+        error_str = (
+            'The API request was blocked or returned an unexpected response. '
+            'This may be caused by a firewall, rate limit, or network issue. '
+            'Please check your API key, network settings, and try again.'
+        )
+    elif len(error_str) > 1000:
+        error_str = error_str[:1000] + '...'
+
     await send_to_websocket(session_id, cast(Dict[str, Any], {
         'type': 'error',
-        'error': str(error)
+        'error': error_str
     }))
