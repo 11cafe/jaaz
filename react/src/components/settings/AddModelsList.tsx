@@ -4,6 +4,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export type ModelItem = {
   name: string
@@ -25,6 +32,7 @@ export default function AddModelsList({
 }: ModelsListProps) {
   const [modelItems, setModelItems] = useState<ModelItem[]>([])
   const [newModelName, setNewModelName] = useState('')
+  const [newModelType, setNewModelType] = useState<'text' | 'image' | 'video'>('text')
   const [openAddModelDialog, setOpenAddModelDialog] = useState(false)
 
   useEffect(() => {
@@ -57,11 +65,12 @@ export default function AddModelsList({
     if (newModelName) {
       const newItems = [
         ...modelItems,
-        { name: newModelName, type: 'text' as const },
+        { name: newModelName, type: newModelType },
       ]
       setModelItems(newItems)
       notifyChange(newItems)
       setNewModelName('')
+      setNewModelType('text')
       setOpenAddModelDialog(false)
     }
   }
@@ -98,6 +107,24 @@ export default function AddModelsList({
                 }}
                 onChange={(e) => setNewModelName(e.target.value)}
               />
+              <div className="space-y-2">
+                <Label>Model Type</Label>
+                <Select
+                  value={newModelType}
+                  onValueChange={(v) =>
+                    setNewModelType(v as 'text' | 'image' | 'video')
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">text</SelectItem>
+                    <SelectItem value="image">image</SelectItem>
+                    <SelectItem value="video">video</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="button" onClick={handleAddModel} className="w-full">
                 Add Model
               </Button>
