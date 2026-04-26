@@ -122,17 +122,28 @@ class ConfigService:
                 content = await f.read()
                 config: AppConfig = toml.loads(content)
             for provider, provider_config in config.items():
-                if provider not in DEFAULT_PROVIDERS_CONFIG:
+                is_custom_provider = provider not in DEFAULT_PROVIDERS_CONFIG
+                if is_custom_provider:
                     provider_config['is_custom'] = True
                 self.app_config[provider] = provider_config
-                # image/video models are hardcoded in the default provider config
-                provider_models = DEFAULT_PROVIDERS_CONFIG.get(
-                    provider, {}).get('models', {})
+                # For built-in providers, image/video models are hardcoded and
+                # only user-added text models are preserved.
+                # For custom providers (e.g. OpenRouter), all model types are
+                # user-defined, so we preserve them as-is.
+                provider_models = dict(
+                    DEFAULT_PROVIDERS_CONFIG.get(provider, {}).get('models', {})
+                )
                 for model_name, model_config in provider_config.get('models', {}).items():
-                    # Only text model can be self added
-                    if model_config.get('type') == 'text' and model_name not in provider_models:
-                        provider_models[model_name] = model_config
-                        provider_models[model_name]['is_custom'] = True
+                    if is_custom_provider:
+                        # Custom providers: preserve all model types
+                        if model_name not in provider_models:
+                            provider_models[model_name] = model_config
+                            provider_models[model_name]['is_custom'] = True
+                    else:
+                        # Built-in providers: only allow user-added text models
+                        if model_config.get('type') == 'text' and model_name not in provider_models:
+                            provider_models[model_name] = model_config
+                            provider_models[model_name]['is_custom'] = True
                 self.app_config[provider]['models'] = provider_models
 
             # 确保 jaaz URL 始终正确
